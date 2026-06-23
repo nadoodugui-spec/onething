@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#c2603f" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -51,7 +51,7 @@
   }
 
   * { box-sizing: border-box; }
-  html { height: 100%; }
+  html { height: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   body {
     margin: 0; font-family: var(--font-body); color: var(--ink);
     background: radial-gradient(circle at 50% 0%, var(--desk1) 0%, var(--desk2) 55%, var(--desk3) 100%);
@@ -379,24 +379,38 @@
   #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 130; display: none; }
 
   @media (max-width: 720px) {
-    body { padding: 10px 10px 60px; height: auto; }
-    .toolbar { margin-bottom: 8px; }
+    body { padding: 10px 10px calc(50px + env(safe-area-inset-bottom)); height: auto; }
+    .toolbar { margin-bottom: 8px; gap: 8px; }
     .notebook { grid-template-columns: 1fr; min-height: 0; overflow: visible; border-radius: 10px; }
     .binding { display: none; }
-    .page { padding: 18px 16px 26px; }
+    .page { padding: 16px 16px 24px; }
     /* 모바일: THE ONE THING(오른쪽)을 위로, 오늘 할 일들(왼쪽)을 아래로 */
     .page.right { order: -1; box-shadow: none; }
     .page.left { order: 1; box-shadow: none; border-top: 2px dashed var(--line); }
     .page.left::before { left: 44px; }
-    /* 모바일에선 원씽 카드가 세로로 과하게 늘어나지 않게 */
+    /* 헤더(제목 + 날짜·화살표)를 세로로 가지런히 */
+    .page-head { min-height: 0; }
+    .page.right .page-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .page.right .date-nav { width: 100%; justify-content: center; gap: 12px; }
+    .onething-title { font-size: 1.5rem; white-space: nowrap; }
+    .page-title { font-size: 1.55rem; white-space: nowrap; }
+    .date { font-size: 1.15rem; white-space: nowrap; }
+    .date-nav button { font-size: 1.3rem; padding: 2px 8px; }
+    .today-btn { font-size: .82rem !important; padding: 3px 12px !important; }
+    .goal-badge { font-size: 1.2rem; }
+    /* '추가' 버튼이 세로로 쪼개지지 않게 */
+    .add-row { gap: 6px; }
+    .add-row input { font-size: 1.1rem; }
+    .add-row button { flex: none; white-space: nowrap; padding: 6px 14px; }
+    /* 원씽 카드 */
     #activeSlot { flex: 0 0 auto; }
     .onething-card { padding: 22px 18px; }
     .onething-card .ot-text { font-size: 2rem; }
-    .empty-ot { padding: 30px 18px; font-size: 1.7rem; }
-    .page-title, .onething-title { font-size: 1.7rem; }
-    .date { font-size: 1.2rem; }
+    .empty-ot { padding: 30px 18px; font-size: 1.6rem; }
+    /* 도구막대 */
     .search { min-width: 0; width: 100%; }
     .tools { width: 100%; justify-content: center; }
+    .sync-chip { bottom: calc(14px + env(safe-area-inset-bottom)); }
   }
 </style>
 </head>
