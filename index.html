@@ -51,7 +51,7 @@
   }
 
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
+  html { height: 100%; }
   body {
     margin: 0; font-family: var(--font-body); color: var(--ink);
     background: radial-gradient(circle at 50% 0%, var(--desk1) 0%, var(--desk2) 55%, var(--desk3) 100%);
@@ -193,6 +193,21 @@
   .detail-actions input[type="date"] { border: none; background: rgba(0,0,0,.07); border-radius: 12px; padding: 3px 8px; font-family: var(--font-body); color: var(--ink); }
   .detail-actions .del:hover { background: #f0c9c0; color: #a3402e; }
 
+  /* ===== Later section (왼쪽, 끝난 일 위) ===== */
+  .later-wrap { margin-top: 20px; padding-left: 12px; }
+  .later-head { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-family: var(--font-hand); font-size: 1.45rem; color: var(--ink-soft); }
+  .later-head .tri { transition: transform .15s ease; font-size: .9rem; }
+  .later-wrap.collapsed .tri { transform: rotate(-90deg); }
+  .later-count { font-size: 1rem; color: #b3a888; }
+  ul.later-list { list-style: none; margin: 6px 0 0; padding: 0; }
+  .later-wrap.collapsed ul.later-list { display: none; }
+  li.later-item { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 1.15rem; line-height: 32px; color: var(--ink); }
+  li.later-item .lt-text { flex: 1; word-break: break-word; }
+  li.later-item .lt-now { border: none; background: rgba(0,0,0,.07); color: var(--ink); cursor: pointer; border-radius: 12px; padding: 2px 10px; font-family: var(--font-body); font-size: .85rem; }
+  li.later-item .lt-now:hover { background: var(--highlight); color: var(--accent); }
+  li.later-item .row-x { opacity: 0; }
+  li.later-item:hover .row-x { opacity: 1; }
+
   /* ===== Done section ===== */
   .done-wrap { margin-top: 22px; padding-left: 12px; }
   .done-head { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-family: var(--font-hand); font-size: 1.45rem; color: var(--ink-soft); }
@@ -332,6 +347,22 @@
   .heat .cell { width: 14px; height: 14px; border-radius: 3px; background: rgba(0,0,0,.06); }
   .heat .cell.l1 { background: #f0d6a8; } .heat .cell.l2 { background: #e6b25f; }
   .heat .cell.l3 { background: #d98a3a; } .heat .cell.l4 { background: var(--accent); }
+  .stat-hero { font-family: var(--font-hand); font-size: 1.5rem; color: var(--ink); background: linear-gradient(180deg, var(--card1), var(--card2)); border-radius: 14px; padding: 14px 16px; text-align: center; margin-bottom: 14px; line-height: 1.4; box-shadow: 0 4px 12px rgba(120,80,40,.12); }
+  .section-h { font-family: var(--font-hand); font-size: 1.25rem; color: var(--ink-soft); margin: 16px 0 6px; }
+  .week-strip { display: flex; gap: 6px; justify-content: space-between; margin: 6px 0 4px; }
+  .day-pill { flex: 1; text-align: center; border-radius: 10px; padding: 8px 0 6px; background: rgba(0,0,0,.05); font-size: .82rem; color: var(--ink-soft); }
+  .day-pill .dmark { font-size: 1.2rem; display: block; line-height: 1.3; }
+  .day-pill.done { background: var(--accent); color: #fff; }
+  .day-pill.today { box-shadow: 0 0 0 2px var(--accent) inset; font-weight: 700; }
+  .day-pill.future { opacity: .45; }
+  .ms-wrap { margin: 6px 0 4px; }
+  .ms-label { font-size: .98rem; color: var(--ink); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .ms-bar { height: 16px; border-radius: 8px; background: rgba(0,0,0,.08); overflow: hidden; }
+  .ms-fill { height: 100%; background: linear-gradient(90deg, #e6b54a, var(--accent)); border-radius: 8px; transition: width .5s ease; min-width: 4px; }
+  .ms-note { margin-top: 6px; color: var(--ink-soft); font-size: .92rem; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .badge-chip { display: flex; align-items: center; gap: 5px; border-radius: 14px; padding: 5px 12px; font-size: .92rem; background: var(--accent); color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,.15); }
+  .badge-chip.locked { background: rgba(0,0,0,.07); color: var(--ink-soft); box-shadow: none; }
 
   /* lists in modals */
   .mlist { list-style: none; margin: 8px 0 0; padding: 0; }
@@ -348,10 +379,24 @@
   #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 130; display: none; }
 
   @media (max-width: 720px) {
-    .notebook { grid-template-columns: 1fr; min-height: 0; }
+    body { padding: 10px 10px 60px; height: auto; }
+    .toolbar { margin-bottom: 8px; }
+    .notebook { grid-template-columns: 1fr; min-height: 0; overflow: visible; border-radius: 10px; }
     .binding { display: none; }
-    .page.left::before { left: 50px; }
+    .page { padding: 18px 16px 26px; }
+    /* 모바일: THE ONE THING(오른쪽)을 위로, 오늘 할 일들(왼쪽)을 아래로 */
+    .page.right { order: -1; box-shadow: none; }
+    .page.left { order: 1; box-shadow: none; border-top: 2px dashed var(--line); }
+    .page.left::before { left: 44px; }
+    /* 모바일에선 원씽 카드가 세로로 과하게 늘어나지 않게 */
+    #activeSlot { flex: 0 0 auto; }
+    .onething-card { padding: 22px 18px; }
     .onething-card .ot-text { font-size: 2rem; }
+    .empty-ot { padding: 30px 18px; font-size: 1.7rem; }
+    .page-title, .onething-title { font-size: 1.7rem; }
+    .date { font-size: 1.2rem; }
+    .search { min-width: 0; width: 100%; }
+    .tools { width: 100%; justify-content: center; }
   }
 </style>
 </head>
@@ -362,7 +407,6 @@
   <div class="toolbar">
     <input id="searchInput" class="search" type="text" placeholder="🔍 할 일 검색…" autocomplete="off" />
     <div class="tools">
-      <button data-act="later" type="button">🗂 나중에</button>
       <button data-act="stats" type="button">📊 통계</button>
       <button data-act="trash" type="button">🗑 휴지통</button>
       <button data-act="backup" type="button">💾 백업</button>
@@ -384,6 +428,13 @@
           <button id="addBtn" title="추가">＋ 추가</button>
         </div>
         <ul class="list" id="todoList"></ul>
+        <div class="later-wrap collapsed" id="laterWrap">
+          <div class="later-head" id="laterHead">
+            <span class="tri">▾</span><span>🗂 나중에</span>
+            <span class="later-count" id="laterCount"></span><span class="done-line"></span>
+          </div>
+          <ul class="later-list" id="laterList"></ul>
+        </div>
         <div class="done-wrap" id="doneWrap">
           <div class="done-head" id="doneHead">
             <span class="tri">▾</span><span>끝난 일</span>
@@ -489,14 +540,6 @@
     </div>
   </div>
 
-  <div class="modal" id="laterModal" hidden>
-    <div class="modal-box">
-      <div class="modal-head"><span>🗂 나중에</span><button class="modal-close" id="laterClose">✕</button></div>
-      <p class="modal-desc">지금은 아니지만 잊긴 싫은 일. ‘지금 하기’를 누르면 왼쪽 목록으로 돌아옵니다.</p>
-      <ul class="mlist" id="laterList"></ul>
-    </div>
-  </div>
-
   <div class="modal" id="backupModal" hidden>
     <div class="modal-box">
       <div class="modal-head"><span>💾 백업</span><button class="modal-close" id="backupClose">✕</button></div>
@@ -560,7 +603,7 @@
   function migrate(s) {
     const base = { version: 2, todos: [], history: [], trash: [],
       settings: { theme: "paper", font: "gowun", pomodoroMin: 25, reminder: false },
-      doneCollapsed: false, lastReminderDate: null };
+      doneCollapsed: false, laterCollapsed: true, lastReminderDate: null };
     if (!s || typeof s !== "object") return base;
     const out = Object.assign({}, base, s);
     out.settings = Object.assign({}, base.settings, s.settings || {});
@@ -984,7 +1027,7 @@
     }
   }
   function render() {
-    renderTodos(); renderDone(); renderRight();
+    renderTodos(); renderLater(); renderDone(); renderRight();
     const active = activeTodo(); if (!active) leftUnlocked = false;
     const locked = !!active && !leftUnlocked && viewDate === todayStr();
     $(".notebook").classList.toggle("locked", locked);
@@ -997,30 +1040,70 @@
   }
 
   // ---------- modals: stats / trash / later / backup / settings ----------
+  function bestStreak(set) {
+    if (!set.size) return 0;
+    const dates = [...set].sort(); let best = 1, run = 1;
+    for (let i = 1; i < dates.length; i++) { if (dates[i] === addDaysStr(dates[i - 1], 1)) { run++; if (run > best) best = run; } else run = 1; }
+    return best;
+  }
   function openStats() {
     const set = new Set(state.history.map((h) => h.date));
+    const total = state.history.length;
+    // 현재 연속
     let streak = 0, day = todayStr(); if (!set.has(day)) day = addDaysStr(day, -1);
     while (set.has(day)) { streak++; day = addDaysStr(day, -1); }
-    const total = state.history.length;
-    let week = 0; for (let i = 0; i < 7; i++) if (set.has(addDaysStr(todayStr(), -i))) {}
-    const counts = {}; state.history.forEach((h) => { counts[h.date] = (counts[h.date] || 0) + 1; });
-    let weekCount = 0; for (let i = 0; i < 7; i++) weekCount += counts[addDaysStr(todayStr(), -i)] || 0;
-    let html = '<div class="stat-row">'
-      + '<div class="stat-card"><div class="num">🔥' + streak + '</div><div class="lbl">연속 일수</div></div>'
-      + '<div class="stat-card"><div class="num">' + weekCount + '</div><div class="lbl">이번 주 원씽</div></div>'
-      + '<div class="stat-card"><div class="num">' + total + '</div><div class="lbl">전체 원씽</div></div></div>';
-    html += '<div class="mlabel" style="margin:6px 0">최근 12주 (진할수록 많이 한 날)</div><div class="heat" id="heat"></div>';
-    $id("statsBody").innerHTML = html;
-    const heat = $id("heat"); const start = addDaysStr(todayStr(), -83);
-    // align to Sunday-start columns
-    let d0 = parseDate(start); d0.setDate(d0.getDate() - d0.getDay());
-    for (let c = 0; c < 13; c++) for (let r = 0; r < 7; r++) {
-      const ds = dstr(new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + c * 7 + r));
-      const cell = document.createElement("div"); cell.className = "cell";
-      const n = counts[ds] || 0; if (n >= 4) cell.className += " l4"; else if (n === 3) cell.className += " l3"; else if (n === 2) cell.className += " l2"; else if (n === 1) cell.className += " l1";
-      if (ds <= todayStr()) cell.title = ds + " · " + n + "개";
-      heat.appendChild(cell);
+    const best = bestStreak(set);
+    // 이번 주 (월요일 시작) 7일 채우기
+    const dow = (parseDate(todayStr()).getDay() + 6) % 7;
+    const weekStart = addDaysStr(todayStr(), -dow);
+    let weekCount = 0; const pills = [];
+    for (let i = 0; i < 7; i++) {
+      const ds = addDaysStr(weekStart, i); const done = set.has(ds); if (done) weekCount++;
+      const isT = ds === todayStr(); const fut = ds > todayStr(); const lab = DOW[parseDate(ds).getDay()];
+      pills.push('<div class="day-pill' + (done ? " done" : "") + (isT ? " today" : "") + (fut ? " future" : "") + '"><span class="dmark">' + (done ? "✓" : (fut ? "·" : "○")) + '</span>' + lab + '</div>');
     }
+    // 응원 한마디
+    let hero;
+    if (total === 0) hero = "아직 시작 전 — 오늘 첫 원씽을 완료해 보세요! 🌱";
+    else if (streak >= 7) hero = "🔥 " + streak + "일 연속! 정말 불타오르네요 ✨";
+    else if (streak > 0) hero = "🔥 " + streak + "일째 실천 중 — 이 흐름을 이어가요!";
+    else hero = "다시 시작하기 좋은 날 — 오늘 하나만 해볼까요? 💪";
+
+    let html = '<div class="stat-hero">' + hero + '</div>';
+    html += '<div class="stat-row">'
+      + '<div class="stat-card"><div class="num">🔥' + streak + '</div><div class="lbl">현재 연속</div></div>'
+      + '<div class="stat-card"><div class="num">🏅' + best + '</div><div class="lbl">최고 연속</div></div>'
+      + '<div class="stat-card"><div class="num">🏆' + total + '</div><div class="lbl">전체 원씽</div></div></div>';
+
+    // 다음 목표 진행 막대
+    const MS = [1, 3, 7, 15, 30, 60, 100];
+    if (total >= 100) {
+      html += '<div class="ms-wrap"><div class="ms-label"><span>👑 최고 등급 달성!</span><span>' + total + '개</span></div>'
+        + '<div class="ms-bar"><div class="ms-fill" style="width:100%"></div></div></div>';
+    } else {
+      const next = MS.find((m) => total < m); let prev = 0; MS.forEach((m) => { if (m <= total) prev = m; });
+      const pct = Math.round(((total - prev) / (next - prev)) * 100);
+      html += '<div class="ms-wrap"><div class="ms-label"><span>🏆 다음 목표 ' + next + '개</span><span>' + total + ' / ' + next + '</span></div>'
+        + '<div class="ms-bar"><div class="ms-fill" style="width:' + pct + '%"></div></div>'
+        + '<div class="ms-note">' + (next - total) + '개만 더 하면 달성! 💪</div></div>';
+    }
+
+    // 이번 주 7일
+    html += '<div class="section-h">이번 주 · ' + weekCount + '/7일 실천</div><div class="week-strip">' + pills.join("") + '</div>';
+
+    // 배지
+    const badges = [
+      { ic: "🌱", name: "첫 걸음", on: total >= 1 },
+      { ic: "🔥", name: "3일 연속", on: best >= 3 },
+      { ic: "⚡", name: "7일 연속", on: best >= 7 },
+      { ic: "🏅", name: "원씽 10", on: total >= 10 },
+      { ic: "💎", name: "원씽 30", on: total >= 30 },
+      { ic: "👑", name: "원씽 100", on: total >= 100 },
+    ];
+    html += '<div class="section-h">배지</div><div class="badge-row">'
+      + badges.map((b) => '<span class="badge-chip' + (b.on ? "" : " locked") + '">' + b.ic + " " + b.name + (b.on ? "" : " 🔒") + '</span>').join("") + '</div>';
+
+    $id("statsBody").innerHTML = html;
     $id("statsModal").hidden = false;
   }
   function openTrash() {
@@ -1035,18 +1118,23 @@
     });
     $id("trashModal").hidden = false;
   }
-  function openLater() {
-    const list = $id("laterList"); list.innerHTML = "";
-    const items = laterTodos();
-    if (!items.length) list.innerHTML = '<div class="empty-note">‘나중에’로 미뤄둔 일이 없어요.</div>';
+  function renderLater() {
+    const wrap = $id("laterWrap"), list = $id("laterList"); const items = laterTodos();
+    wrap.classList.toggle("collapsed", !!state.laterCollapsed);
+    $id("laterCount").textContent = items.length ? "(" + items.length + ")" : "";
+    list.innerHTML = "";
+    if (!items.length) {
+      const li = document.createElement("li"); li.className = "later-item"; li.style.color = "#b3a888";
+      li.textContent = "미뤄둔 일이 없어요."; list.append(li); return;
+    }
     items.forEach((t) => {
-      const li = document.createElement("li");
-      const tx = document.createElement("span"); tx.className = "mtext"; tx.textContent = t.text;
-      const n = document.createElement("button"); n.textContent = "▶ 지금 하기"; n.addEventListener("click", () => { toggleLater(t.id); openLater(); });
-      const x = document.createElement("button"); x.textContent = "🗑"; x.addEventListener("click", () => { deleteTodo(t.id); openLater(); });
-      li.append(tx, n, x); list.append(li);
+      const li = document.createElement("li"); li.className = "later-item";
+      const tx = document.createElement("span"); tx.className = "lt-text"; tx.textContent = t.text;
+      const now = document.createElement("button"); now.className = "lt-now"; now.textContent = "▶ 오늘 할 일로"; now.title = "오늘 할 일들로 옮기기";
+      now.addEventListener("click", () => toggleLater(t.id));
+      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.title = "삭제"; x.addEventListener("click", () => deleteTodo(t.id));
+      li.append(tx, now, x); list.append(li);
     });
-    $id("laterModal").hidden = false;
   }
   function exportBackup() {
     try {
@@ -1149,6 +1237,7 @@
   $id("addBtn").addEventListener("click", () => { const i = $id("newTodo"); addTodo(i.value); i.value = ""; i.focus(); });
   $id("newTodo").addEventListener("keydown", (e) => { if (e.key === "Enter") { addTodo(e.target.value); e.target.value = ""; } });
   $id("doneHead").addEventListener("click", () => { state.doneCollapsed = !state.doneCollapsed; save(); renderDone(); });
+  $id("laterHead").addEventListener("click", () => { state.laterCollapsed = !state.laterCollapsed; save(); renderLater(); });
   $id("todoList").addEventListener("dragover", (e) => e.preventDefault());
   $id("todoList").addEventListener("drop", (e) => { if (e.target.id === "todoList" && dragId) { e.preventDefault(); reorder(dragId, null, false); } });
   $id("searchInput").addEventListener("input", (e) => { searchQuery = e.target.value; renderTodos(); });
@@ -1179,7 +1268,7 @@
 
   $(".tools").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return; const act = b.dataset.act;
-    if (act === "later") openLater(); else if (act === "stats") openStats(); else if (act === "trash") openTrash();
+    if (act === "stats") openStats(); else if (act === "trash") openTrash();
     else if (act === "backup") $id("backupModal").hidden = false; else if (act === "settings") openSettings(); else if (act === "help") $id("helpModal").hidden = false;
   });
 
@@ -1202,7 +1291,6 @@
   $id("statsClose").addEventListener("click", () => { $id("statsModal").hidden = true; });
   $id("trashClose").addEventListener("click", () => { $id("trashModal").hidden = true; });
   $id("trashEmptyBtn").addEventListener("click", emptyTrash);
-  $id("laterClose").addEventListener("click", () => { $id("laterModal").hidden = true; });
   $id("backupClose").addEventListener("click", () => { $id("backupModal").hidden = true; });
   $id("exportBtn").addEventListener("click", exportBackup);
   $id("importBtn").addEventListener("click", () => $id("importFile").click());
