@@ -250,6 +250,7 @@
     box-shadow: 0 0 0 2px rgba(194,96,63,.18), 0 10px 24px rgba(120,80,40,.18); overflow: hidden;
   }
   .onething-card::before { content: "지금, 이것 하나"; position: absolute; top: 10px; right: 14px; font-family: var(--font-hand); font-size: 1.05rem; color: #cda24a; }
+  body[data-lang="en"] .onething-card::before { content: "Just this one"; }
   .onething-card .ot-text { font-family: var(--font-hand); font-size: 2.7rem; line-height: 1.2; color: var(--ink); word-break: break-word; cursor: text; padding-right: 6px; }
   .timer { display: flex; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
   .timer .time { font-family: var(--font-hand); font-size: 2rem; color: var(--accent); min-width: 92px; }
@@ -343,10 +344,6 @@
   .stat-card { flex: 1; min-width: 90px; background: rgba(0,0,0,.05); border-radius: 12px; padding: 12px; text-align: center; }
   .stat-card .num { font-family: var(--font-hand); font-size: 2.2rem; color: var(--accent); line-height: 1; }
   .stat-card .lbl { font-size: .85rem; color: var(--ink-soft); margin-top: 4px; }
-  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 14px); gap: 3px; overflow-x: auto; padding-bottom: 6px; }
-  .heat .cell { width: 14px; height: 14px; border-radius: 3px; background: rgba(0,0,0,.06); }
-  .heat .cell.l1 { background: #f0d6a8; } .heat .cell.l2 { background: #e6b25f; }
-  .heat .cell.l3 { background: #d98a3a; } .heat .cell.l4 { background: var(--accent); }
   .stat-hero { font-family: var(--font-hand); font-size: 1.5rem; color: var(--ink); background: linear-gradient(180deg, var(--card1), var(--card2)); border-radius: 14px; padding: 14px 16px; text-align: center; margin-bottom: 14px; line-height: 1.4; box-shadow: 0 4px 12px rgba(120,80,40,.12); }
   .section-h { font-family: var(--font-hand); font-size: 1.25rem; color: var(--ink-soft); margin: 16px 0 6px; }
   .week-strip { display: flex; gap: 6px; justify-content: space-between; margin: 6px 0 4px; }
@@ -384,11 +381,9 @@
     .notebook { grid-template-columns: 1fr; min-height: 0; overflow: visible; border-radius: 10px; }
     .binding { display: none; }
     .page { padding: 16px 16px 24px; }
-    /* 모바일: THE ONE THING(오른쪽)을 위로, 오늘 할 일들(왼쪽)을 아래로 */
     .page.right { order: -1; box-shadow: none; }
     .page.left { order: 1; box-shadow: none; border-top: 2px dashed var(--line); }
     .page.left::before { left: 44px; }
-    /* 헤더(제목 + 날짜·화살표)를 세로로 가지런히 */
     .page-head { min-height: 0; }
     .page.right .page-head { flex-direction: column; align-items: flex-start; gap: 8px; }
     .page.right .date-nav { width: 100%; justify-content: center; gap: 12px; }
@@ -398,33 +393,31 @@
     .date-nav button { font-size: 1.3rem; padding: 2px 8px; }
     .today-btn { font-size: .82rem !important; padding: 3px 12px !important; }
     .goal-badge { font-size: 1.2rem; }
-    /* '추가' 버튼이 세로로 쪼개지지 않게 */
     .add-row { gap: 6px; }
     .add-row input { font-size: 1.1rem; }
     .add-row button { flex: none; white-space: nowrap; padding: 6px 14px; }
-    /* 원씽 카드 */
     #activeSlot { flex: 0 0 auto; }
     .onething-card { padding: 22px 18px; }
     .onething-card .ot-text { font-size: 2rem; }
     .empty-ot { padding: 30px 18px; font-size: 1.6rem; }
-    /* 도구막대 */
     .search { min-width: 0; width: 100%; }
     .tools { width: 100%; justify-content: center; }
     .sync-chip { bottom: calc(14px + env(safe-area-inset-bottom)); }
   }
 </style>
 </head>
-<body data-theme="paper" data-font="gowun">
+<body data-theme="paper" data-font="gowun" data-lang="ko">
 
-  <button class="sync-chip" id="syncChip" type="button" title="기기 간 동기화">☁️ 동기화</button>
+  <button class="sync-chip" id="syncChip" type="button" data-i18n-title="sync_title">☁️ 동기화</button>
 
   <div class="toolbar">
-    <input id="searchInput" class="search" type="text" placeholder="🔍 할 일 검색…" autocomplete="off" />
+    <input id="searchInput" class="search" type="text" data-i18n-ph="search_ph" placeholder="🔍 할 일 검색…" autocomplete="off" />
     <div class="tools">
-      <button data-act="stats" type="button">📊 통계</button>
-      <button data-act="trash" type="button">🗑 휴지통</button>
-      <button data-act="backup" type="button">💾 백업</button>
-      <button data-act="settings" type="button">⚙️ 설정</button>
+      <button id="langBtn" data-act="lang" type="button">🌐 EN</button>
+      <button data-act="stats" type="button" data-i18n="t_stats">📊 통계</button>
+      <button data-act="trash" type="button" data-i18n="t_trash">🗑 휴지통</button>
+      <button data-act="backup" type="button" data-i18n="t_backup">💾 백업</button>
+      <button data-act="settings" type="button" data-i18n="t_settings">⚙️ 설정</button>
       <button data-act="help" type="button">❓</button>
     </div>
   </div>
@@ -434,34 +427,34 @@
     <section class="page left">
       <div class="page-inner">
         <div class="page-head">
-          <h1 class="page-title">오늘 할 일들</h1>
-          <button id="relockBtn" class="relock-btn" hidden>🔒 다시 집중</button>
+          <h1 class="page-title" data-i18n="left_title">오늘 할 일들</h1>
+          <button id="relockBtn" class="relock-btn" data-i18n="relock" hidden>🔒 다시 집중</button>
         </div>
         <div class="add-row">
-          <input id="newTodo" type="text" placeholder="해야 할 일을 적어보세요…" maxlength="200" autocomplete="off" />
-          <button id="addBtn" title="추가">＋ 추가</button>
+          <input id="newTodo" type="text" data-i18n-ph="new_ph" placeholder="해야 할 일을 적어보세요…" maxlength="200" autocomplete="off" />
+          <button id="addBtn" data-i18n="add_btn" data-i18n-title="add_title" title="추가">＋ 추가</button>
         </div>
         <ul class="list" id="todoList"></ul>
         <div class="later-wrap collapsed" id="laterWrap">
           <div class="later-head" id="laterHead">
-            <span class="tri">▾</span><span>📁 나중에</span>
+            <span class="tri">▾</span><span data-i18n="later_h">📁 나중에</span>
             <span class="later-count" id="laterCount"></span><span class="done-line"></span>
           </div>
           <ul class="later-list" id="laterList"></ul>
         </div>
         <div class="done-wrap" id="doneWrap">
           <div class="done-head" id="doneHead">
-            <span class="tri">▾</span><span>끝난 일</span>
+            <span class="tri">▾</span><span data-i18n="done_h">끝난 일</span>
             <span class="done-count" id="doneCount"></span><span class="done-line"></span>
           </div>
           <ul class="done-list" id="doneList"></ul>
         </div>
       </div>
-      <div class="lock-overlay" id="lockOverlay" title="조각을 맞추면 잠깐 열려요">
+      <div class="lock-overlay" id="lockOverlay" data-i18n-title="lock_title" title="조각을 맞추면 잠깐 열려요">
         <div class="lock-card">
           <div class="lock-emoji">🔒</div>
-          <div class="lock-msg">지금은 오른쪽 <b>단 하나</b>에 집중 중</div>
-          <div class="lock-sub">눌러서 퍼즐을 풀면 잠깐 열려요</div>
+          <div class="lock-msg" data-i18n-html="lock_msg">지금은 오른쪽 <b>단 하나</b>에 집중 중</div>
+          <div class="lock-sub" data-i18n="lock_sub">눌러서 퍼즐을 풀면 잠깐 열려요</div>
         </div>
       </div>
     </section>
@@ -473,13 +466,13 @@
       <div class="page-head">
         <h2 class="onething-title"><span class="star">★</span> THE ONE THING</h2>
         <div class="date-nav">
-          <button id="prevDay" title="이전 날">◀</button>
+          <button id="prevDay" data-i18n-title="prev_day" title="이전 날">◀</button>
           <span class="date" id="todayDate"></span>
-          <button id="nextDay" title="다음 날">▶</button>
-          <button id="todayBtn" class="today-btn" hidden>오늘</button>
+          <button id="nextDay" data-i18n-title="next_day" title="다음 날">▶</button>
+          <button id="todayBtn" class="today-btn" data-i18n="today_btn" hidden>오늘</button>
         </div>
       </div>
-      <div class="goal-badge" id="goalBadge" hidden>⭐ 오늘의 원씽 달성!</div>
+      <div class="goal-badge" id="goalBadge" data-i18n="goal_badge" hidden>⭐ 오늘의 원씽 달성!</div>
       <div class="log">
         <ul class="history" id="historyList"></ul>
         <div id="activeSlot"></div>
@@ -495,7 +488,7 @@
   <!-- ===== Modals ===== -->
   <div class="modal" id="puzzleModal" hidden>
     <div class="modal-box">
-      <div class="modal-head"><span id="puzzleTitle">🧩 조각 맞추기</span><button class="modal-close" id="puzzleClose">✕</button></div>
+      <div class="modal-head"><span id="puzzleTitle">🧩</span><button class="modal-close" id="puzzleClose">✕</button></div>
       <p class="modal-desc" id="puzzleDesc"></p>
       <div class="puzzle-stage" id="puzzleStage"></div>
       <div class="puzzle-status" id="puzzleStatus"></div>
@@ -504,16 +497,16 @@
 
   <div class="modal" id="syncModal" hidden>
     <div class="modal-box">
-      <div class="modal-head"><span>☁️ 기기 간 동기화</span><button class="modal-close" id="syncClose">✕</button></div>
+      <div class="modal-head"><span data-i18n="sync_head">☁️ 기기 간 동기화</span><button class="modal-close" id="syncClose">✕</button></div>
       <div class="sync-state" id="syncState"></div>
-      <div class="mlabel" style="margin-bottom:6px">동기화 코드 — 두 기기에 <b>똑같이</b> 입력하세요</div>
+      <div class="mlabel" style="margin-bottom:6px" data-i18n-html="sync_label">동기화 코드 — 두 기기에 <b>똑같이</b> 입력하세요</div>
       <div class="mrow sync-row">
-        <input id="syncCodeInput" type="text" placeholder="예: my-note-7Fk29q" autocomplete="off" />
-        <button id="syncSaveBtn" class="mbtn">저장</button>
+        <input id="syncCodeInput" type="text" data-i18n-ph="sync_ph" placeholder="예: my-note-7Fk29q" autocomplete="off" />
+        <button id="syncSaveBtn" class="mbtn" data-i18n="save_btn">저장</button>
       </div>
       <div class="mrow">
-        <button id="syncGenBtn" class="mbtn ghost">🎲 새 코드 만들기</button>
-        <button id="syncCopyBtn" class="mbtn ghost">📋 코드 복사</button>
+        <button id="syncGenBtn" class="mbtn ghost" data-i18n="sync_gen">🎲 새 코드 만들기</button>
+        <button id="syncCopyBtn" class="mbtn ghost" data-i18n="sync_copy">📋 코드 복사</button>
       </div>
       <p class="sync-help" id="syncHelp"></p>
     </div>
@@ -521,18 +514,18 @@
 
   <div class="modal" id="settingsModal" hidden>
     <div class="modal-box">
-      <div class="modal-head"><span>⚙️ 설정</span><button class="modal-close" id="settingsClose">✕</button></div>
-      <div class="mrow"><span class="mlabel">테마(배경)</span><div class="seg" id="themeSeg">
-        <button data-theme="paper">📒 종이</button><button data-theme="dark">🌙 어둡게</button>
-        <button data-theme="sky">💧 하늘</button><button data-theme="forest">🌿 숲</button>
+      <div class="modal-head"><span data-i18n="set_head">⚙️ 설정</span><button class="modal-close" id="settingsClose">✕</button></div>
+      <div class="mrow"><span class="mlabel" data-i18n="set_theme">테마(배경)</span><div class="seg" id="themeSeg">
+        <button data-theme="paper" data-i18n="th_paper">📒 종이</button><button data-theme="dark" data-i18n="th_dark">🌙 어둡게</button>
+        <button data-theme="sky" data-i18n="th_sky">💧 하늘</button><button data-theme="forest" data-i18n="th_forest">🌿 숲</button>
       </div></div>
-      <div class="mrow"><span class="mlabel">글꼴</span><div class="seg" id="fontSeg">
-        <button data-font="gowun">고운돋움</button><button data-font="gaegu">또박손글씨</button><button data-font="clean">깔끔</button>
+      <div class="mrow"><span class="mlabel" data-i18n="set_font">글꼴</span><div class="seg" id="fontSeg">
+        <button data-font="gowun" data-i18n="fn_gowun">고운돋움</button><button data-font="gaegu" data-i18n="fn_gaegu">또박손글씨</button><button data-font="clean" data-i18n="fn_clean">깔끔</button>
       </div></div>
-      <div class="mrow"><span class="mlabel">집중 타이머 길이</span>
-        <input id="pomoInput" type="number" min="1" max="180" style="width:70px;border:none;border-bottom:2px dashed var(--line);background:transparent;color:var(--ink);font-family:var(--font-body);font-size:1.1rem;text-align:center;outline:none" /> 분
+      <div class="mrow"><span class="mlabel" data-i18n="set_timer">집중 타이머 길이</span>
+        <input id="pomoInput" type="number" min="1" max="180" style="width:70px;border:none;border-bottom:2px dashed var(--line);background:transparent;color:var(--ink);font-family:var(--font-body);font-size:1.1rem;text-align:center;outline:none" /> <span data-i18n="min_unit">분</span>
       </div>
-      <div class="mrow"><span class="mlabel">매일 ‘오늘의 원씽 정하기’ 알림</span>
+      <div class="mrow"><span class="mlabel" data-i18n="set_reminder">매일 ‘오늘의 원씽 정하기’ 알림</span>
         <button id="reminderToggle" class="seg-toggle mbtn ghost"></button>
       </div>
     </div>
@@ -540,44 +533,35 @@
 
   <div class="modal" id="statsModal" hidden>
     <div class="modal-box">
-      <div class="modal-head"><span>📊 통계</span><button class="modal-close" id="statsClose">✕</button></div>
+      <div class="modal-head"><span data-i18n="stats_head">📊 통계</span><button class="modal-close" id="statsClose">✕</button></div>
       <div id="statsBody"></div>
     </div>
   </div>
 
   <div class="modal" id="trashModal" hidden>
     <div class="modal-box">
-      <div class="modal-head"><span>🗑 휴지통</span><button class="modal-close" id="trashClose">✕</button></div>
-      <p class="modal-desc">삭제한 일은 여기로 옵니다. 되돌리거나 완전히 지울 수 있어요. (30일 지나면 자동 정리)</p>
+      <div class="modal-head"><span data-i18n="trash_head">🗑 휴지통</span><button class="modal-close" id="trashClose">✕</button></div>
+      <p class="modal-desc" data-i18n="trash_desc">삭제한 일은 여기로 옵니다. 되돌리거나 완전히 지울 수 있어요. (30일 지나면 자동 정리)</p>
       <ul class="mlist" id="trashList"></ul>
-      <div class="mrow" style="margin-top:12px"><button id="trashEmptyBtn" class="mbtn ghost">휴지통 비우기</button></div>
+      <div class="mrow" style="margin-top:12px"><button id="trashEmptyBtn" class="mbtn ghost" data-i18n="trash_empty">휴지통 비우기</button></div>
     </div>
   </div>
 
   <div class="modal" id="backupModal" hidden>
     <div class="modal-box">
-      <div class="modal-head"><span>💾 백업</span><button class="modal-close" id="backupClose">✕</button></div>
-      <p class="modal-desc">클라우드와 별개로, 파일로 백업하고 불러올 수 있어요. (불러오면 현재 내용을 덮어씁니다 — 확인 후 진행)</p>
+      <div class="modal-head"><span data-i18n="backup_head">💾 백업</span><button class="modal-close" id="backupClose">✕</button></div>
+      <p class="modal-desc" data-i18n="backup_desc">클라우드와 별개로, 파일로 백업하고 불러올 수 있어요. (불러오면 현재 내용을 덮어씁니다 — 확인 후 진행)</p>
       <div class="mrow">
-        <button id="exportBtn" class="mbtn">⬇️ 파일로 내보내기</button>
-        <button id="importBtn" class="mbtn ghost">⬆️ 파일에서 불러오기</button>
+        <button id="exportBtn" class="mbtn" data-i18n="export_btn">⬇️ 파일로 내보내기</button>
+        <button id="importBtn" class="mbtn ghost" data-i18n="import_btn">⬆️ 파일에서 불러오기</button>
       </div>
     </div>
   </div>
 
   <div class="modal" id="helpModal" hidden>
     <div class="modal-box">
-      <div class="modal-head"><span>❓ 도움말 · 단축키</span><button class="modal-close" id="helpClose">✕</button></div>
-      <div class="modal-desc" style="line-height:1.7">
-        <b>사용법</b><br>
-        • 왼쪽에 할 일을 적고, ➜ 로 가장 중요한 하나를 오른쪽 ‘원씽’으로 보냅니다.<br>
-        • 원씽엔 집중 타이머가 있어요(끝나면 알림만, 자동 완료 안 함).<br>
-        • 완료하면 취소선과 함께 기록되고 색종이가 날립니다 🎉<br>
-        • 각 할 일의 ⋯ 을 누르면 색·마감일·반복·하위 할 일·나중에·삭제가 있어요.<br>
-        • ◀ ▶ 로 날짜를 넘겨 지난 원씽을 돌아볼 수 있어요.<br><br>
-        <b>단축키</b><br>
-        N: 할 일 입력칸으로 · / : 검색 · S: 통계 · T: 테마 전환 · ? : 도움말 · Esc: 닫기
-      </div>
+      <div class="modal-head"><span data-i18n="help_head">❓ 도움말 · 단축키</span><button class="modal-close" id="helpClose">✕</button></div>
+      <div class="modal-desc" style="line-height:1.7" data-i18n-html="help_body"></div>
     </div>
   </div>
 
@@ -602,21 +586,215 @@
   const $id = (id) => document.getElementById(id);
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+  // ===== i18n =====
+  let LANG = "ko";
+  const I18N = {
+    // toolbar / static
+    sync_title: { ko: "기기 간 동기화", en: "Sync across devices" },
+    search_ph: { ko: "🔍 할 일 검색…", en: "🔍 Search to-dos…" },
+    t_stats: { ko: "📊 통계", en: "📊 Stats" },
+    t_trash: { ko: "🗑 휴지통", en: "🗑 Trash" },
+    t_backup: { ko: "💾 백업", en: "💾 Backup" },
+    t_settings: { ko: "⚙️ 설정", en: "⚙️ Settings" },
+    left_title: { ko: "오늘 할 일들", en: "Today's To-Dos" },
+    relock: { ko: "🔒 다시 집중", en: "🔒 Refocus" },
+    new_ph: { ko: "해야 할 일을 적어보세요…", en: "Write something to do…" },
+    add_btn: { ko: "＋ 추가", en: "＋ Add" },
+    add_title: { ko: "추가", en: "Add" },
+    later_h: { ko: "📁 나중에", en: "📁 Later" },
+    done_h: { ko: "끝난 일", en: "Done" },
+    prev_day: { ko: "이전 날", en: "Previous day" },
+    next_day: { ko: "다음 날", en: "Next day" },
+    today_btn: { ko: "오늘", en: "Today" },
+    goal_badge: { ko: "⭐ 오늘의 원씽 달성!", en: "⭐ One Thing done today!" },
+    lock_title: { ko: "조각을 맞추면 잠깐 열려요", en: "Solve the puzzle to peek" },
+    lock_msg: { ko: "지금은 오른쪽 <b>단 하나</b>에 집중 중", en: "Focusing on the <b>one thing</b> on the right" },
+    lock_sub: { ko: "눌러서 퍼즐을 풀면 잠깐 열려요", en: "Tap and solve a puzzle to peek" },
+    // sync modal
+    sync_head: { ko: "☁️ 기기 간 동기화", en: "☁️ Sync across devices" },
+    sync_label: { ko: "동기화 코드 — 두 기기에 <b>똑같이</b> 입력하세요", en: "Sync code — enter the <b>same</b> code on both devices" },
+    sync_ph: { ko: "예: my-note-7Fk29q", en: "e.g. my-note-7Fk29q" },
+    save_btn: { ko: "저장", en: "Save" },
+    sync_gen: { ko: "🎲 새 코드 만들기", en: "🎲 New code" },
+    sync_copy: { ko: "📋 코드 복사", en: "📋 Copy code" },
+    sync_help: { ko: "① 윈도우·맥북 두 곳에서 이 노트를 엽니다.\n② 똑같은 ‘동기화 코드’를 양쪽에 입력하면 자동으로 같은 내용이 됩니다.\n③ 코드는 남이 못 맞히게 길고 특이하게 정하세요.", en: "① Open this note on both devices.\n② Enter the same 'sync code' on each to share the same data automatically.\n③ Make the code long and unique so others can't guess it." },
+    // settings
+    set_head: { ko: "⚙️ 설정", en: "⚙️ Settings" },
+    set_theme: { ko: "테마(배경)", en: "Theme" },
+    th_paper: { ko: "📒 종이", en: "📒 Paper" }, th_dark: { ko: "🌙 어둡게", en: "🌙 Dark" },
+    th_sky: { ko: "💧 하늘", en: "💧 Sky" }, th_forest: { ko: "🌿 숲", en: "🌿 Forest" },
+    set_font: { ko: "글꼴", en: "Font" },
+    fn_gowun: { ko: "고운돋움", en: "Gowun" }, fn_gaegu: { ko: "또박손글씨", en: "Handwriting" }, fn_clean: { ko: "깔끔", en: "Clean" },
+    set_timer: { ko: "집중 타이머 길이", en: "Timer length" },
+    min_unit: { ko: "분", en: "min" },
+    set_reminder: { ko: "매일 ‘오늘의 원씽 정하기’ 알림", en: "Daily 'pick your One Thing' reminder" },
+    // modal heads
+    stats_head: { ko: "📊 통계", en: "📊 Stats" },
+    trash_head: { ko: "🗑 휴지통", en: "🗑 Trash" },
+    trash_desc: { ko: "삭제한 일은 여기로 옵니다. 되돌리거나 완전히 지울 수 있어요. (30일 지나면 자동 정리)", en: "Deleted items come here. Restore or delete them for good. (auto-cleared after 30 days)" },
+    trash_empty: { ko: "휴지통 비우기", en: "Empty trash" },
+    backup_head: { ko: "💾 백업", en: "💾 Backup" },
+    backup_desc: { ko: "클라우드와 별개로, 파일로 백업하고 불러올 수 있어요. (불러오면 현재 내용을 덮어씁니다 — 확인 후 진행)", en: "Back up and restore via a file, separate from the cloud. (Import overwrites current data — confirmed first)" },
+    export_btn: { ko: "⬇️ 파일로 내보내기", en: "⬇️ Export to file" },
+    import_btn: { ko: "⬆️ 파일에서 불러오기", en: "⬆️ Import from file" },
+    help_head: { ko: "❓ 도움말 · 단축키", en: "❓ Help · Shortcuts" },
+    help_body: {
+      ko: "<b>사용법</b><br>• 왼쪽에 할 일을 적고, ➜ 로 가장 중요한 하나를 오른쪽 ‘원씽’으로 보냅니다.<br>• 원씽엔 집중 타이머가 있어요(끝나면 알림만, 자동 완료 안 함).<br>• 완료하면 취소선과 함께 기록되고 색종이가 날립니다 🎉<br>• 각 할 일의 ⋯ 을 누르면 색·마감일·반복·하위 할 일·나중에·삭제가 있어요.<br>• ◀ ▶ 로 날짜를 넘겨 지난 원씽을 돌아볼 수 있어요.<br><br><b>단축키</b><br>N: 할 일 입력칸으로 · / : 검색 · S: 통계 · T: 테마 전환 · ? : 도움말 · Esc: 닫기",
+      en: "<b>How to use</b><br>• Write to-dos on the left, then send the most important one to the 'One Thing' on the right with ➜.<br>• The One Thing has a focus timer (it only notifies when done — never auto-completes).<br>• Completing it logs a strikethrough and throws confetti 🎉<br>• Tap ⋯ on a to-do for color, due date, repeat, subtasks, later, delete.<br>• Use ◀ ▶ to flip days and review past One Things.<br><br><b>Shortcuts</b><br>N: focus the input · / : search · S: stats · T: toggle theme · ? : help · Esc: close"
+    },
+    // dynamic — toasts & messages
+    swap_done: { ko: "원씽을 교체했어요 — 왼쪽은 다시 잠겼어요", en: "Swapped the One Thing — the left page is locked again" },
+    sent_done: { ko: "오른쪽 원씽에 집중! 왼쪽은 잠겨요 — 열려면 퍼즐을 풀어요", en: "Focus on the One Thing! The left locks — solve a puzzle to open" },
+    putback_done: { ko: "목록으로 되돌렸어요 — 다시 선택하세요", en: "Moved back to the list — pick again" },
+    confirm_empty: { ko: "휴지통을 완전히 비울까요? 되돌릴 수 없어요.", en: "Empty the trash completely? This can't be undone." },
+    alarm_title: { ko: "⏰ 집중 시간 종료", en: "⏰ Focus time's up" },
+    alarm_body: { ko: "{0} — 잠깐 쉬거나 계속하세요. (자동 완료되지 않아요)", en: "{0} — take a break or keep going. (Not auto-completed)" },
+    alarm_toast: { ko: "⏰ 집중 시간 종료! 잠깐 쉬거나 계속하세요 (자동 완료 안 함)", en: "⏰ Focus time's up! Take a break or keep going (not auto-completed)" },
+    onething_word: { ko: "원씽", en: "the One Thing" },
+    cheer0: { ko: "잘했어요! 하나를 끝냈어요 🎉", en: "Nice! You finished one 🎉" },
+    cheer1: { ko: "원씽 완료! 오늘의 한 걸음 👏", en: "One Thing done! A step for today 👏" },
+    cheer2: { ko: "멋져요 — 가장 중요한 일을 해냈어요 ✨", en: "Great — you did the most important thing ✨" },
+    cheer3: { ko: "끝! 이 작은 성취가 쌓입니다 🌱", en: "Done! These small wins add up 🌱" },
+    cheer4: { ko: "수고했어요, 딱 하나 해냈어요 💪", en: "Well done — just one, accomplished 💪" },
+    solved_status: { ko: "통과! 🎉 왼쪽을 엽니다", en: "Solved! 🎉 Opening the left" },
+    solved_toast: { ko: "퍼즐 통과! 왼쪽을 잠깐 열었어요 — 다 보면 ‘다시 집중’", en: "Puzzle solved! Left page opened — tap 'Refocus' when done" },
+    pz_math_t: { ko: "🧮 계산 퍼즐", en: "🧮 Math puzzle" },
+    pz_math_d: { ko: "답을 입력하면 왼쪽이 잠깐 열려요.", en: "Type the answer to open the left for a bit." },
+    pz_order_t: { ko: "🔢 순서 맞추기", en: "🔢 Tap in order" },
+    pz_order_d: { ko: "1 → 2 → 3 → 4 순서대로 누르면 열려요.", en: "Tap 1 → 2 → 3 → 4 in order to open." },
+    pz_order_restart: { ko: "처음부터 다시!", en: "Start over!" },
+    pz_match_t: { ko: "🧩 조각 맞추기", en: "🧩 Match the pieces" },
+    pz_match_d: { ko: "조각을 같은 숫자의 빈칸으로 끌어다 넣으면 열려요.", en: "Drag each piece onto the slot with the same number." },
+    // todo rows
+    ti_done: { ko: "완료", en: "Done" },
+    ti_color: { ko: "색 라벨", en: "Color label" },
+    ti_edit: { ko: "더블클릭하면 수정", en: "Double-click to edit" },
+    rep_daily: { ko: "🔁 매일", en: "🔁 Daily" },
+    rep_weekly: { ko: "🔁 매주", en: "🔁 Weekly" },
+    rep_none: { ko: "🔁 반복 없음", en: "🔁 No repeat" },
+    badge_prog: { ko: "진행 중 ▶", en: "In progress ▶" },
+    send_swap: { ko: "이걸로 원씽 교체", en: "Swap the One Thing" },
+    send_to: { ko: "오른쪽 원씽으로 보내기", en: "Send to the One Thing" },
+    ti_more: { ko: "더보기", en: "More" },
+    no_results: { ko: "검색 결과가 없어요.", en: "No results." },
+    empty_list: { ko: "위 칸에 할 일을 적어 시작하세요 ✎", en: "Write a to-do above to start ✎" },
+    sub_ph: { ko: "+ 하위 할 일 추가 후 Enter", en: "+ Add a subtask, then Enter" },
+    ti_due: { ko: "마감일", en: "Due date" },
+    ti_later: { ko: "📁 나중에", en: "📁 Later" },
+    ti_delete: { ko: "🗑 삭제", en: "🗑 Delete" },
+    subs_head: { ko: "☑ {0}/{1} · 하위 할 일", en: "☑ {0}/{1} · Subtasks" },
+    subs_empty: { ko: "하위 할 일 — 작게 쪼개기", en: "Subtasks — break it down" },
+    ti_restore: { ko: "되돌리기", en: "Restore" },
+    ti_backtodo: { ko: "다시 할 일로", en: "Back to to-dos" },
+    ti_totrash: { ko: "휴지통으로", en: "To trash" },
+    ti_delrec: { ko: "기록 삭제", en: "Delete record" },
+    // timer / one thing
+    timer_pause: { ko: "⏸ 일시정지", en: "⏸ Pause" },
+    timer_start: { ko: "▶ 집중 시작", en: "▶ Start focus" },
+    focus_acc: { ko: "집중 {0}", en: "Focused {0}" },
+    tp_label: { ko: "길이", en: "Length" },
+    tp_custom: { ko: "직접", en: "Custom" },
+    complete: { ko: "완료", en: "Done" },
+    pick_again: { ko: "↩ 다시 선택", en: "↩ Pick again" },
+    hint_active: { ko: "이 하나만 끝내면 됩니다. 타이머는 끝나도 자동 완료되지 않아요.", en: "Just finish this one. The timer never auto-completes." },
+    empty_ot: { ko: "지금 집중할 단 하나를<br>왼쪽에서 <span class='arrow'>➜</span> 눌러 보내세요", en: "Send your single focus<br>from the left with <span class='arrow'>➜</span>" },
+    hint_count: { ko: "오늘 {0}개의 원씽을 끝냈어요. 다음 하나를 골라보세요.", en: "You finished {0} One Thing(s) today. Pick the next one." },
+    hint_key: { ko: "여러 할 일 중 가장 중요한 ‘하나’를 고르는 것이 핵심이에요.", en: "The key is choosing the single most important thing." },
+    ro_has: { ko: "이 날의 원씽 기록이에요 ☝", en: "The One Thing log for this day ☝" },
+    ro_none: { ko: "이 날엔 끝낸 원씽이 없어요", en: "No One Things finished this day" },
+    hint_today: { ko: "‘오늘’ 버튼으로 돌아오면 원씽을 고를 수 있어요.", en: "Tap 'Today' to pick a One Thing." },
+    // stats
+    hero0: { ko: "아직 시작 전 — 오늘 첫 원씽을 완료해 보세요! 🌱", en: "Not started yet — finish your first One Thing today! 🌱" },
+    hero_fire: { ko: "🔥 {0}일 연속! 정말 불타오르네요 ✨", en: "🔥 {0}-day streak! You're on fire ✨" },
+    hero_going: { ko: "🔥 {0}일째 실천 중 — 이 흐름을 이어가요!", en: "🔥 Day {0} going — keep the streak!" },
+    hero_restart: { ko: "다시 시작하기 좋은 날 — 오늘 하나만 해볼까요? 💪", en: "A good day to restart — just one today? 💪" },
+    lbl_cur: { ko: "현재 연속", en: "Current streak" },
+    lbl_best: { ko: "최고 연속", en: "Best streak" },
+    lbl_total: { ko: "전체 원씽", en: "Total One Things" },
+    ms_top: { ko: "👑 최고 등급 달성!", en: "👑 Top tier reached!" },
+    ms_count: { ko: "{0}개", en: "{0}" },
+    ms_next: { ko: "🏆 다음 목표 {0}개", en: "🏆 Next goal: {0}" },
+    ms_note: { ko: "{0}개만 더 하면 달성! 💪", en: "{0} more to go! 💪" },
+    week_h: { ko: "이번 주 · {0}/7일 실천", en: "This week · {0}/7 days" },
+    badges_h: { ko: "배지", en: "Badges" },
+    bdg0: { ko: "첫 걸음", en: "First step" },
+    bdg1: { ko: "3일 연속", en: "3-day streak" },
+    bdg2: { ko: "7일 연속", en: "7-day streak" },
+    bdg3: { ko: "원씽 10", en: "10 One Things" },
+    bdg4: { ko: "원씽 30", en: "30 One Things" },
+    bdg5: { ko: "원씽 100", en: "100 One Things" },
+    // trash / later
+    trash_emptynote: { ko: "휴지통이 비어 있어요.", en: "Trash is empty." },
+    tr_restore: { ko: "↩ 복구", en: "↩ Restore" },
+    tr_purge: { ko: "🗑 완전삭제", en: "🗑 Delete forever" },
+    later_empty: { ko: "미뤄둔 일이 없어요.", en: "Nothing put aside." },
+    lt_now: { ko: "▶ 오늘 할 일로", en: "▶ To today" },
+    lt_now_title: { ko: "오늘 할 일들로 옮기기", en: "Move to today's to-dos" },
+    lt_del: { ko: "삭제", en: "Delete" },
+    // backup
+    bk_exported: { ko: "백업 파일을 내보냈어요 💾", en: "Exported a backup file 💾" },
+    bk_export_fail: { ko: "내보내기에 실패했어요", en: "Export failed" },
+    bk_invalid: { ko: "올바른 백업 파일이 아니에요", en: "Not a valid backup file" },
+    bk_confirm: { ko: "불러오면 지금 내용을 덮어씁니다. 진행할까요?", en: "Importing will overwrite current data. Continue?" },
+    bk_imported: { ko: "백업을 불러왔어요 ✓", en: "Backup imported ✓" },
+    bk_import_fail: { ko: "불러오기에 실패했어요", en: "Import failed" },
+    rem_on: { ko: "켜짐 ✓", en: "On ✓" },
+    rem_off: { ko: "꺼짐", en: "Off" },
+    // sync status
+    s_on: { ko: "✅ 동기화 켜짐", en: "✅ Sync on" },
+    s_on_msg: { ko: "켜짐 · 코드: {0}", en: "On · code: {0}" },
+    s_nocode: { ko: "☁️ 코드 입력", en: "☁️ Enter code" },
+    s_nocode_msg: { ko: "Firebase 설정 완료! 이제 아래에서 동기화 코드를 정하세요.", en: "Firebase ready! Set a sync code below." },
+    s_err: { ko: "⚠️ 동기화 오류", en: "⚠️ Sync error" },
+    s_err_msg: { ko: "연결에 문제가 있어요. 설정값과 인터넷을 확인하세요.", en: "Connection problem. Check settings and internet." },
+    s_unconf: { ko: "☁️ 동기화 설정", en: "☁️ Set up sync" },
+    s_unconf_msg: { ko: "아직 클라우드 설정이 비어 있어요.", en: "Cloud config is empty yet." },
+    s_saved: { ko: "동기화 코드를 저장했어요 — 다른 기기에도 같은 코드를 넣으세요", en: "Saved the sync code — enter the same code on other devices" },
+    s_copied: { ko: "코드를 복사했어요", en: "Code copied" },
+    s_copyfail: { ko: "이 환경에선 복사를 못 해요 — 직접 적어두세요", en: "Can't copy here — note it down manually" },
+    s_pulled: { ko: "다른 기기의 변경을 받아왔어요 ☁️", en: "Pulled changes from another device ☁️" },
+    // reminder / timer presets / relock / theme
+    rem_title: { ko: "✦ 오늘의 원씽", en: "✦ Today's One Thing" },
+    rem_body: { ko: "오늘 집중할 단 하나를 정해보세요.", en: "Pick the single thing to focus on today." },
+    rem_toast: { ko: "✦ 오늘 집중할 단 하나를 정해보세요", en: "✦ Pick the single thing to focus on today" },
+    tp_prompt: { ko: "집중 시간을 분 단위로 입력하세요 (1~180)", en: "Enter focus minutes (1–180)" },
+    tp_range: { ko: "1~180 사이 숫자를 입력하세요", en: "Enter a number between 1 and 180" },
+    tp_set: { ko: "집중 시간을 {0}분으로 정했어요", en: "Set focus time to {0} min" },
+    relock_toast: { ko: "다시 집중 모드 — 왼쪽을 잠갔어요", en: "Refocus mode — left page locked" },
+    theme_toast: { ko: "테마: {0}", en: "Theme: {0}" }
+  };
+  function t(key) {
+    const e = I18N[key]; let s = e ? (e[LANG] || e.ko) : key;
+    for (let i = 1; i < arguments.length; i++) s = s.split("{" + (i - 1) + "}").join(arguments[i]);
+    return s;
+  }
+
   // ---------- date utils ----------
   function pad2(n) { return n < 10 ? "0" + n : "" + n; }
   function dstr(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
   function todayStr() { return dstr(new Date()); }
   function parseDate(s) { const p = s.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
   function addDaysStr(s, n) { const d = parseDate(s); d.setDate(d.getDate() + n); return dstr(d); }
-  const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-  function fmtNice(s) { const d = parseDate(s); return d.getFullYear() + ". " + (d.getMonth() + 1) + ". " + d.getDate() + ". (" + DOW[d.getDay()] + ")"; }
-  function fmtDur(sec) { sec = sec || 0; if (sec < 60) return sec + "초"; const m = Math.round(sec / 60); if (m < 60) return m + "분"; return Math.floor(m / 60) + "시간 " + (m % 60) + "분"; }
+  const DOW_KO = ["일", "월", "화", "수", "목", "금", "토"];
+  const DOW_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const MON_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function dowLabel(i) { return (LANG === "en" ? DOW_EN : DOW_KO)[i]; }
+  function fmtNice(s) {
+    const d = parseDate(s);
+    if (LANG === "en") return MON_EN[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear() + " (" + DOW_EN[d.getDay()] + ")";
+    return d.getFullYear() + ". " + (d.getMonth() + 1) + ". " + d.getDate() + ". (" + DOW_KO[d.getDay()] + ")";
+  }
+  function fmtDur(sec) {
+    sec = sec || 0;
+    if (LANG === "en") { if (sec < 60) return sec + "s"; const m = Math.round(sec / 60); if (m < 60) return m + "m"; return Math.floor(m / 60) + "h " + (m % 60) + "m"; }
+    if (sec < 60) return sec + "초"; const m = Math.round(sec / 60); if (m < 60) return m + "분"; return Math.floor(m / 60) + "시간 " + (m % 60) + "분";
+  }
   function fmtMMSS(sec) { sec = Math.max(0, sec | 0); return pad2(Math.floor(sec / 60)) + ":" + pad2(sec % 60); }
 
   // ---------- state & migration ----------
   function migrate(s) {
     const base = { version: 2, todos: [], history: [], trash: [],
-      settings: { theme: "paper", font: "gowun", pomodoroMin: 25, reminder: false },
+      settings: { theme: "paper", font: "gowun", pomodoroMin: 25, reminder: false, lang: "ko" },
       doneCollapsed: false, laterCollapsed: true, lastReminderDate: null };
     if (!s || typeof s !== "object") return base;
     const out = Object.assign({}, base, s);
@@ -674,19 +852,19 @@
     save(); render();
   }
   function sendToOneThing(id) {
-    const t = state.todos.find((x) => x.id === id); if (!t || t.status === "done") return;
+    const td = state.todos.find((x) => x.id === id); if (!td || td.status === "done") return;
     viewDate = todayStr();
     const cur = activeTodo(); if (cur && cur.id === id) return;
     if (cur) cur.status = "todo";
-    t.status = "active"; t.activatedAt = Date.now();
-    state.todos = [t, ...state.todos.filter((x) => x.id !== t.id)];
+    td.status = "active"; td.activatedAt = Date.now();
+    state.todos = [td, ...state.todos.filter((x) => x.id !== td.id)];
     leftUnlocked = false; resetTimer(true);
     save(); render();
-    toast(cur ? "원씽을 교체했어요 — 왼쪽은 다시 잠겼어요" : "오른쪽 원씽에 집중! 왼쪽은 잠겨요 — 열려면 퍼즐을 풀어요");
+    toast(cur ? t("swap_done") : t("sent_done"));
   }
   function putBack(id) {
-    const t = state.todos.find((x) => x.id === id); if (!t) return;
-    t.status = "todo"; pauseTimer(); save(); render(); toast("목록으로 되돌렸어요 — 다시 선택하세요");
+    const td = state.todos.find((x) => x.id === id); if (!td) return;
+    td.status = "todo"; pauseTimer(); save(); render(); toast(t("putback_done"));
   }
   function completeTodo(id) {
     const t = state.todos.find((x) => x.id === id); if (!t || t.status === "done") return;
@@ -695,7 +873,6 @@
       state.history.push({ id: uid(), text: t.text, date: todayStr(), completedAt: Date.now(), focusSec: t.focusSec || 0, note: "" });
       pauseTimer();
     }
-    // 반복 할 일이면 다음 회차 생성
     if (t.repeat) {
       state.todos.push({ id: uid(), text: t.text, color: t.color, due: null,
         subtasks: (t.subtasks || []).map((s) => ({ id: uid(), text: s.text, done: false })),
@@ -704,7 +881,7 @@
     }
     t.status = "done"; t.completedAt = Date.now();
     save(); render();
-    if (wasActive) { celebrate(); toast(pick(CHEERS)); }
+    if (wasActive) { celebrate(); toast(pickCheer()); }
   }
   function restoreTodo(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.status = "todo"; t.completedAt = null; save(); render(); }
   function deleteTodo(id) {
@@ -729,10 +906,9 @@
   function toggleSub(id, sid) { const t = state.todos.find((x) => x.id === id); if (!t) return; const s = t.subtasks.find((x) => x.id === sid); if (s) s.done = !s.done; save(); render(); }
   function delSub(id, sid) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.subtasks = t.subtasks.filter((x) => x.id !== sid); save(); render(); }
 
-  // trash / later actions
-  function restoreTrash(id) { const i = state.trash.findIndex((x) => x.id === id); if (i < 0) return; const t = state.trash[i]; delete t.deletedAt; t.status = "done" === t.status ? "todo" : (t.status || "todo"); t.status = t.status === "active" ? "todo" : t.status; state.trash.splice(i, 1); state.todos.push(t); save(); render(); openTrash(); }
+  function restoreTrash(id) { const i = state.trash.findIndex((x) => x.id === id); if (i < 0) return; const t = state.trash[i]; delete t.deletedAt; t.status = t.status === "active" || t.status === "done" ? "todo" : (t.status || "todo"); state.trash.splice(i, 1); state.todos.push(t); save(); render(); openTrash(); }
   function purgeTrash(id) { state.trash = state.trash.filter((x) => x.id !== id); save(); render(); openTrash(); }
-  function emptyTrash() { if (!state.trash.length) return; if (!confirm("휴지통을 완전히 비울까요? 되돌릴 수 없어요.")) return; state.trash = []; save(); render(); openTrash(); }
+  function emptyTrash() { if (!state.trash.length) return; if (!confirm(t("confirm_empty"))) return; state.trash = []; save(); render(); openTrash(); }
 
   // ---------- drag reorder ----------
   let dragId = null;
@@ -749,7 +925,7 @@
     save(); render();
   }
 
-  // ---------- timer (pomodoro; 끝나도 자동 완료 안 함, 알림만) ----------
+  // ---------- timer ----------
   let timerRunning = false, timerRemaining = 0, timerIv = null;
   function pomoSec() { return (state.settings.pomodoroMin || 25) * 60; }
   function resetTimer(silent) { pauseTimer(); timerRemaining = pomoSec(); if (!silent) updateTimerUI(); }
@@ -771,8 +947,8 @@
   function toggleTimer() { if (timerRunning) pauseTimer(); else startTimer(); }
   function updateTimerUI() {
     const disp = $id("timeDisp"); if (disp) disp.textContent = fmtMMSS(timerRemaining > 0 ? timerRemaining : pomoSec());
-    const btn = $id("timerToggle"); if (btn) btn.textContent = timerRunning ? "⏸ 일시정지" : "▶ 집중 시작";
-    const acc = $id("focusAcc"); const a = activeTodo(); if (acc && a) acc.textContent = "집중 " + fmtDur(a.focusSec || 0);
+    const btn = $id("timerToggle"); if (btn) btn.textContent = timerRunning ? t("timer_pause") : t("timer_start");
+    const acc = $id("focusAcc"); const a = activeTodo(); if (acc && a) acc.textContent = t("focus_acc", fmtDur(a.focusSec || 0));
   }
   function requestNotify() {
     try { if (window.Notification && Notification.permission === "default") Notification.requestPermission(); } catch (e) {}
@@ -787,15 +963,14 @@
     } catch (e) {}
   }
   function alarmDone() {
-    const a = activeTodo(); const name = a ? a.text : "원씽";
+    const a = activeTodo(); const name = a ? a.text : t("onething_word");
     beep();
-    try { if (window.Notification && Notification.permission === "granted") new Notification("⏰ 집중 시간 종료", { body: name + " — 잠깐 쉬거나 계속하세요. (자동 완료되지 않아요)" }); } catch (e) {}
-    toast("⏰ 집중 시간 종료! 잠깐 쉬거나 계속하세요 (자동 완료 안 함)");
+    try { if (window.Notification && Notification.permission === "granted") new Notification(t("alarm_title"), { body: t("alarm_body", name) }); } catch (e) {}
+    toast(t("alarm_toast"));
   }
 
   // ---------- celebrate ----------
-  const CHEERS = ["잘했어요! 하나를 끝냈어요 🎉", "원씽 완료! 오늘의 한 걸음 👏", "멋져요 — 가장 중요한 일을 해냈어요 ✨", "끝! 이 작은 성취가 쌓입니다 🌱", "수고했어요, 딱 하나 해냈어요 💪"];
-  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function pickCheer() { return t("cheer" + Math.floor(Math.random() * 5)); }
   function celebrate() {
     const c = $id("confetti"); if (!c) return; const ctx = c.getContext("2d");
     c.width = window.innerWidth; c.height = window.innerHeight; c.style.display = "block";
@@ -825,8 +1000,8 @@
   let leftUnlocked = false;
   function openPuzzle() { buildPuzzle(); $id("puzzleModal").hidden = false; }
   function onSolved() {
-    $id("puzzleStatus").textContent = "통과! 🎉 왼쪽을 엽니다";
-    setTimeout(() => { $id("puzzleModal").hidden = true; leftUnlocked = true; render(); toast("퍼즐 통과! 왼쪽을 잠깐 열었어요 — 다 보면 ‘다시 집중’"); }, 600);
+    $id("puzzleStatus").textContent = t("solved_status");
+    setTimeout(() => { $id("puzzleModal").hidden = true; leftUnlocked = true; render(); toast(t("solved_toast")); }, 600);
   }
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function buildPuzzle() {
@@ -834,8 +1009,8 @@
     const stage = $id("puzzleStage"); const status = $id("puzzleStatus");
     stage.innerHTML = ""; status.textContent = ""; stage.className = "puzzle-stage";
     if (type === "math") {
-      $id("puzzleTitle").textContent = "🧮 계산 퍼즐";
-      $id("puzzleDesc").textContent = "답을 입력하면 왼쪽이 잠깐 열려요.";
+      $id("puzzleTitle").textContent = t("pz_math_t");
+      $id("puzzleDesc").textContent = t("pz_math_d");
       const a = 2 + Math.floor(Math.random() * 8), b = 2 + Math.floor(Math.random() * 8), op = Math.random() < 0.5 ? "+" : "×";
       const ans = op === "+" ? a + b : a * b;
       stage.style.height = "auto"; stage.style.background = "transparent"; stage.style.border = "none";
@@ -845,8 +1020,8 @@
       return;
     }
     if (type === "order") {
-      $id("puzzleTitle").textContent = "🔢 순서 맞추기";
-      $id("puzzleDesc").textContent = "1 → 2 → 3 → 4 순서대로 누르면 열려요.";
+      $id("puzzleTitle").textContent = t("pz_order_t");
+      $id("puzzleDesc").textContent = t("pz_order_d");
       stage.style.height = "auto"; stage.style.background = "transparent"; stage.style.border = "none";
       const wrap = document.createElement("div"); wrap.className = "pz-order";
       const nums = shuffle([1, 2, 3, 4]); let next = 1;
@@ -855,15 +1030,14 @@
         b.addEventListener("click", () => {
           if (b.classList.contains("done")) return;
           if (n === next) { b.classList.add("done"); next++; status.textContent = (next - 1) + " / 4"; if (next > 4) onSolved(); }
-          else { next = 1; wrap.querySelectorAll("button").forEach((x) => x.classList.remove("done")); status.textContent = "처음부터 다시!"; }
+          else { next = 1; wrap.querySelectorAll("button").forEach((x) => x.classList.remove("done")); status.textContent = t("pz_order_restart"); }
         });
         wrap.appendChild(b);
       });
       stage.appendChild(wrap); status.textContent = "0 / 4"; return;
     }
-    // match (drag pieces to same-number slots)
-    $id("puzzleTitle").textContent = "🧩 조각 맞추기";
-    $id("puzzleDesc").textContent = "조각을 같은 숫자의 빈칸으로 끌어다 넣으면 열려요.";
+    $id("puzzleTitle").textContent = t("pz_match_t");
+    $id("puzzleDesc").textContent = t("pz_match_d");
     stage.style.height = "300px"; stage.style.background = ""; stage.style.border = "";
     let placed = 0; const W = stage.clientWidth || 320; const size = 64;
     const gap = Math.max(12, (W - size * 3) / 4); const xAt = (p) => gap + p * (size + gap);
@@ -906,74 +1080,71 @@
   function renderTodos() {
     const ul = $id("todoList"); ul.innerHTML = "";
     const vis = visibleTodos(), cur = activeTodo();
-    vis.forEach((t) => {
-      const li = document.createElement("li"); li.className = "todo" + (t.status === "active" ? " active" : ""); li.dataset.id = t.id; li.draggable = true;
+    vis.forEach((td) => {
+      const li = document.createElement("li"); li.className = "todo" + (td.status === "active" ? " active" : ""); li.dataset.id = td.id; li.draggable = true;
       const grip = document.createElement("span"); grip.className = "grip"; grip.textContent = "⠿";
-      const check = document.createElement("button"); check.className = "check"; check.title = "완료"; check.addEventListener("click", () => completeTodo(t.id));
-      const dot = document.createElement("button"); dot.className = "dot" + (t.color ? " " + t.color : ""); dot.title = "색 라벨"; dot.addEventListener("click", () => cycleColor(t.id));
-      const text = document.createElement("span"); text.className = "todo-text"; text.textContent = t.text; text.title = "더블클릭하면 수정"; makeEditable(text, "todo", t.id);
+      const check = document.createElement("button"); check.className = "check"; check.title = t("ti_done"); check.addEventListener("click", () => completeTodo(td.id));
+      const dot = document.createElement("button"); dot.className = "dot" + (td.color ? " " + td.color : ""); dot.title = t("ti_color"); dot.addEventListener("click", () => cycleColor(td.id));
+      const text = document.createElement("span"); text.className = "todo-text"; text.textContent = td.text; text.title = t("ti_edit"); makeEditable(text, "todo", td.id);
       li.append(grip, check, dot, text);
-      if (t.due) { const c = document.createElement("span"); const today = todayStr(); c.className = "chip" + (t.due < today ? " due-over" : t.due === today ? " due-soon" : ""); c.textContent = "📅 " + t.due.slice(5); li.append(c); }
-      if (t.repeat) { const c = document.createElement("span"); c.className = "chip"; c.textContent = t.repeat === "daily" ? "🔁 매일" : "🔁 매주"; li.append(c); }
-      if (t.subtasks && t.subtasks.length) { const d = t.subtasks.filter((s) => s.done).length; const c = document.createElement("span"); c.className = "chip"; c.textContent = "☑ " + d + "/" + t.subtasks.length; li.append(c); }
-      if (t.status === "active") { const b = document.createElement("span"); b.className = "badge"; b.textContent = "진행 중 ▶"; li.append(b); }
-      else { const s = document.createElement("button"); s.className = "send-btn"; s.innerHTML = "➜"; s.title = cur ? "이걸로 원씽 교체" : "오른쪽 원씽으로 보내기"; s.addEventListener("click", () => sendToOneThing(t.id)); li.append(s); }
-      const more = document.createElement("button"); more.className = "more-btn"; more.textContent = "⋯"; more.title = "더보기"; more.addEventListener("click", () => { if (expanded.has(t.id)) expanded.delete(t.id); else expanded.add(t.id); render(); }); li.append(more);
-
-      if (expanded.has(t.id)) li.append(buildDetail(t));
-
-      li.addEventListener("dragstart", (e) => { dragId = t.id; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", t.id); } catch (_) {} });
+      if (td.due) { const c = document.createElement("span"); const today = todayStr(); c.className = "chip" + (td.due < today ? " due-over" : td.due === today ? " due-soon" : ""); c.textContent = "📅 " + td.due.slice(5); li.append(c); }
+      if (td.repeat) { const c = document.createElement("span"); c.className = "chip"; c.textContent = td.repeat === "daily" ? t("rep_daily") : t("rep_weekly"); li.append(c); }
+      if (td.subtasks && td.subtasks.length) { const d = td.subtasks.filter((s) => s.done).length; const c = document.createElement("span"); c.className = "chip"; c.textContent = "☑ " + d + "/" + td.subtasks.length; li.append(c); }
+      if (td.status === "active") { const b = document.createElement("span"); b.className = "badge"; b.textContent = t("badge_prog"); li.append(b); }
+      else { const s = document.createElement("button"); s.className = "send-btn"; s.innerHTML = "➜"; s.title = cur ? t("send_swap") : t("send_to"); s.addEventListener("click", () => sendToOneThing(td.id)); li.append(s); }
+      const more = document.createElement("button"); more.className = "more-btn"; more.textContent = "⋯"; more.title = t("ti_more"); more.addEventListener("click", () => { if (expanded.has(td.id)) expanded.delete(td.id); else expanded.add(td.id); render(); }); li.append(more);
+      if (expanded.has(td.id)) li.append(buildDetail(td));
+      li.addEventListener("dragstart", (e) => { dragId = td.id; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", td.id); } catch (_) {} });
       li.addEventListener("dragend", () => { dragId = null; li.classList.remove("dragging"); document.querySelectorAll(".drop-before").forEach((n) => n.classList.remove("drop-before")); });
-      li.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId && dragId !== t.id) li.classList.add("drop-before"); });
+      li.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId && dragId !== td.id) li.classList.add("drop-before"); });
       li.addEventListener("dragleave", () => li.classList.remove("drop-before"));
-      li.addEventListener("drop", (e) => { e.preventDefault(); li.classList.remove("drop-before"); if (dragId && dragId !== t.id) reorder(dragId, t.id, false); });
+      li.addEventListener("drop", (e) => { e.preventDefault(); li.classList.remove("drop-before"); if (dragId && dragId !== td.id) reorder(dragId, td.id, false); });
       ul.append(li);
     });
-    if (vis.length === 0) { const li = document.createElement("li"); li.className = "todo"; li.style.color = "#b3a888"; li.textContent = searchQuery ? "검색 결과가 없어요." : "위 칸에 할 일을 적어 시작하세요 ✎"; ul.append(li); }
+    if (vis.length === 0) { const li = document.createElement("li"); li.className = "todo"; li.style.color = "#b3a888"; li.textContent = searchQuery ? t("no_results") : t("empty_list"); ul.append(li); }
   }
-  function buildDetail(t) {
+  function buildDetail(td) {
     const d = document.createElement("div"); d.className = "detail";
     const ul = document.createElement("ul"); ul.className = "sub-list";
-    (t.subtasks || []).forEach((s) => {
+    (td.subtasks || []).forEach((s) => {
       const li = document.createElement("li");
-      const cb = document.createElement("button"); cb.className = "check scheck"; cb.textContent = s.done ? "✓" : ""; cb.addEventListener("click", () => toggleSub(t.id, s.id));
+      const cb = document.createElement("button"); cb.className = "check scheck"; cb.textContent = s.done ? "✓" : ""; cb.addEventListener("click", () => toggleSub(td.id, s.id));
       const tx = document.createElement("span"); tx.className = "stext" + (s.done ? " done" : ""); tx.textContent = s.text;
-      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.addEventListener("click", () => delSub(t.id, s.id));
+      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.addEventListener("click", () => delSub(td.id, s.id));
       li.append(cb, tx, x); ul.append(li);
     });
     d.append(ul);
     const sa = document.createElement("div"); sa.className = "sub-add";
-    const si = document.createElement("input"); si.placeholder = "+ 하위 할 일 추가 후 Enter";
-    si.addEventListener("keydown", (e) => { if (e.key === "Enter") { addSub(t.id, si.value); } });
+    const si = document.createElement("input"); si.placeholder = t("sub_ph");
+    si.addEventListener("keydown", (e) => { if (e.key === "Enter") { addSub(td.id, si.value); } });
     sa.append(si); d.append(sa);
     const act = document.createElement("div"); act.className = "detail-actions";
-    const due = document.createElement("input"); due.type = "date"; due.value = t.due || ""; due.title = "마감일"; due.addEventListener("change", () => setDue(t.id, due.value));
-    const rep = document.createElement("button"); rep.textContent = t.repeat ? (t.repeat === "daily" ? "🔁 매일" : "🔁 매주") : "🔁 반복 없음"; rep.addEventListener("click", () => cycleRepeat(t.id));
-    const lat = document.createElement("button"); lat.textContent = "📁 나중에"; lat.addEventListener("click", () => toggleLater(t.id));
-    const del = document.createElement("button"); del.className = "del"; del.textContent = "🗑 삭제"; del.addEventListener("click", () => deleteTodo(t.id));
+    const due = document.createElement("input"); due.type = "date"; due.value = td.due || ""; due.title = t("ti_due"); due.addEventListener("change", () => setDue(td.id, due.value));
+    const rep = document.createElement("button"); rep.textContent = td.repeat ? (td.repeat === "daily" ? t("rep_daily") : t("rep_weekly")) : t("rep_none"); rep.addEventListener("click", () => cycleRepeat(td.id));
+    const lat = document.createElement("button"); lat.textContent = t("ti_later"); lat.addEventListener("click", () => toggleLater(td.id));
+    const del = document.createElement("button"); del.className = "del"; del.textContent = t("ti_delete"); del.addEventListener("click", () => deleteTodo(td.id));
     act.append(due, rep, lat, del); d.append(act);
     return d;
   }
-  // 원씽 카드에 표시할 하위 할 일 (할 일을 원씽으로 보내면 하위 할 일도 함께 따라온다)
-  function buildOtSubs(t) {
+  function buildOtSubs(td) {
     const wrap = document.createElement("div"); wrap.className = "ot-subs";
-    const subs = t.subtasks || [];
+    const subs = td.subtasks || [];
     const doneN = subs.filter((s) => s.done).length;
     const head = document.createElement("div"); head.className = "ot-subs-head";
-    head.textContent = subs.length ? ("☑ " + doneN + "/" + subs.length + " · 하위 할 일") : "하위 할 일 — 작게 쪼개기";
+    head.textContent = subs.length ? t("subs_head", doneN, subs.length) : t("subs_empty");
     wrap.append(head);
     const ul = document.createElement("ul"); ul.className = "ot-sub-list";
     subs.forEach((s) => {
       const li = document.createElement("li");
-      const cb = document.createElement("button"); cb.className = "check scheck"; cb.textContent = s.done ? "✓" : ""; cb.addEventListener("click", () => toggleSub(t.id, s.id));
+      const cb = document.createElement("button"); cb.className = "check scheck"; cb.textContent = s.done ? "✓" : ""; cb.addEventListener("click", () => toggleSub(td.id, s.id));
       const tx = document.createElement("span"); tx.className = "stext" + (s.done ? " done" : ""); tx.textContent = s.text;
-      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.addEventListener("click", () => delSub(t.id, s.id));
+      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.addEventListener("click", () => delSub(td.id, s.id));
       li.append(cb, tx, x); ul.append(li);
     });
     wrap.append(ul);
     const sa = document.createElement("div"); sa.className = "sub-add";
-    const si = document.createElement("input"); si.placeholder = "+ 하위 할 일 추가 후 Enter";
-    si.addEventListener("keydown", (e) => { if (e.key === "Enter") addSub(t.id, si.value); });
+    const si = document.createElement("input"); si.placeholder = t("sub_ph");
+    si.addEventListener("keydown", (e) => { if (e.key === "Enter") addSub(td.id, si.value); });
     sa.append(si); wrap.append(sa);
     return wrap;
   }
@@ -982,12 +1153,12 @@
     wrap.classList.toggle("collapsed", !!state.doneCollapsed);
     $id("doneCount").textContent = dones.length ? "(" + dones.length + ")" : "";
     list.innerHTML = "";
-    dones.slice().reverse().forEach((t) => {
+    dones.slice().reverse().forEach((td) => {
       const li = document.createElement("li"); li.className = "done";
-      const mark = document.createElement("span"); mark.className = "check"; mark.style.borderColor = "var(--done)"; mark.style.color = "var(--accent)"; mark.textContent = "✓"; mark.style.cursor = "pointer"; mark.title = "되돌리기"; mark.addEventListener("click", () => restoreTodo(t.id));
-      const text = document.createElement("span"); text.className = "done-text"; text.textContent = t.text;
-      const restore = document.createElement("button"); restore.className = "restore"; restore.textContent = "↩"; restore.title = "다시 할 일로"; restore.addEventListener("click", () => restoreTodo(t.id));
-      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.title = "휴지통으로"; x.addEventListener("click", () => deleteTodo(t.id));
+      const mark = document.createElement("span"); mark.className = "check"; mark.style.borderColor = "var(--done)"; mark.style.color = "var(--accent)"; mark.textContent = "✓"; mark.style.cursor = "pointer"; mark.title = t("ti_restore"); mark.addEventListener("click", () => restoreTodo(td.id));
+      const text = document.createElement("span"); text.className = "done-text"; text.textContent = td.text;
+      const restore = document.createElement("button"); restore.className = "restore"; restore.textContent = "↩"; restore.title = t("ti_backtodo"); restore.addEventListener("click", () => restoreTodo(td.id));
+      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.title = t("ti_totrash"); x.addEventListener("click", () => deleteTodo(td.id));
       li.append(mark, text, restore, x); list.append(li);
     });
   }
@@ -1006,39 +1177,57 @@
       const tx = document.createElement("span"); tx.className = "hist-text"; tx.textContent = h.text; makeEditable(tx, "history", h.id);
       li.append(num, ck, tx);
       if (h.focusSec) { const tm = document.createElement("span"); tm.className = "hist-time"; tm.textContent = "⏱ " + fmtDur(h.focusSec); li.append(tm); }
-      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.title = "기록 삭제"; x.addEventListener("click", () => deleteHistory(h.id)); li.append(x);
+      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.title = t("ti_delrec"); x.addEventListener("click", () => deleteHistory(h.id)); li.append(x);
       hist.append(li);
     });
 
     const slot = $id("activeSlot"); slot.innerHTML = ""; const cur = activeTodo();
     if (isToday && cur) {
       const card = document.createElement("div"); card.className = "onething-card";
-      const text = document.createElement("div"); text.className = "ot-text"; text.textContent = cur.text; text.title = "더블클릭하면 수정"; makeEditable(text, "todo", cur.id);
+      const text = document.createElement("div"); text.className = "ot-text"; text.textContent = cur.text; text.title = t("ti_edit"); makeEditable(text, "todo", cur.id);
       const timer = document.createElement("div"); timer.className = "timer";
       timer.innerHTML = '<span class="time" id="timeDisp">' + fmtMMSS(timerRemaining > 0 ? timerRemaining : pomoSec()) + '</span>'
-        + '<button id="timerToggle">' + (timerRunning ? "⏸ 일시정지" : "▶ 집중 시작") + '</button>'
-        + '<button id="timerReset">↺</button><span class="focus-acc" id="focusAcc">집중 ' + fmtDur(cur.focusSec || 0) + '</span>';
+        + '<button id="timerToggle">' + (timerRunning ? t("timer_pause") : t("timer_start")) + '</button>'
+        + '<button id="timerReset">↺</button><span class="focus-acc" id="focusAcc">' + t("focus_acc", fmtDur(cur.focusSec || 0)) + '</span>';
       const presetEl = document.createElement("div"); presetEl.className = "timer-presets";
       const pm = state.settings.pomodoroMin || 25; const presets = [15, 25, 30, 45, 60];
-      let ph = '<span class="tp-label">길이</span>';
+      let ph = '<span class="tp-label">' + t("tp_label") + '</span>';
       presets.forEach((n) => { ph += '<button data-min="' + n + '"' + (n === pm ? ' class="sel"' : '') + '>' + n + '</button>'; });
-      ph += '<button data-min="custom"' + (presets.indexOf(pm) < 0 ? ' class="sel"' : '') + '>직접</button><span class="tp-unit">분</span>';
+      ph += '<button data-min="custom"' + (presets.indexOf(pm) < 0 ? ' class="sel"' : '') + '>' + t("tp_custom") + '</button><span class="tp-unit">' + t("min_unit") + '</span>';
       presetEl.innerHTML = ph;
       const foot = document.createElement("div"); foot.className = "ot-foot";
-      const done = document.createElement("button"); done.className = "complete-btn"; done.innerHTML = '<span class="box"></span> 완료'; done.addEventListener("click", () => completeTodo(cur.id));
-      const back = document.createElement("button"); back.className = "putback"; back.textContent = "↩ 다시 선택"; back.addEventListener("click", () => putBack(cur.id));
+      const done = document.createElement("button"); done.className = "complete-btn"; done.innerHTML = '<span class="box"></span> ' + t("complete"); done.addEventListener("click", () => completeTodo(cur.id));
+      const back = document.createElement("button"); back.className = "putback"; back.textContent = t("pick_again"); back.addEventListener("click", () => putBack(cur.id));
       foot.append(done, back); card.append(text, buildOtSubs(cur), timer, presetEl, foot); slot.append(card);
-      $id("rightHint").textContent = "이 하나만 끝내면 됩니다. 타이머는 끝나도 자동 완료되지 않아요.";
+      $id("rightHint").textContent = t("hint_active");
       setTimeout(() => { const tb = $id("timerToggle"), tr = $id("timerReset"); if (tb) tb.onclick = toggleTimer; if (tr) tr.onclick = () => resetTimer(); }, 0);
     } else if (isToday) {
-      const empty = document.createElement("div"); empty.className = "empty-ot"; empty.innerHTML = "지금 집중할 단 하나를<br>왼쪽에서 <span class='arrow'>➜</span> 눌러 보내세요"; slot.append(empty);
-      $id("rightHint").textContent = dayHist.length ? "오늘 " + dayHist.length + "개의 원씽을 끝냈어요. 다음 하나를 골라보세요." : "여러 할 일 중 가장 중요한 ‘하나’를 고르는 것이 핵심이에요.";
+      const empty = document.createElement("div"); empty.className = "empty-ot"; empty.innerHTML = t("empty_ot"); slot.append(empty);
+      $id("rightHint").textContent = dayHist.length ? t("hint_count", dayHist.length) : t("hint_key");
     } else {
       const empty = document.createElement("div"); empty.className = "empty-ot readonly";
-      empty.innerHTML = dayHist.length ? "이 날의 원씽 기록이에요 ☝" : "이 날엔 끝낸 원씽이 없어요";
+      empty.textContent = dayHist.length ? t("ro_has") : t("ro_none");
       slot.append(empty);
-      $id("rightHint").textContent = "‘오늘’ 버튼으로 돌아오면 원씽을 고를 수 있어요.";
+      $id("rightHint").textContent = t("hint_today");
     }
+  }
+  function renderLater() {
+    const wrap = $id("laterWrap"), list = $id("laterList"); const items = laterTodos();
+    wrap.classList.toggle("collapsed", !!state.laterCollapsed);
+    $id("laterCount").textContent = items.length ? "(" + items.length + ")" : "";
+    list.innerHTML = "";
+    if (!items.length) {
+      const li = document.createElement("li"); li.className = "later-item"; li.style.color = "#b3a888";
+      li.textContent = t("later_empty"); list.append(li); return;
+    }
+    items.forEach((td) => {
+      const li = document.createElement("li"); li.className = "later-item";
+      const tx = document.createElement("span"); tx.className = "lt-text"; tx.textContent = td.text;
+      const now = document.createElement("button"); now.className = "lt-now"; now.textContent = t("lt_now"); now.title = t("lt_now_title");
+      now.addEventListener("click", () => toggleLater(td.id));
+      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.title = t("lt_del"); x.addEventListener("click", () => deleteTodo(td.id));
+      li.append(tx, now, x); list.append(li);
+    });
   }
   function render() {
     renderTodos(); renderLater(); renderDone(); renderRight();
@@ -1052,6 +1241,20 @@
     document.body.dataset.theme = state.settings.theme || "paper";
     document.body.dataset.font = state.settings.font || "gowun";
   }
+  function applyLang() {
+    LANG = state.settings.lang || "ko";
+    document.body.dataset.lang = LANG;
+    document.documentElement.lang = LANG;
+    document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+    document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = t(el.dataset.i18nTitle); });
+    document.querySelectorAll("[data-i18n-html]").forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
+    const lb = $id("langBtn"); if (lb) lb.textContent = LANG === "ko" ? "🌐 EN" : "🌐 한";
+  }
+  function toggleLang() {
+    state.settings.lang = (LANG === "ko") ? "en" : "ko";
+    save(); applyLang(); render(); refreshSyncState();
+  }
 
   // ---------- modals: stats / trash / later / backup / settings ----------
   function bestStreak(set) {
@@ -1063,58 +1266,52 @@
   function openStats() {
     const set = new Set(state.history.map((h) => h.date));
     const total = state.history.length;
-    // 현재 연속
     let streak = 0, day = todayStr(); if (!set.has(day)) day = addDaysStr(day, -1);
     while (set.has(day)) { streak++; day = addDaysStr(day, -1); }
     const best = bestStreak(set);
-    // 이번 주 (월요일 시작) 7일 채우기
     const dow = (parseDate(todayStr()).getDay() + 6) % 7;
     const weekStart = addDaysStr(todayStr(), -dow);
     let weekCount = 0; const pills = [];
     for (let i = 0; i < 7; i++) {
       const ds = addDaysStr(weekStart, i); const done = set.has(ds); if (done) weekCount++;
-      const isT = ds === todayStr(); const fut = ds > todayStr(); const lab = DOW[parseDate(ds).getDay()];
+      const isT = ds === todayStr(); const fut = ds > todayStr(); const lab = dowLabel(parseDate(ds).getDay());
       pills.push('<div class="day-pill' + (done ? " done" : "") + (isT ? " today" : "") + (fut ? " future" : "") + '"><span class="dmark">' + (done ? "✓" : (fut ? "·" : "○")) + '</span>' + lab + '</div>');
     }
-    // 응원 한마디
     let hero;
-    if (total === 0) hero = "아직 시작 전 — 오늘 첫 원씽을 완료해 보세요! 🌱";
-    else if (streak >= 7) hero = "🔥 " + streak + "일 연속! 정말 불타오르네요 ✨";
-    else if (streak > 0) hero = "🔥 " + streak + "일째 실천 중 — 이 흐름을 이어가요!";
-    else hero = "다시 시작하기 좋은 날 — 오늘 하나만 해볼까요? 💪";
+    if (total === 0) hero = t("hero0");
+    else if (streak >= 7) hero = t("hero_fire", streak);
+    else if (streak > 0) hero = t("hero_going", streak);
+    else hero = t("hero_restart");
 
     let html = '<div class="stat-hero">' + hero + '</div>';
     html += '<div class="stat-row">'
-      + '<div class="stat-card"><div class="num">🔥' + streak + '</div><div class="lbl">현재 연속</div></div>'
-      + '<div class="stat-card"><div class="num">🏅' + best + '</div><div class="lbl">최고 연속</div></div>'
-      + '<div class="stat-card"><div class="num">🏆' + total + '</div><div class="lbl">전체 원씽</div></div></div>';
+      + '<div class="stat-card"><div class="num">🔥' + streak + '</div><div class="lbl">' + t("lbl_cur") + '</div></div>'
+      + '<div class="stat-card"><div class="num">🏅' + best + '</div><div class="lbl">' + t("lbl_best") + '</div></div>'
+      + '<div class="stat-card"><div class="num">🏆' + total + '</div><div class="lbl">' + t("lbl_total") + '</div></div></div>';
 
-    // 다음 목표 진행 막대
     const MS = [1, 3, 7, 15, 30, 60, 100];
     if (total >= 100) {
-      html += '<div class="ms-wrap"><div class="ms-label"><span>👑 최고 등급 달성!</span><span>' + total + '개</span></div>'
+      html += '<div class="ms-wrap"><div class="ms-label"><span>' + t("ms_top") + '</span><span>' + t("ms_count", total) + '</span></div>'
         + '<div class="ms-bar"><div class="ms-fill" style="width:100%"></div></div></div>';
     } else {
       const next = MS.find((m) => total < m); let prev = 0; MS.forEach((m) => { if (m <= total) prev = m; });
       const pct = Math.round(((total - prev) / (next - prev)) * 100);
-      html += '<div class="ms-wrap"><div class="ms-label"><span>🏆 다음 목표 ' + next + '개</span><span>' + total + ' / ' + next + '</span></div>'
+      html += '<div class="ms-wrap"><div class="ms-label"><span>' + t("ms_next", next) + '</span><span>' + total + ' / ' + next + '</span></div>'
         + '<div class="ms-bar"><div class="ms-fill" style="width:' + pct + '%"></div></div>'
-        + '<div class="ms-note">' + (next - total) + '개만 더 하면 달성! 💪</div></div>';
+        + '<div class="ms-note">' + t("ms_note", next - total) + '</div></div>';
     }
 
-    // 이번 주 7일
-    html += '<div class="section-h">이번 주 · ' + weekCount + '/7일 실천</div><div class="week-strip">' + pills.join("") + '</div>';
+    html += '<div class="section-h">' + t("week_h", weekCount) + '</div><div class="week-strip">' + pills.join("") + '</div>';
 
-    // 배지
     const badges = [
-      { ic: "🌱", name: "첫 걸음", on: total >= 1 },
-      { ic: "🔥", name: "3일 연속", on: best >= 3 },
-      { ic: "⚡", name: "7일 연속", on: best >= 7 },
-      { ic: "🏅", name: "원씽 10", on: total >= 10 },
-      { ic: "💎", name: "원씽 30", on: total >= 30 },
-      { ic: "👑", name: "원씽 100", on: total >= 100 },
+      { ic: "🌱", name: t("bdg0"), on: total >= 1 },
+      { ic: "🔥", name: t("bdg1"), on: best >= 3 },
+      { ic: "⚡", name: t("bdg2"), on: best >= 7 },
+      { ic: "🏅", name: t("bdg3"), on: total >= 10 },
+      { ic: "💎", name: t("bdg4"), on: total >= 30 },
+      { ic: "👑", name: t("bdg5"), on: total >= 100 },
     ];
-    html += '<div class="section-h">배지</div><div class="badge-row">'
+    html += '<div class="section-h">' + t("badges_h") + '</div><div class="badge-row">'
       + badges.map((b) => '<span class="badge-chip' + (b.on ? "" : " locked") + '">' + b.ic + " " + b.name + (b.on ? "" : " 🔒") + '</span>').join("") + '</div>';
 
     $id("statsBody").innerHTML = html;
@@ -1122,33 +1319,15 @@
   }
   function openTrash() {
     const list = $id("trashList"); list.innerHTML = "";
-    if (!state.trash.length) { list.innerHTML = '<div class="empty-note">휴지통이 비어 있어요.</div>'; }
-    state.trash.forEach((t) => {
+    if (!state.trash.length) { list.innerHTML = '<div class="empty-note">' + t("trash_emptynote") + '</div>'; }
+    state.trash.forEach((td) => {
       const li = document.createElement("li");
-      const tx = document.createElement("span"); tx.className = "mtext"; tx.textContent = t.text;
-      const r = document.createElement("button"); r.textContent = "↩ 복구"; r.addEventListener("click", () => restoreTrash(t.id));
-      const x = document.createElement("button"); x.textContent = "🗑 완전삭제"; x.addEventListener("click", () => purgeTrash(t.id));
+      const tx = document.createElement("span"); tx.className = "mtext"; tx.textContent = td.text;
+      const r = document.createElement("button"); r.textContent = t("tr_restore"); r.addEventListener("click", () => restoreTrash(td.id));
+      const x = document.createElement("button"); x.textContent = t("tr_purge"); x.addEventListener("click", () => purgeTrash(td.id));
       li.append(tx, r, x); list.append(li);
     });
     $id("trashModal").hidden = false;
-  }
-  function renderLater() {
-    const wrap = $id("laterWrap"), list = $id("laterList"); const items = laterTodos();
-    wrap.classList.toggle("collapsed", !!state.laterCollapsed);
-    $id("laterCount").textContent = items.length ? "(" + items.length + ")" : "";
-    list.innerHTML = "";
-    if (!items.length) {
-      const li = document.createElement("li"); li.className = "later-item"; li.style.color = "#b3a888";
-      li.textContent = "미뤄둔 일이 없어요."; list.append(li); return;
-    }
-    items.forEach((t) => {
-      const li = document.createElement("li"); li.className = "later-item";
-      const tx = document.createElement("span"); tx.className = "lt-text"; tx.textContent = t.text;
-      const now = document.createElement("button"); now.className = "lt-now"; now.textContent = "▶ 오늘 할 일로"; now.title = "오늘 할 일들로 옮기기";
-      now.addEventListener("click", () => toggleLater(t.id));
-      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.title = "삭제"; x.addEventListener("click", () => deleteTodo(t.id));
-      li.append(tx, now, x); list.append(li);
-    });
   }
   function exportBackup() {
     try {
@@ -1156,19 +1335,19 @@
       const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
       a.download = "onething-backup-" + todayStr() + ".json"; document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 100);
-      toast("백업 파일을 내보냈어요 💾");
-    } catch (e) { toast("내보내기에 실패했어요"); }
+      toast(t("bk_exported"));
+    } catch (e) { toast(t("bk_export_fail")); }
   }
   function importBackup(file) {
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const obj = JSON.parse(reader.result);
-        if (!obj || !Array.isArray(obj.todos)) { toast("올바른 백업 파일이 아니에요"); return; }
-        if (!confirm("불러오면 지금 내용을 덮어씁니다. 진행할까요?")) return;
-        state = migrate(obj); save(); render();
-        $id("backupModal").hidden = true; toast("백업을 불러왔어요 ✓");
-      } catch (e) { toast("불러오기에 실패했어요"); }
+        if (!obj || !Array.isArray(obj.todos)) { toast(t("bk_invalid")); return; }
+        if (!confirm(t("bk_confirm"))) return;
+        state = migrate(obj); save(); applyLang(); render();
+        $id("backupModal").hidden = true; toast(t("bk_imported"));
+      } catch (e) { toast(t("bk_import_fail")); }
     };
     reader.readAsText(file);
   }
@@ -1176,7 +1355,7 @@
     $id("themeSeg").querySelectorAll("button").forEach((b) => b.classList.toggle("sel", b.dataset.theme === (state.settings.theme || "paper")));
     $id("fontSeg").querySelectorAll("button").forEach((b) => b.classList.toggle("sel", b.dataset.font === (state.settings.font || "gowun")));
     $id("pomoInput").value = state.settings.pomodoroMin || 25;
-    $id("reminderToggle").textContent = state.settings.reminder ? "켜짐 ✓" : "꺼짐";
+    $id("reminderToggle").textContent = state.settings.reminder ? t("rem_on") : t("rem_off");
     $id("settingsModal").hidden = false;
   }
 
@@ -1200,7 +1379,7 @@
         if ((val.ts || 0) <= lastTs) { setSyncStatus("ok", code); return; }
         applyingRemote = true; state = migrate(val.data); lastTs = val.ts || 0;
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
-        render(); applyingRemote = false; setSyncStatus("ok", code); toast("다른 기기의 변경을 받아왔어요 ☁️");
+        applyLang(); render(); applyingRemote = false; setSyncStatus("ok", code); toast(t("s_pulled"));
       }, () => setSyncStatus("error"));
     } catch (e) { setSyncStatus("error"); }
   }
@@ -1208,18 +1387,18 @@
   function setSyncStatus(kind, code) {
     const chip = $id("syncChip"), stateEl = $id("syncState"); if (!chip) return; chip.classList.remove("on", "warn", "err");
     let c, m, cls;
-    if (kind === "ok") { chip.classList.add("on"); c = "✅ 동기화 켜짐"; m = "켜짐 · 코드: " + (code || getSyncCode()); cls = "on"; }
-    else if (kind === "nocode") { chip.classList.add("warn"); c = "☁️ 코드 입력"; m = "Firebase 설정 완료! 이제 아래에서 동기화 코드를 정하세요."; cls = "warn"; }
-    else if (kind === "error") { chip.classList.add("err"); c = "⚠️ 동기화 오류"; m = "연결에 문제가 있어요. 설정값과 인터넷을 확인하세요."; cls = "err"; }
-    else { c = "☁️ 동기화 설정"; m = "아직 클라우드 설정이 비어 있어요."; cls = "warn"; }
+    if (kind === "ok") { chip.classList.add("on"); c = t("s_on"); m = t("s_on_msg", code || getSyncCode()); cls = "on"; }
+    else if (kind === "nocode") { chip.classList.add("warn"); c = t("s_nocode"); m = t("s_nocode_msg"); cls = "warn"; }
+    else if (kind === "error") { chip.classList.add("err"); c = t("s_err"); m = t("s_err_msg"); cls = "err"; }
+    else { c = t("s_unconf"); m = t("s_unconf_msg"); cls = "warn"; }
     chip.textContent = c; if (stateEl) { stateEl.textContent = m; stateEl.className = "sync-state " + cls; }
   }
   function refreshSyncState() { if (!cloudConfigured()) setSyncStatus("unconfigured"); else if (!getSyncCode()) setSyncStatus("nocode"); else if (cloudReady) setSyncStatus("ok"); else setSyncStatus("nocode"); }
-  function saveSyncCode(code) { code = (code || "").trim(); try { localStorage.setItem(SYNC_CODE_KEY, code); } catch (_) {} initSync(); refreshSyncState(); if (code && cloudConfigured()) toast("동기화 코드를 저장했어요 — 다른 기기에도 같은 코드를 넣으세요"); }
+  function saveSyncCode(code) { code = (code || "").trim(); try { localStorage.setItem(SYNC_CODE_KEY, code); } catch (_) {} initSync(); refreshSyncState(); if (code && cloudConfigured()) toast(t("s_saved")); }
   function genCode() { const p = () => Math.random().toString(36).slice(2, 6); return "note-" + p() + p(); }
   function openSync() {
     $id("syncCodeInput").value = getSyncCode();
-    $id("syncHelp").textContent = "① 윈도우·맥북 두 곳에서 이 노트를 엽니다.\n② 똑같은 ‘동기화 코드’를 양쪽에 입력하면 자동으로 같은 내용이 됩니다.\n③ 코드는 남이 못 맞히게 길고 특이하게 정하세요.";
+    $id("syncHelp").textContent = t("sync_help");
     refreshSyncState(); $id("syncModal").hidden = false;
   }
 
@@ -1230,13 +1409,13 @@
     const doneToday = state.history.some((h) => h.date === today);
     if (!activeTodo() && !doneToday) {
       requestNotify();
-      try { if (window.Notification && Notification.permission === "granted") new Notification("✦ 오늘의 원씽", { body: "오늘 집중할 단 하나를 정해보세요." }); } catch (e) {}
-      toast("✦ 오늘 집중할 단 하나를 정해보세요");
+      try { if (window.Notification && Notification.permission === "granted") new Notification(t("rem_title"), { body: t("rem_body") }); } catch (e) {}
+      toast(t("rem_toast"));
     }
     state.lastReminderDate = today; save();
   }
 
-  // ---------- PWA (호스팅 시에만 설치형으로 동작) ----------
+  // ---------- PWA ----------
   function setupPWA() {
     try {
       if (location.protocol === "http:" || location.protocol === "https:") {
@@ -1260,48 +1439,45 @@
   $id("nextDay").addEventListener("click", () => { viewDate = addDaysStr(viewDate, 1); render(); });
   $id("todayBtn").addEventListener("click", () => { viewDate = todayStr(); render(); });
 
-  // 타이머 길이 선택 (원씽 카드의 15·25·30·45·60·직접)
   $id("activeSlot").addEventListener("click", (e) => {
     const b = e.target.closest("[data-min]"); if (!b) return;
     let v;
     if (b.dataset.min === "custom") {
-      const inp = prompt("집중 시간을 분 단위로 입력하세요 (1~180)", state.settings.pomodoroMin || 25);
+      const inp = prompt(t("tp_prompt"), state.settings.pomodoroMin || 25);
       if (inp === null) return; v = parseInt(inp, 10);
     } else v = parseInt(b.dataset.min, 10);
-    if (!v || v < 1) { if (b.dataset.min === "custom") toast("1~180 사이 숫자를 입력하세요"); return; }
+    if (!v || v < 1) { if (b.dataset.min === "custom") toast(t("tp_range")); return; }
     v = Math.min(180, v);
     state.settings.pomodoroMin = v;
     if (!timerRunning) timerRemaining = v * 60;
     save(); render();
-    toast("집중 시간을 " + v + "분으로 정했어요");
+    toast(t("tp_set", v));
   });
 
   $id("lockOverlay").addEventListener("click", openPuzzle);
   $id("puzzleClose").addEventListener("click", () => { $id("puzzleModal").hidden = true; });
-  $id("relockBtn").addEventListener("click", () => { leftUnlocked = false; render(); toast("다시 집중 모드 — 왼쪽을 잠갔어요"); });
+  $id("relockBtn").addEventListener("click", () => { leftUnlocked = false; render(); toast(t("relock_toast")); });
 
   $(".tools").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return; const act = b.dataset.act;
-    if (act === "stats") openStats(); else if (act === "trash") openTrash();
+    if (act === "lang") toggleLang();
+    else if (act === "stats") openStats(); else if (act === "trash") openTrash();
     else if (act === "backup") $id("backupModal").hidden = false; else if (act === "settings") openSettings(); else if (act === "help") $id("helpModal").hidden = false;
   });
 
-  // sync panel
   $id("syncChip").addEventListener("click", openSync);
   $id("syncClose").addEventListener("click", () => { $id("syncModal").hidden = true; });
   $id("syncSaveBtn").addEventListener("click", () => saveSyncCode($id("syncCodeInput").value));
   $id("syncCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveSyncCode(e.target.value); });
   $id("syncGenBtn").addEventListener("click", () => { $id("syncCodeInput").value = genCode(); });
-  $id("syncCopyBtn").addEventListener("click", () => { const v = $id("syncCodeInput").value.trim(); if (!v) return; if (navigator.clipboard) navigator.clipboard.writeText(v).then(() => toast("코드를 복사했어요"), () => {}); else toast("이 환경에선 복사를 못 해요 — 직접 적어두세요"); });
+  $id("syncCopyBtn").addEventListener("click", () => { const v = $id("syncCodeInput").value.trim(); if (!v) return; if (navigator.clipboard) navigator.clipboard.writeText(v).then(() => toast(t("s_copied")), () => {}); else toast(t("s_copyfail")); });
 
-  // settings
   $id("settingsClose").addEventListener("click", () => { $id("settingsModal").hidden = true; });
   $id("themeSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.settings.theme = b.dataset.theme; save(); openSettings(); applyTheme(); });
   $id("fontSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.settings.font = b.dataset.font; save(); openSettings(); applyTheme(); });
   $id("pomoInput").addEventListener("change", (e) => { const v = Math.max(1, Math.min(180, parseInt(e.target.value, 10) || 25)); state.settings.pomodoroMin = v; if (!timerRunning) resetTimer(); save(); });
-  $id("reminderToggle").addEventListener("click", () => { state.settings.reminder = !state.settings.reminder; if (state.settings.reminder) requestNotify(); $id("reminderToggle").textContent = state.settings.reminder ? "켜짐 ✓" : "꺼짐"; save(); });
+  $id("reminderToggle").addEventListener("click", () => { state.settings.reminder = !state.settings.reminder; if (state.settings.reminder) requestNotify(); $id("reminderToggle").textContent = state.settings.reminder ? t("rem_on") : t("rem_off"); save(); });
 
-  // stats / trash / later / backup / help closes
   $id("statsClose").addEventListener("click", () => { $id("statsModal").hidden = true; });
   $id("trashClose").addEventListener("click", () => { $id("trashModal").hidden = true; });
   $id("trashEmptyBtn").addEventListener("click", emptyTrash);
@@ -1311,10 +1487,8 @@
   $id("importFile").addEventListener("change", (e) => { if (e.target.files && e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ""; });
   $id("helpClose").addEventListener("click", () => { $id("helpModal").hidden = true; });
 
-  // backdrop click closes any modal
   document.querySelectorAll(".modal").forEach((m) => m.addEventListener("click", (e) => { if (e.target === m) m.hidden = true; }));
 
-  // shortcuts
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { document.querySelectorAll(".modal").forEach((m) => (m.hidden = true)); return; }
     const tag = (e.target.tagName || "").toLowerCase();
@@ -1322,16 +1496,16 @@
     if (e.key === "n" || e.key === "N") { e.preventDefault(); $id("newTodo").focus(); }
     else if (e.key === "/") { e.preventDefault(); $id("searchInput").focus(); }
     else if (e.key === "s" || e.key === "S") openStats();
-    else if (e.key === "t" || e.key === "T") { state.settings.theme = (state.settings.theme === "dark") ? "paper" : "dark"; save(); applyTheme(); toast("테마: " + state.settings.theme); }
+    else if (e.key === "t" || e.key === "T") { state.settings.theme = (state.settings.theme === "dark") ? "paper" : "dark"; save(); applyTheme(); toast(t("theme_toast", state.settings.theme)); }
     else if (e.key === "?") $id("helpModal").hidden = false;
   });
 
   // ---------- init ----------
-  // 30일 지난 휴지통 자동 정리
-  state.trash = (state.trash || []).filter((t) => !t.deletedAt || (Date.now() - t.deletedAt) < 30 * 864e5);
+  state.trash = (state.trash || []).filter((td) => !td.deletedAt || (Date.now() - td.deletedAt) < 30 * 864e5);
   if (activeTodo()) timerRemaining = pomoSec();
   setupPWA();
   applyTheme();
+  applyLang();
   render();
   initSync();
   checkReminder();
