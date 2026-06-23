@@ -444,7 +444,7 @@
         <ul class="list" id="todoList"></ul>
         <div class="later-wrap collapsed" id="laterWrap">
           <div class="later-head" id="laterHead">
-            <span class="tri">▾</span><span>🗂 나중에</span>
+            <span class="tri">▾</span><span>📁 나중에</span>
             <span class="later-count" id="laterCount"></span><span class="done-line"></span>
           </div>
           <ul class="later-list" id="laterList"></ul>
@@ -949,7 +949,7 @@
     const act = document.createElement("div"); act.className = "detail-actions";
     const due = document.createElement("input"); due.type = "date"; due.value = t.due || ""; due.title = "마감일"; due.addEventListener("change", () => setDue(t.id, due.value));
     const rep = document.createElement("button"); rep.textContent = t.repeat ? (t.repeat === "daily" ? "🔁 매일" : "🔁 매주") : "🔁 반복 없음"; rep.addEventListener("click", () => cycleRepeat(t.id));
-    const lat = document.createElement("button"); lat.textContent = "🗂 나중에"; lat.addEventListener("click", () => toggleLater(t.id));
+    const lat = document.createElement("button"); lat.textContent = "📁 나중에"; lat.addEventListener("click", () => toggleLater(t.id));
     const del = document.createElement("button"); del.className = "del"; del.textContent = "🗑 삭제"; del.addEventListener("click", () => deleteTodo(t.id));
     act.append(due, rep, lat, del); d.append(act);
     return d;
