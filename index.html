@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#c2603f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>The One Thing · 나만의 원씽 노트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet" />
+<!-- 클라우드 동기화용 Firebase (인터넷이 없으면 자동으로 이 컴퓨터에만 저장됩니다) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --paper: #fbf6e9; --paper-edge: #f1e8cf; --line: #d9cdb0;
+    --ink: #34302a; --ink-soft: #6f6657; --margin-red: #e3a9a0;
+    --accent: #c2603f; --highlight: #ffe9a8; --done: #b6ab97; --binding: #cdbf9c;
+    --desk1: #6a5e4d; --desk2: #4f4639; --desk3: #3c352b;
+    --card1: #fffdf5; --card2: #fdf3d4;
+    --font-body: 'Gowun Dodum', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    --font-hand: 'Gaegu', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  }
+  body[data-theme="dark"] {
+    --paper: #2c2925; --paper-edge: #232019; --line: #46413a;
+    --ink: #ece3d2; --ink-soft: #b3a995; --margin-red: #7d5a55;
+    --accent: #e0916c; --highlight: #5a4a2a; --done: #7a7263; --binding: #1d1b17;
+    --desk1: #1b1915; --desk2: #131210; --desk3: #0c0b09;
+    --card1: #38332c; --card2: #2d2820;
+  }
+  body[data-theme="sky"] {
+    --paper: #eef5fb; --paper-edge: #dfeaf4; --line: #c4d6e6;
+    --ink: #28333d; --ink-soft: #5d6e7c; --margin-red: #a9c2e3;
+    --accent: #3f74c2; --highlight: #cfe3ff; --done: #9fb0c0; --binding: #b6cadd;
+    --desk1: #4d5b6a; --desk2: #39444f; --desk3: #2b333c;
+    --card1: #f7fbff; --card2: #dcebfb;
+  }
+  body[data-theme="forest"] {
+    --paper: #eef6ec; --paper-edge: #dfeede; --line: #c3dac0;
+    --ink: #2a3528; --ink-soft: #5c6e58; --margin-red: #a9d3a0;
+    --accent: #4d8a3f; --highlight: #d8f0cf; --done: #a3b89e; --binding: #b8d3b2;
+    --desk1: #50624c; --desk2: #3b483a; --desk3: #2c352b;
+    --card1: #f7fdf5; --card2: #ddf1d8;
+  }
+  body[data-font="gaegu"] { --font-body: 'Gaegu', sans-serif; --font-hand: 'Gaegu', sans-serif; }
+  body[data-font="clean"] {
+    --font-body: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    --font-hand: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; font-family: var(--font-body); color: var(--ink);
+    background: radial-gradient(circle at 50% 0%, var(--desk1) 0%, var(--desk2) 55%, var(--desk3) 100%);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 16px 18px 60px; transition: background .4s ease, color .4s ease;
+  }
+
+  /* ===== Toolbar ===== */
+  .toolbar {
+    width: 100%; max-width: 1600px; display: flex; gap: 10px; align-items: center;
+    flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .search {
+    flex: 1; min-width: 180px; border: none; border-radius: 18px;
+    padding: 8px 16px; font-family: var(--font-body); font-size: 1rem;
+    background: rgba(255,255,255,.85); color: #34302a; outline: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  }
+  .tools { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tools button {
+    border: none; cursor: pointer; border-radius: 16px; padding: 7px 13px;
+    font-family: var(--font-body); font-size: .92rem;
+    background: rgba(255,255,255,.85); color: #4a4338; box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  }
+  .tools button:hover { filter: brightness(.96); }
+
+  /* ===== Notebook ===== */
+  .notebook {
+    width: 100%; max-width: 1600px; display: grid; grid-template-columns: 1fr 4px 1fr;
+    background: var(--paper); border-radius: 8px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 24px 60px rgba(0,0,0,.45), 0 6px 18px rgba(0,0,0,.35);
+    overflow: hidden; min-height: 76vh; transition: background .4s ease;
+  }
+  .page {
+    position: relative; padding: 26px 30px 44px;
+    background:
+      repeating-linear-gradient(to bottom, transparent 0, transparent 35px, var(--line) 35px, var(--line) 36px),
+      var(--paper);
+    background-position: 0 14px;
+  }
+  .page.left  { box-shadow: inset -18px 0 24px -18px rgba(0,0,0,.18); }
+  .page.right { box-shadow: inset  18px 0 24px -18px rgba(0,0,0,.18); display: flex; flex-direction: column; }
+  .binding {
+    background: linear-gradient(to right, rgba(0,0,0,.18), rgba(0,0,0,.05) 40%, rgba(0,0,0,.05) 60%, rgba(0,0,0,.18));
+    position: relative;
+  }
+  .binding::after {
+    content: ""; position: absolute; top: 24px; bottom: 24px; left: 50%;
+    transform: translateX(-50%); border-left: 2px dashed rgba(120,105,75,.55);
+  }
+  .page.left::before {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 60px;
+    border-left: 2px solid var(--margin-red); opacity: .5;
+  }
+
+  .page-inner { transition: filter .45s ease, opacity .45s ease; }
+  .notebook.locked .page-inner { filter: blur(4.5px) saturate(.82); opacity: .32; pointer-events: none; user-select: none; }
+
+  .page-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 0 0 6px; min-height: 40px; gap: 8px;
+  }
+  .page-title { font-family: var(--font-hand); font-size: 2rem; line-height: 1; margin: 0; color: var(--ink); }
+  .date { font-family: var(--font-hand); font-size: 1.4rem; color: var(--ink-soft); }
+
+  /* ===== Add row ===== */
+  .add-row { display: flex; gap: 8px; margin: 10px 0 8px; padding-left: 12px; }
+  .add-row input {
+    flex: 1; border: none; border-bottom: 2px dashed var(--line); background: transparent;
+    font-family: inherit; font-size: 1.2rem; color: var(--ink); padding: 4px 2px; outline: none;
+  }
+  .add-row input::placeholder { color: #b3a888; }
+  .add-row button, .ghost-btn {
+    border: none; cursor: pointer; background: var(--accent); color: #fff;
+    font-family: inherit; font-size: 1.05rem; font-weight: 700; border-radius: 20px;
+    padding: 4px 16px; box-shadow: 0 2px 5px rgba(0,0,0,.18);
+  }
+  .add-row button:hover, .ghost-btn:hover { filter: brightness(1.06); }
+
+  /* ===== Todo list ===== */
+  ul.list { list-style: none; margin: 0; padding: 0 0 0 12px; }
+  li.todo {
+    display: flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 4px;
+    font-size: 1.28rem; line-height: 36px; border-radius: 6px; flex-wrap: wrap;
+  }
+  li.todo:hover { background: rgba(0,0,0,.035); }
+  li.todo.dragging { opacity: .45; }
+  li.todo.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+  .grip { cursor: grab; color: #bcb094; font-size: 1.05rem; user-select: none; }
+  .check {
+    width: 21px; height: 21px; flex: none; border: 2px solid var(--ink-soft); border-radius: 5px;
+    background: transparent; cursor: pointer; display: inline-flex; align-items: center;
+    justify-content: center; font-size: .95rem; color: var(--accent); line-height: 1;
+  }
+  .check:hover { border-color: var(--accent); }
+  .dot {
+    width: 15px; height: 15px; border-radius: 50%; flex: none; cursor: pointer;
+    border: 2px solid #cfc4ab; background: transparent;
+  }
+  .dot.red { background: #e06b5a; border-color: #e06b5a; }
+  .dot.yellow { background: #e9c14e; border-color: #e9c14e; }
+  .dot.green { background: #6db36b; border-color: #6db36b; }
+  .dot.blue { background: #5b91d8; border-color: #5b91d8; }
+  .dot.purple { background: #a87ad0; border-color: #a87ad0; }
+  .todo-text { flex: 1; min-width: 80px; cursor: text; word-break: break-word; }
+  li.todo.active .todo-text { font-weight: 700; }
+  .chip {
+    font-family: var(--font-body); font-size: .8rem; padding: 1px 8px; border-radius: 12px;
+    background: rgba(0,0,0,.06); color: var(--ink-soft); flex: none; line-height: 1.6;
+  }
+  .chip.due-soon { background: #ffe1d8; color: #b34a32; }
+  .chip.due-over { background: #ffd2c8; color: #a32f1a; font-weight: 700; }
+  .badge { font-family: var(--font-hand); font-size: 1.05rem; color: var(--accent); flex: none; white-space: nowrap; }
+  .send-btn {
+    flex: none; cursor: pointer; border: none; background: transparent; color: var(--accent);
+    font-size: 1.45rem; line-height: 1; padding: 0 4px; border-radius: 6px;
+  }
+  .send-btn:hover { background: var(--highlight); }
+  .more-btn { flex: none; cursor: pointer; border: none; background: transparent; color: #b6aa90; font-size: 1.2rem; padding: 0 4px; }
+  .more-btn:hover { color: var(--accent); }
+
+  /* todo detail panel */
+  .detail {
+    flex-basis: 100%; margin: 2px 0 8px 26px; padding: 10px 12px;
+    background: rgba(0,0,0,.04); border-radius: 10px; font-size: 1rem; line-height: 1.5;
+  }
+  .sub-list { list-style: none; margin: 0 0 6px; padding: 0; }
+  .sub-list li { display: flex; align-items: center; gap: 7px; min-height: 28px; }
+  .sub-list .scheck { width: 17px; height: 17px; font-size: .8rem; }
+  .sub-list .stext { flex: 1; }
+  .sub-list .stext.done { text-decoration: line-through; color: var(--done); }
+  .sub-add { display: flex; gap: 6px; margin-bottom: 8px; }
+  .sub-add input { flex: 1; border: none; border-bottom: 1px dashed var(--line); background: transparent; font-family: inherit; font-size: 1rem; color: var(--ink); outline: none; padding: 2px; }
+  .detail-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .detail-actions button, .detail-actions label {
+    border: none; cursor: pointer; background: rgba(0,0,0,.07); color: var(--ink);
+    border-radius: 12px; padding: 4px 10px; font-family: var(--font-body); font-size: .9rem;
+  }
+  .detail-actions input[type="date"] { border: none; background: rgba(0,0,0,.07); border-radius: 12px; padding: 3px 8px; font-family: var(--font-body); color: var(--ink); }
+  .detail-actions .del:hover { background: #f0c9c0; color: #a3402e; }
+
+  /* ===== Done section ===== */
+  .done-wrap { margin-top: 22px; padding-left: 12px; }
+  .done-head { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-family: var(--font-hand); font-size: 1.45rem; color: var(--ink-soft); }
+  .done-head .tri { transition: transform .15s ease; font-size: .9rem; }
+  .done-wrap.collapsed .tri { transform: rotate(-90deg); }
+  .done-line { flex: 1; border-bottom: 1px solid var(--line); }
+  .done-count { font-size: 1rem; color: #b3a888; }
+  ul.done-list { list-style: none; margin: 6px 0 0; padding: 0; }
+  .done-wrap.collapsed ul.done-list { display: none; }
+  li.done { display: flex; align-items: center; gap: 8px; min-height: 30px; font-size: 1.1rem; line-height: 30px; color: var(--done); }
+  li.done .done-text { flex: 1; text-decoration: line-through; }
+  li.done .restore, li.done .row-x { opacity: 0; }
+  li.done:hover .restore, li.done:hover .row-x { opacity: 1; }
+  .restore, .row-x { border: none; background: transparent; cursor: pointer; color: var(--ink-soft); font-size: 1.05rem; padding: 0 3px; }
+  .restore:hover, .row-x:hover { color: var(--accent); }
+
+  /* ===== Right page ===== */
+  .onething-title { font-family: var(--font-hand); font-size: 2rem; color: var(--accent); margin: 0; line-height: 1; }
+  .star { color: #e6b54a; }
+  .date-nav { display: flex; align-items: center; gap: 8px; }
+  .date-nav button { border: none; background: transparent; cursor: pointer; color: var(--ink-soft); font-size: 1.2rem; padding: 2px 4px; border-radius: 6px; }
+  .date-nav button:hover { background: rgba(0,0,0,.06); color: var(--accent); }
+  .today-btn { font-family: var(--font-body); font-size: .8rem !important; background: var(--accent) !important; color: #fff !important; border-radius: 12px !important; padding: 2px 10px !important; }
+  .goal-badge { font-family: var(--font-hand); font-size: 1.3rem; color: #c99a2e; margin: 2px 0 0 4px; }
+
+  .log { margin-top: 12px; padding-left: 4px; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  ul.history { list-style: none; margin: 0 0 8px; padding: 0; }
+  li.hist { display: flex; align-items: center; gap: 8px; min-height: 34px; line-height: 34px; font-size: 1.25rem; color: var(--done); }
+  li.hist .hist-num { font-family: var(--font-hand); color: #cdbf9c; font-size: 1rem; width: 22px; flex: none; text-align: right; }
+  li.hist .hist-text { flex: 1; text-decoration: line-through; text-decoration-color: var(--accent); text-decoration-thickness: 2px; word-break: break-word; }
+  li.hist .hist-time { font-size: .82rem; color: #bcb094; flex: none; }
+  li.hist .check.done { border-color: var(--done); color: var(--accent); background: rgba(194,96,63,.08); }
+  li.hist .row-x { opacity: 0; }
+  li.hist:hover .row-x { opacity: 1; }
+
+  #activeSlot { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
+  .onething-card {
+    position: relative; margin: 10px 0 6px; padding: 30px 26px; border-radius: 16px;
+    background: linear-gradient(180deg, var(--card1), var(--card2));
+    box-shadow: 0 0 0 2px rgba(194,96,63,.18), 0 10px 24px rgba(120,80,40,.18); overflow: hidden;
+  }
+  .onething-card::before { content: "지금, 이것 하나"; position: absolute; top: 10px; right: 14px; font-family: var(--font-hand); font-size: 1.05rem; color: #cda24a; }
+  .onething-card .ot-text { font-family: var(--font-hand); font-size: 2.7rem; line-height: 1.2; color: var(--ink); word-break: break-word; cursor: text; padding-right: 6px; }
+  .timer { display: flex; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .timer .time { font-family: var(--font-hand); font-size: 2rem; color: var(--accent); min-width: 92px; }
+  .timer button { border: none; cursor: pointer; background: rgba(0,0,0,.07); color: var(--ink); border-radius: 16px; padding: 5px 14px; font-family: var(--font-body); font-size: 1rem; }
+  .timer button:hover { filter: brightness(.96); }
+  .timer .focus-acc { font-size: .9rem; color: var(--ink-soft); }
+  .timer-presets { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .timer-presets .tp-label { font-size: .85rem; color: var(--ink-soft); }
+  .timer-presets .tp-unit { font-size: .85rem; color: var(--ink-soft); }
+  .timer-presets button { border: none; cursor: pointer; background: rgba(0,0,0,.07); color: var(--ink); border-radius: 12px; padding: 3px 11px; font-family: var(--font-body); font-size: .9rem; }
+  .timer-presets button:hover { filter: brightness(.96); }
+  .timer-presets button.sel { background: var(--accent); color: #fff; }
+  .ot-subs { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .ot-subs-head { font-size: .95rem; color: var(--ink-soft); margin-bottom: 6px; }
+  .ot-sub-list { list-style: none; margin: 0 0 6px; padding: 0; }
+  .ot-sub-list li { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 1.15rem; }
+  .ot-sub-list .scheck { width: 19px; height: 19px; font-size: .85rem; }
+  .ot-sub-list .stext { flex: 1; word-break: break-word; }
+  .ot-sub-list .stext.done { text-decoration: line-through; color: var(--done); }
+  .ot-sub-list .row-x { opacity: 0; }
+  .ot-sub-list li:hover .row-x { opacity: 1; }
+  .ot-subs .sub-add input { font-size: 1.05rem; }
+  .ot-foot { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
+  .complete-btn { display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer; background: var(--accent); color: #fff; font-family: inherit; font-size: 1.2rem; font-weight: 700; border-radius: 24px; padding: 7px 20px; box-shadow: 0 3px 8px rgba(0,0,0,.2); }
+  .complete-btn .box { width: 20px; height: 20px; border: 2px solid #fff; border-radius: 5px; }
+  .putback { border: none; background: transparent; cursor: pointer; color: var(--ink-soft); font-size: 1.1rem; font-family: inherit; text-decoration: underline dotted; }
+  .putback:hover { color: var(--accent); }
+  .empty-ot { margin: 14px 0; padding: 56px 32px; border: 2px dashed var(--line); border-radius: 18px; text-align: center; color: var(--ink-soft); font-family: var(--font-hand); font-size: 2.2rem; line-height: 1.55; }
+  .empty-ot .arrow { color: var(--accent); font-size: 1.3em; }
+  .empty-ot.readonly { font-size: 1.7rem; }
+  .hint { margin-top: 10px; padding-left: 6px; color: #b3a888; font-size: 1rem; }
+
+  /* ===== Lock overlay & relock ===== */
+  .lock-overlay { position: absolute; inset: 0; z-index: 6; display: none; align-items: center; justify-content: center; cursor: pointer; }
+  .notebook.locked .lock-overlay { display: flex; }
+  .lock-card { text-align: center; background: rgba(251,246,233,.86); border: 2px dashed var(--accent); border-radius: 16px; padding: 22px 26px; box-shadow: 0 10px 24px rgba(0,0,0,.16); }
+  body[data-theme="dark"] .lock-card { background: rgba(44,41,37,.9); }
+  .lock-emoji { font-size: 2.4rem; }
+  .lock-msg { font-family: var(--font-hand); font-size: 1.5rem; color: var(--ink); margin-top: 6px; }
+  .lock-msg b { color: var(--accent); }
+  .lock-sub { color: var(--ink-soft); font-size: 1.02rem; margin-top: 4px; }
+  .relock-btn { border: none; background: var(--accent); color: #fff; cursor: pointer; font-family: var(--font-body); font-size: .9rem; border-radius: 16px; padding: 3px 12px; box-shadow: 0 2px 5px rgba(0,0,0,.18); }
+  .relock-btn[hidden] { display: none; }
+
+  /* ===== Sync chip ===== */
+  .sync-chip { position: fixed; left: 14px; bottom: 14px; z-index: 60; border: none; cursor: pointer; border-radius: 18px; padding: 6px 14px; font-family: var(--font-body); font-size: .9rem; background: #efe6cf; color: #6f6657; box-shadow: 0 3px 8px rgba(0,0,0,.18); }
+  .sync-chip.on { background: #d8ead7; color: #3f6b46; }
+  .sync-chip.warn { background: #f4e3c2; color: #9a6a1e; }
+  .sync-chip.err { background: #f1d6cf; color: #a3402e; }
+
+  /* ===== Modals (generic) ===== */
+  .modal { position: fixed; inset: 0; z-index: 100; background: rgba(40,34,28,.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal[hidden] { display: none; }
+  .modal-box { background: var(--paper); color: var(--ink); border-radius: 18px; padding: 18px 20px 22px; width: min(94vw, 420px); max-height: 88vh; overflow: auto; box-shadow: 0 22px 55px rgba(0,0,0,.42); font-family: var(--font-body); }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; font-family: var(--font-hand); font-size: 1.6rem; }
+  .modal-close { border: none; background: transparent; cursor: pointer; font-size: 1.2rem; color: var(--ink-soft); }
+  .modal-desc { color: var(--ink-soft); font-size: 1rem; margin: 6px 0 12px; line-height: 1.45; }
+  .mrow { display: flex; gap: 8px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+  .mlabel { font-size: .95rem; color: var(--ink-soft); }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg button { border: none; cursor: pointer; background: rgba(0,0,0,.08); color: var(--ink); border-radius: 14px; padding: 6px 12px; font-family: var(--font-body); font-size: .95rem; }
+  .seg button.sel { background: var(--accent); color: #fff; }
+  .mbtn { border: none; cursor: pointer; background: var(--accent); color: #fff; border-radius: 16px; padding: 7px 16px; font-family: var(--font-body); font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,.18); }
+  .mbtn.ghost { background: rgba(0,0,0,.08); color: var(--ink); box-shadow: none; }
+
+  /* sync panel specifics */
+  .sync-state { font-size: 1rem; line-height: 1.45; padding: 9px 12px; border-radius: 10px; margin: 6px 0 14px; background: #f3ead4; color: var(--ink); }
+  .sync-state.on { background: #dcebda; color: #3f6b46; }
+  .sync-state.warn { background: #f4e6c8; color: #8a5f18; }
+  .sync-state.err { background: #f1d9d2; color: #9a3a2a; }
+  .sync-row input { flex: 1; border: none; border-bottom: 2px dashed var(--line); background: transparent; font-family: var(--font-body); font-size: 1.05rem; padding: 4px 2px; outline: none; color: var(--ink); }
+  .sync-help { color: var(--ink-soft); font-size: .92rem; line-height: 1.6; margin-top: 14px; white-space: pre-line; }
+
+  /* puzzle */
+  .puzzle-stage { position: relative; width: 100%; height: 300px; border: 2px dashed var(--line); border-radius: 12px; background: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, var(--line) 31px, var(--line) 32px), var(--card1); overflow: hidden; touch-action: none; margin-top: 6px; }
+  .pz-slot { position: absolute; width: 64px; height: 64px; border: 2px dashed var(--accent); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-family: var(--font-hand); font-size: 1.7rem; color: #d7b48a; background: rgba(194,96,63,.06); }
+  .pz-slot.filled { border-style: solid; border-color: var(--done); background: rgba(120,150,110,.12); color: transparent; }
+  .pz-piece { position: absolute; width: 64px; height: 64px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-hand); font-size: 2rem; font-weight: 700; box-shadow: 0 5px 12px rgba(0,0,0,.28); cursor: grab; touch-action: none; user-select: none; transition: left .2s ease, top .2s ease; }
+  .pz-piece.dragging { cursor: grabbing; transition: none; z-index: 20; }
+  .pz-piece.placed { cursor: default; }
+  .puzzle-status { text-align: center; margin-top: 12px; font-family: var(--font-hand); font-size: 1.4rem; color: var(--accent); }
+  .pz-math { text-align: center; padding: 20px 0; }
+  .pz-math .q { font-family: var(--font-hand); font-size: 3rem; color: var(--ink); }
+  .pz-math input { width: 120px; font-size: 1.6rem; text-align: center; border: none; border-bottom: 2px solid var(--accent); background: transparent; color: var(--ink); outline: none; margin-top: 12px; font-family: var(--font-body); }
+  .pz-order { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 24px 0; }
+  .pz-order button { width: 64px; height: 64px; border-radius: 14px; border: none; cursor: pointer; font-family: var(--font-hand); font-size: 2rem; font-weight: 700; color: #fff; background: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,.25); }
+  .pz-order button.done { opacity: .35; cursor: default; }
+
+  /* stats */
+  .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0 16px; }
+  .stat-card { flex: 1; min-width: 90px; background: rgba(0,0,0,.05); border-radius: 12px; padding: 12px; text-align: center; }
+  .stat-card .num { font-family: var(--font-hand); font-size: 2.2rem; color: var(--accent); line-height: 1; }
+  .stat-card .lbl { font-size: .85rem; color: var(--ink-soft); margin-top: 4px; }
+  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 14px); gap: 3px; overflow-x: auto; padding-bottom: 6px; }
+  .heat .cell { width: 14px; height: 14px; border-radius: 3px; background: rgba(0,0,0,.06); }
+  .heat .cell.l1 { background: #f0d6a8; } .heat .cell.l2 { background: #e6b25f; }
+  .heat .cell.l3 { background: #d98a3a; } .heat .cell.l4 { background: var(--accent); }
+
+  /* lists in modals */
+  .mlist { list-style: none; margin: 8px 0 0; padding: 0; }
+  .mlist li { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 1.05rem; border-bottom: 1px solid var(--line); padding: 4px 0; }
+  .mlist .mtext { flex: 1; word-break: break-word; }
+  .mlist .mtext.struck { text-decoration: line-through; color: var(--done); }
+  .mlist button { border: none; background: transparent; cursor: pointer; color: var(--ink-soft); font-size: 1rem; padding: 2px 6px; border-radius: 8px; }
+  .mlist button:hover { background: rgba(0,0,0,.06); color: var(--accent); }
+  .empty-note { color: var(--ink-soft); text-align: center; padding: 18px; }
+
+  /* toast & confetti */
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px); background: #34302a; color: #fbf6e9; padding: 9px 18px; border-radius: 22px; font-size: 1.02rem; box-shadow: 0 8px 20px rgba(0,0,0,.3); opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 120; max-width: 86vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 130; display: none; }
+
+  @media (max-width: 720px) {
+    .notebook { grid-template-columns: 1fr; min-height: 0; }
+    .binding { display: none; }
+    .page.left::before { left: 50px; }
+    .onething-card .ot-text { font-size: 2rem; }
+  }
+</style>
+</head>
+<body data-theme="paper" data-font="gowun">
+
+  <button class="sync-chip" id="syncChip" type="button" title="기기 간 동기화">☁️ 동기화</button>
+
+  <div class="toolbar">
+    <input id="searchInput" class="search" type="text" placeholder="🔍 할 일 검색…" autocomplete="off" />
+    <div class="tools">
+      <button data-act="later" type="button">🗂 나중에</button>
+      <button data-act="stats" type="button">📊 통계</button>
+      <button data-act="trash" type="button">🗑 휴지통</button>
+      <button data-act="backup" type="button">💾 백업</button>
+      <button data-act="settings" type="button">⚙️ 설정</button>
+      <button data-act="help" type="button">❓</button>
+    </div>
+  </div>
+
+  <div class="notebook">
+    <!-- ===== LEFT PAGE ===== -->
+    <section class="page left">
+      <div class="page-inner">
+        <div class="page-head">
+          <h1 class="page-title">오늘 할 일들</h1>
+          <button id="relockBtn" class="relock-btn" hidden>🔒 다시 집중</button>
+        </div>
+        <div class="add-row">
+          <input id="newTodo" type="text" placeholder="해야 할 일을 적어보세요…" maxlength="200" autocomplete="off" />
+          <button id="addBtn" title="추가">＋ 추가</button>
+        </div>
+        <ul class="list" id="todoList"></ul>
+        <div class="done-wrap" id="doneWrap">
+          <div class="done-head" id="doneHead">
+            <span class="tri">▾</span><span>끝난 일</span>
+            <span class="done-count" id="doneCount"></span><span class="done-line"></span>
+          </div>
+          <ul class="done-list" id="doneList"></ul>
+        </div>
+      </div>
+      <div class="lock-overlay" id="lockOverlay" title="조각을 맞추면 잠깐 열려요">
+        <div class="lock-card">
+          <div class="lock-emoji">🔒</div>
+          <div class="lock-msg">지금은 오른쪽 <b>단 하나</b>에 집중 중</div>
+          <div class="lock-sub">눌러서 퍼즐을 풀면 잠깐 열려요</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="binding"></div>
+
+    <!-- ===== RIGHT PAGE ===== -->
+    <section class="page right">
+      <div class="page-head">
+        <h2 class="onething-title"><span class="star">★</span> THE ONE THING</h2>
+        <div class="date-nav">
+          <button id="prevDay" title="이전 날">◀</button>
+          <span class="date" id="todayDate"></span>
+          <button id="nextDay" title="다음 날">▶</button>
+          <button id="todayBtn" class="today-btn" hidden>오늘</button>
+        </div>
+      </div>
+      <div class="goal-badge" id="goalBadge" hidden>⭐ 오늘의 원씽 달성!</div>
+      <div class="log">
+        <ul class="history" id="historyList"></ul>
+        <div id="activeSlot"></div>
+        <div class="hint" id="rightHint"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <canvas id="confetti"></canvas>
+  <input type="file" id="importFile" accept="application/json" hidden />
+
+  <!-- ===== Modals ===== -->
+  <div class="modal" id="puzzleModal" hidden>
+    <div class="modal-box">
+      <div class="modal-head"><span id="puzzleTitle">🧩 조각 맞추기</span><button class="modal-close" id="puzzleClose">✕</button></div>
+      <p class="modal-desc" id="puzzleDesc"></p>
+      <div class="puzzle-stage" id="puzzleStage"></div>
+      <div class="puzzle-status" id="puzzleStatus"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="syncModal" hidden>
+    <div class="modal-box">
+      <div class="modal-head"><span>☁️ 기기 간 동기화</span><button class="modal-close" id="syncClose">✕</button></div>
+      <div class="sync-state" id="syncState"></div>
+      <div class="mlabel" style="margin-bottom:6px">동기화 코드 — 두 기기에 <b>똑같이</b> 입력하세요</div>
+      <div class="mrow sync-row">
+        <input id="syncCodeInput" type="text" placeholder="예: my-note-7Fk29q" autocomplete="off" />
+        <button id="syncSaveBtn" class="mbtn">저장</button>
+      </div>
+      <div class="mrow">
+        <button id="syncGenBtn" class="mbtn ghost">🎲 새 코드 만들기</button>
+        <button id="syncCopyBtn" class="mbtn ghost">📋 코드 복사</button>
+      </div>
+      <p class="sync-help" id="syncHelp"></p>
+    </div>
+  </div>
+
+  <div class="modal" id="settingsModal" hidden>
+    <div class="modal-box">
+      <div class="modal-head"><span>⚙️ 설정</span><button class="modal-close" id="settingsClose">✕</button></div>
+      <div class="mrow"><span class="mlabel">테마(배경)</span><div class="seg" id="themeSeg">
+        <button data-theme="paper">📒 종이</button><button data-theme="dark">🌙 어둡게</button>
+        <button data-theme="sky">💧 하늘</button><button data-theme="forest">🌿 숲</button>
+      </div></div>
+      <div class="mrow"><span class="mlabel">글꼴</span><div class="seg" id="fontSeg">
+        <button data-font="gowun">고운돋움</button><button data-font="gaegu">또박손글씨</button><button data-font="clean">깔끔</button>
+      </div></div>
+      <div class="mrow"><span class="mlabel">집중 타이머 길이</span>
+        <input id="pomoInput" type="number" min="1" max="180" style="width:70px;border:none;border-bottom:2px dashed var(--line);background:transparent;color:var(--ink);font-family:var(--font-body);font-size:1.1rem;text-align:center;outline:none" /> 분
+      </div>
+      <div class="mrow"><span class="mlabel">매일 ‘오늘의 원씽 정하기’ 알림</span>
+        <button id="reminderToggle" class="seg-toggle mbtn ghost"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="statsModal" hidden>
+    <div class="modal-box">
+      <div class="modal-head"><span>📊 통계</span><button class="modal-close" id="statsClose">✕</button></div>
+      <div id="statsBody"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="trashModal" hidden>
+    <div class="modal-box">
+      <div class="modal-head"><span>🗑 휴지통</span><button class="modal-close" id="trashClose">✕</button></div>
+      <p class="modal-desc">삭제한 일은 여기로 옵니다. 되돌리거나 완전히 지울 수 있어요. (30일 지나면 자동 정리)</p>
+      <ul class="mlist" id="trashList"></ul>
+      <div class="mrow" style="margin-top:12px"><button id="trashEmptyBtn" class="mbtn ghost">휴지통 비우기</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="laterModal" hidden>
+    <div class="modal-box">
+      <div class="modal-head"><span>🗂 나중에</span><button class="modal-close" id="laterClose">✕</button></div>
+      <p class="modal-desc">지금은 아니지만 잊긴 싫은 일. ‘지금 하기’를 누르면 왼쪽 목록으로 돌아옵니다.</p>
+      <ul class="mlist" id="laterList"></ul>
+    </div>
+  </div>
+
+  <div class="modal" id="backupModal" hidden>
+    <div class="modal-box">
+      <div class="modal-head"><span>💾 백업</span><button class="modal-close" id="backupClose">✕</button></div>
+      <p class="modal-desc">클라우드와 별개로, 파일로 백업하고 불러올 수 있어요. (불러오면 현재 내용을 덮어씁니다 — 확인 후 진행)</p>
+      <div class="mrow">
+        <button id="exportBtn" class="mbtn">⬇️ 파일로 내보내기</button>
+        <button id="importBtn" class="mbtn ghost">⬆️ 파일에서 불러오기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="helpModal" hidden>
+    <div class="modal-box">
+      <div class="modal-head"><span>❓ 도움말 · 단축키</span><button class="modal-close" id="helpClose">✕</button></div>
+      <div class="modal-desc" style="line-height:1.7">
+        <b>사용법</b><br>
+        • 왼쪽에 할 일을 적고, ➜ 로 가장 중요한 하나를 오른쪽 ‘원씽’으로 보냅니다.<br>
+        • 원씽엔 집중 타이머가 있어요(끝나면 알림만, 자동 완료 안 함).<br>
+        • 완료하면 취소선과 함께 기록되고 색종이가 날립니다 🎉<br>
+        • 각 할 일의 ⋯ 을 누르면 색·마감일·반복·하위 할 일·나중에·삭제가 있어요.<br>
+        • ◀ ▶ 로 날짜를 넘겨 지난 원씽을 돌아볼 수 있어요.<br><br>
+        <b>단축키</b><br>
+        N: 할 일 입력칸으로 · / : 검색 · S: 통계 · T: 테마 전환 · ? : 도움말 · Esc: 닫기
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "onething-notebook-v1";
+
+  // ===== 클라우드 동기화 설정 =====
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyASo_vj9aOyAfv0F6HlOlJ7e2oPjmKqfSo",
+    authDomain: "onething-7f4d7.firebaseapp.com",
+    databaseURL: "https://onething-7f4d7-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "onething-7f4d7",
+    storageBucket: "onething-7f4d7.firebasestorage.app",
+    messagingSenderId: "9113682878",
+    appId: "1:9113682878:web:b7b4571af1d5bed37defef"
+  };
+
+  const $ = (s) => document.querySelector(s);
+  const $id = (id) => document.getElementById(id);
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  // ---------- date utils ----------
+  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+  function dstr(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function todayStr() { return dstr(new Date()); }
+  function parseDate(s) { const p = s.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function addDaysStr(s, n) { const d = parseDate(s); d.setDate(d.getDate() + n); return dstr(d); }
+  const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+  function fmtNice(s) { const d = parseDate(s); return d.getFullYear() + ". " + (d.getMonth() + 1) + ". " + d.getDate() + ". (" + DOW[d.getDay()] + ")"; }
+  function fmtDur(sec) { sec = sec || 0; if (sec < 60) return sec + "초"; const m = Math.round(sec / 60); if (m < 60) return m + "분"; return Math.floor(m / 60) + "시간 " + (m % 60) + "분"; }
+  function fmtMMSS(sec) { sec = Math.max(0, sec | 0); return pad2(Math.floor(sec / 60)) + ":" + pad2(sec % 60); }
+
+  // ---------- state & migration ----------
+  function migrate(s) {
+    const base = { version: 2, todos: [], history: [], trash: [],
+      settings: { theme: "paper", font: "gowun", pomodoroMin: 25, reminder: false },
+      doneCollapsed: false, lastReminderDate: null };
+    if (!s || typeof s !== "object") return base;
+    const out = Object.assign({}, base, s);
+    out.settings = Object.assign({}, base.settings, s.settings || {});
+    out.todos = Array.isArray(s.todos) ? s.todos.map((t) => ({
+      id: t.id || uid(), text: t.text || "", color: t.color || null, due: t.due || null,
+      subtasks: Array.isArray(t.subtasks) ? t.subtasks : [], repeat: t.repeat || null,
+      later: !!t.later, status: (t.status === "active" || t.status === "done") ? t.status : "todo",
+      activatedAt: t.activatedAt || null, focusSec: t.focusSec || 0,
+      createdAt: t.createdAt || Date.now(), completedAt: t.completedAt || null
+    })) : [];
+    out.history = Array.isArray(s.history) ? s.history.map((h) => ({
+      id: h.id || uid(), text: h.text || "", date: h.date || todayStr(),
+      completedAt: h.completedAt || null, focusSec: h.focusSec || 0, note: h.note || ""
+    })) : [];
+    out.trash = Array.isArray(s.trash) ? s.trash : [];
+    out.version = 2;
+    return out;
+  }
+  function loadState() {
+    try { const raw = localStorage.getItem(STORAGE_KEY); return migrate(raw ? JSON.parse(raw) : null); }
+    catch (e) { return migrate(null); }
+  }
+  let state = loadState();
+  let viewDate = todayStr();
+  let searchQuery = "";
+  const expanded = new Set();
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    pushCloud();
+  }
+
+  // ---------- helpers ----------
+  function activeTodo() { return state.todos.find((t) => t.status === "active") || null; }
+  function visibleTodos() {
+    const q = searchQuery.trim().toLowerCase();
+    return state.todos.filter((t) => t.status !== "done" && !t.later &&
+      (!q || (t.text || "").toLowerCase().includes(q)));
+  }
+  function doneTodos() { return state.todos.filter((t) => t.status === "done"); }
+  function laterTodos() { return state.todos.filter((t) => t.later && t.status !== "done"); }
+
+  let toastTimer = null;
+  function toast(msg) {
+    const el = $id("toast"); el.textContent = msg; el.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+  }
+
+  // ---------- actions ----------
+  function addTodo(text) {
+    text = (text || "").trim(); if (!text) return;
+    state.todos.push({ id: uid(), text, color: null, due: null, subtasks: [], repeat: null,
+      later: false, status: "todo", activatedAt: null, focusSec: 0, createdAt: Date.now(), completedAt: null });
+    save(); render();
+  }
+  function sendToOneThing(id) {
+    const t = state.todos.find((x) => x.id === id); if (!t || t.status === "done") return;
+    viewDate = todayStr();
+    const cur = activeTodo(); if (cur && cur.id === id) return;
+    if (cur) cur.status = "todo";
+    t.status = "active"; t.activatedAt = Date.now();
+    state.todos = [t, ...state.todos.filter((x) => x.id !== t.id)];
+    leftUnlocked = false; resetTimer(true);
+    save(); render();
+    toast(cur ? "원씽을 교체했어요 — 왼쪽은 다시 잠겼어요" : "오른쪽 원씽에 집중! 왼쪽은 잠겨요 — 열려면 퍼즐을 풀어요");
+  }
+  function putBack(id) {
+    const t = state.todos.find((x) => x.id === id); if (!t) return;
+    t.status = "todo"; pauseTimer(); save(); render(); toast("목록으로 되돌렸어요 — 다시 선택하세요");
+  }
+  function completeTodo(id) {
+    const t = state.todos.find((x) => x.id === id); if (!t || t.status === "done") return;
+    const wasActive = t.status === "active";
+    if (wasActive) {
+      state.history.push({ id: uid(), text: t.text, date: todayStr(), completedAt: Date.now(), focusSec: t.focusSec || 0, note: "" });
+      pauseTimer();
+    }
+    // 반복 할 일이면 다음 회차 생성
+    if (t.repeat) {
+      state.todos.push({ id: uid(), text: t.text, color: t.color, due: null,
+        subtasks: (t.subtasks || []).map((s) => ({ id: uid(), text: s.text, done: false })),
+        repeat: t.repeat, later: false, status: "todo", activatedAt: null, focusSec: 0,
+        createdAt: Date.now(), completedAt: null });
+    }
+    t.status = "done"; t.completedAt = Date.now();
+    save(); render();
+    if (wasActive) { celebrate(); toast(pick(CHEERS)); }
+  }
+  function restoreTodo(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.status = "todo"; t.completedAt = null; save(); render(); }
+  function deleteTodo(id) {
+    const i = state.todos.findIndex((x) => x.id === id); if (i < 0) return;
+    const t = state.todos[i]; if (t.status === "active") pauseTimer();
+    state.trash.unshift(Object.assign({}, t, { deletedAt: Date.now() }));
+    state.todos.splice(i, 1); save(); render();
+  }
+  function deleteHistory(id) { const i = state.history.findIndex((h) => h.id === id); if (i >= 0) state.history.splice(i, 1); save(); render(); }
+  function editText(kind, id, v) {
+    v = (v || "").trim();
+    if (kind === "todo") { const t = state.todos.find((x) => x.id === id); if (!t) return; if (!v) { deleteTodo(id); return; } t.text = v; }
+    else if (kind === "history") { const h = state.history.find((x) => x.id === id); if (!h || !v) return; h.text = v; }
+    save(); render();
+  }
+  const COLORS = [null, "red", "yellow", "green", "blue", "purple"];
+  function cycleColor(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; const i = COLORS.indexOf(t.color || null); t.color = COLORS[(i + 1) % COLORS.length]; save(); render(); }
+  function setDue(id, v) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.due = v || null; save(); render(); }
+  function cycleRepeat(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.repeat = t.repeat === null ? "daily" : t.repeat === "daily" ? "weekly" : null; save(); render(); }
+  function toggleLater(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; if (t.status === "active") { t.status = "todo"; pauseTimer(); } t.later = !t.later; save(); render(); }
+  function addSub(id, text) { text = (text || "").trim(); if (!text) return; const t = state.todos.find((x) => x.id === id); if (!t) return; t.subtasks.push({ id: uid(), text, done: false }); save(); render(); }
+  function toggleSub(id, sid) { const t = state.todos.find((x) => x.id === id); if (!t) return; const s = t.subtasks.find((x) => x.id === sid); if (s) s.done = !s.done; save(); render(); }
+  function delSub(id, sid) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.subtasks = t.subtasks.filter((x) => x.id !== sid); save(); render(); }
+
+  // trash / later actions
+  function restoreTrash(id) { const i = state.trash.findIndex((x) => x.id === id); if (i < 0) return; const t = state.trash[i]; delete t.deletedAt; t.status = "done" === t.status ? "todo" : (t.status || "todo"); t.status = t.status === "active" ? "todo" : t.status; state.trash.splice(i, 1); state.todos.push(t); save(); render(); openTrash(); }
+  function purgeTrash(id) { state.trash = state.trash.filter((x) => x.id !== id); save(); render(); openTrash(); }
+  function emptyTrash() { if (!state.trash.length) return; if (!confirm("휴지통을 완전히 비울까요? 되돌릴 수 없어요.")) return; state.trash = []; save(); render(); openTrash(); }
+
+  // ---------- drag reorder ----------
+  let dragId = null;
+  function reorder(draggedId, targetId, after) {
+    const vis = visibleTodos().map((t) => t.id);
+    const from = vis.indexOf(draggedId); if (from < 0) return;
+    vis.splice(from, 1);
+    let to = targetId == null ? vis.length : vis.indexOf(targetId);
+    if (to < 0) to = vis.length; if (after) to += 1;
+    vis.splice(to, 0, draggedId);
+    const map = Object.fromEntries(state.todos.map((t) => [t.id, t]));
+    const others = state.todos.filter((t) => vis.indexOf(t.id) < 0);
+    state.todos = vis.map((id) => map[id]).concat(others);
+    save(); render();
+  }
+
+  // ---------- timer (pomodoro; 끝나도 자동 완료 안 함, 알림만) ----------
+  let timerRunning = false, timerRemaining = 0, timerIv = null;
+  function pomoSec() { return (state.settings.pomodoroMin || 25) * 60; }
+  function resetTimer(silent) { pauseTimer(); timerRemaining = pomoSec(); if (!silent) updateTimerUI(); }
+  function startTimer() {
+    const a = activeTodo(); if (!a) return;
+    if (timerRemaining <= 0) timerRemaining = pomoSec();
+    timerRunning = true; requestNotify();
+    if (timerIv) clearInterval(timerIv);
+    timerIv = setInterval(() => {
+      if (!timerRunning) return; const act = activeTodo(); if (!act) { pauseTimer(); return; }
+      timerRemaining--; act.focusSec = (act.focusSec || 0) + 1;
+      if (act.focusSec % 15 === 0) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} pushCloud(); }
+      updateTimerUI();
+      if (timerRemaining <= 0) { pauseTimer(); save(); alarmDone(); }
+    }, 1000);
+    updateTimerUI();
+  }
+  function pauseTimer() { timerRunning = false; if (timerIv) { clearInterval(timerIv); timerIv = null; } updateTimerUI(); }
+  function toggleTimer() { if (timerRunning) pauseTimer(); else startTimer(); }
+  function updateTimerUI() {
+    const disp = $id("timeDisp"); if (disp) disp.textContent = fmtMMSS(timerRemaining > 0 ? timerRemaining : pomoSec());
+    const btn = $id("timerToggle"); if (btn) btn.textContent = timerRunning ? "⏸ 일시정지" : "▶ 집중 시작";
+    const acc = $id("focusAcc"); const a = activeTodo(); if (acc && a) acc.textContent = "집중 " + fmtDur(a.focusSec || 0);
+  }
+  function requestNotify() {
+    try { if (window.Notification && Notification.permission === "default") Notification.requestPermission(); } catch (e) {}
+  }
+  function beep() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; const a = new AC();
+      const o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination);
+      o.type = "sine"; o.frequency.value = 880; o.start();
+      g.gain.setValueAtTime(0.18, a.currentTime); g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.7);
+      o.stop(a.currentTime + 0.72);
+    } catch (e) {}
+  }
+  function alarmDone() {
+    const a = activeTodo(); const name = a ? a.text : "원씽";
+    beep();
+    try { if (window.Notification && Notification.permission === "granted") new Notification("⏰ 집중 시간 종료", { body: name + " — 잠깐 쉬거나 계속하세요. (자동 완료되지 않아요)" }); } catch (e) {}
+    toast("⏰ 집중 시간 종료! 잠깐 쉬거나 계속하세요 (자동 완료 안 함)");
+  }
+
+  // ---------- celebrate ----------
+  const CHEERS = ["잘했어요! 하나를 끝냈어요 🎉", "원씽 완료! 오늘의 한 걸음 👏", "멋져요 — 가장 중요한 일을 해냈어요 ✨", "끝! 이 작은 성취가 쌓입니다 🌱", "수고했어요, 딱 하나 해냈어요 💪"];
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function celebrate() {
+    const c = $id("confetti"); if (!c) return; const ctx = c.getContext("2d");
+    c.width = window.innerWidth; c.height = window.innerHeight; c.style.display = "block";
+    const colors = ["#c2603f", "#e6b54a", "#5b8a72", "#cf9b39", "#d98b6a", "#7aa6d8"];
+    const parts = [];
+    for (let i = 0; i < 130; i++) parts.push({
+      x: window.innerWidth / 2 + (Math.random() * 200 - 100), y: window.innerHeight / 3,
+      vx: (Math.random() * 2 - 1) * 7, vy: (Math.random() * -1 - 2) * 5,
+      g: 0.18 + Math.random() * 0.12, s: 5 + Math.random() * 6,
+      col: colors[Math.floor(Math.random() * colors.length)], rot: Math.random() * 6, vr: (Math.random() * 2 - 1) * 0.3
+    });
+    let frame = 0;
+    function tick() {
+      frame++; ctx.clearRect(0, 0, c.width, c.height);
+      parts.forEach((p) => {
+        p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.col;
+        ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6); ctx.restore();
+      });
+      if (frame < 90) requestAnimationFrame(tick);
+      else { ctx.clearRect(0, 0, c.width, c.height); c.style.display = "none"; }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // ---------- focus lock & puzzles ----------
+  let leftUnlocked = false;
+  function openPuzzle() { buildPuzzle(); $id("puzzleModal").hidden = false; }
+  function onSolved() {
+    $id("puzzleStatus").textContent = "통과! 🎉 왼쪽을 엽니다";
+    setTimeout(() => { $id("puzzleModal").hidden = true; leftUnlocked = true; render(); toast("퍼즐 통과! 왼쪽을 잠깐 열었어요 — 다 보면 ‘다시 집중’"); }, 600);
+  }
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function buildPuzzle() {
+    const type = ["match", "math", "order"][Math.floor(Math.random() * 3)];
+    const stage = $id("puzzleStage"); const status = $id("puzzleStatus");
+    stage.innerHTML = ""; status.textContent = ""; stage.className = "puzzle-stage";
+    if (type === "math") {
+      $id("puzzleTitle").textContent = "🧮 계산 퍼즐";
+      $id("puzzleDesc").textContent = "답을 입력하면 왼쪽이 잠깐 열려요.";
+      const a = 2 + Math.floor(Math.random() * 8), b = 2 + Math.floor(Math.random() * 8), op = Math.random() < 0.5 ? "+" : "×";
+      const ans = op === "+" ? a + b : a * b;
+      stage.style.height = "auto"; stage.style.background = "transparent"; stage.style.border = "none";
+      stage.innerHTML = '<div class="pz-math"><div class="q">' + a + " " + op + " " + b + ' = ?</div><input id="pzMathIn" type="number" inputmode="numeric" autocomplete="off" /></div>';
+      const inp = $id("pzMathIn"); inp.focus();
+      inp.addEventListener("input", () => { if (parseInt(inp.value, 10) === ans) onSolved(); });
+      return;
+    }
+    if (type === "order") {
+      $id("puzzleTitle").textContent = "🔢 순서 맞추기";
+      $id("puzzleDesc").textContent = "1 → 2 → 3 → 4 순서대로 누르면 열려요.";
+      stage.style.height = "auto"; stage.style.background = "transparent"; stage.style.border = "none";
+      const wrap = document.createElement("div"); wrap.className = "pz-order";
+      const nums = shuffle([1, 2, 3, 4]); let next = 1;
+      nums.forEach((n) => {
+        const b = document.createElement("button"); b.textContent = n;
+        b.addEventListener("click", () => {
+          if (b.classList.contains("done")) return;
+          if (n === next) { b.classList.add("done"); next++; status.textContent = (next - 1) + " / 4"; if (next > 4) onSolved(); }
+          else { next = 1; wrap.querySelectorAll("button").forEach((x) => x.classList.remove("done")); status.textContent = "처음부터 다시!"; }
+        });
+        wrap.appendChild(b);
+      });
+      stage.appendChild(wrap); status.textContent = "0 / 4"; return;
+    }
+    // match (drag pieces to same-number slots)
+    $id("puzzleTitle").textContent = "🧩 조각 맞추기";
+    $id("puzzleDesc").textContent = "조각을 같은 숫자의 빈칸으로 끌어다 넣으면 열려요.";
+    stage.style.height = "300px"; stage.style.background = ""; stage.style.border = "";
+    let placed = 0; const W = stage.clientWidth || 320; const size = 64;
+    const gap = Math.max(12, (W - size * 3) / 4); const xAt = (p) => gap + p * (size + gap);
+    const nums = [1, 2, 3], colors = ["#c2603f", "#5b8a72", "#cf9b39"], slots = [];
+    shuffle([0, 1, 2]).forEach((idx, pos) => { const s = document.createElement("div"); s.className = "pz-slot"; s.dataset.num = nums[idx]; s.textContent = nums[idx]; s.style.left = xAt(pos) + "px"; s.style.top = "22px"; stage.appendChild(s); slots.push(s); });
+    shuffle([0, 1, 2]).forEach((idx, pos) => {
+      const p = document.createElement("div"); p.className = "pz-piece"; p.dataset.num = nums[idx]; p.textContent = nums[idx]; p.style.background = colors[idx];
+      const hx = xAt(pos), hy = 196; p.style.left = hx + "px"; p.style.top = hy + "px"; p._home = { x: hx, y: hy };
+      stage.appendChild(p);
+      dragPiece(p, stage, slots, () => { placed++; status.textContent = placed + " / 3"; if (placed >= 3) onSolved(); });
+    });
+    status.textContent = "0 / 3";
+  }
+  function dragPiece(piece, stage, slots, onPlaced) {
+    let dragging = false, ox = 0, oy = 0;
+    piece.addEventListener("pointerdown", (e) => { if (piece.classList.contains("placed")) return; dragging = true; try { piece.setPointerCapture(e.pointerId); } catch (_) {} const r = piece.getBoundingClientRect(); ox = e.clientX - r.left; oy = e.clientY - r.top; piece.classList.add("dragging"); });
+    piece.addEventListener("pointermove", (e) => { if (!dragging) return; const sr = stage.getBoundingClientRect(); piece.style.left = (e.clientX - sr.left - ox) + "px"; piece.style.top = (e.clientY - sr.top - oy) + "px"; });
+    const home = () => { piece.style.left = piece._home.x + "px"; piece.style.top = piece._home.y + "px"; };
+    piece.addEventListener("pointerup", () => {
+      if (!dragging) return; dragging = false; piece.classList.remove("dragging");
+      const pr = piece.getBoundingClientRect(), pcx = pr.left + pr.width / 2, pcy = pr.top + pr.height / 2; let ok = false;
+      for (const s of slots) { if (s.dataset.filled || s.dataset.num !== piece.dataset.num) continue; const sr = s.getBoundingClientRect(); if (Math.hypot(pcx - (sr.left + sr.width / 2), pcy - (sr.top + sr.height / 2)) < 50) { const st = stage.getBoundingClientRect(); piece.style.left = (sr.left - st.left) + "px"; piece.style.top = (sr.top - st.top) + "px"; piece.classList.add("placed"); s.dataset.filled = "1"; s.classList.add("filled"); ok = true; onPlaced(); break; } }
+      if (!ok) home();
+    });
+    piece.addEventListener("pointercancel", () => { if (!dragging) return; dragging = false; piece.classList.remove("dragging"); home(); });
+  }
+
+  // ---------- editable ----------
+  function makeEditable(el, kind, id) {
+    el.addEventListener("dblclick", () => {
+      const old = el.textContent; const input = document.createElement("input");
+      input.type = "text"; input.value = old; input.style.cssText = "font:inherit;width:100%;border:none;border-bottom:2px solid var(--accent);background:transparent;color:inherit;outline:none";
+      el.replaceWith(input); input.focus(); input.setSelectionRange(old.length, old.length);
+      input.addEventListener("blur", () => editText(kind, id, input.value));
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } if (e.key === "Escape") { input.value = old; input.blur(); } });
+    });
+  }
+
+  // ---------- render ----------
+  function renderTodos() {
+    const ul = $id("todoList"); ul.innerHTML = "";
+    const vis = visibleTodos(), cur = activeTodo();
+    vis.forEach((t) => {
+      const li = document.createElement("li"); li.className = "todo" + (t.status === "active" ? " active" : ""); li.dataset.id = t.id; li.draggable = true;
+      const grip = document.createElement("span"); grip.className = "grip"; grip.textContent = "⠿";
+      const check = document.createElement("button"); check.className = "check"; check.title = "완료"; check.addEventListener("click", () => completeTodo(t.id));
+      const dot = document.createElement("button"); dot.className = "dot" + (t.color ? " " + t.color : ""); dot.title = "색 라벨"; dot.addEventListener("click", () => cycleColor(t.id));
+      const text = document.createElement("span"); text.className = "todo-text"; text.textContent = t.text; text.title = "더블클릭하면 수정"; makeEditable(text, "todo", t.id);
+      li.append(grip, check, dot, text);
+      if (t.due) { const c = document.createElement("span"); const today = todayStr(); c.className = "chip" + (t.due < today ? " due-over" : t.due === today ? " due-soon" : ""); c.textContent = "📅 " + t.due.slice(5); li.append(c); }
+      if (t.repeat) { const c = document.createElement("span"); c.className = "chip"; c.textContent = t.repeat === "daily" ? "🔁 매일" : "🔁 매주"; li.append(c); }
+      if (t.subtasks && t.subtasks.length) { const d = t.subtasks.filter((s) => s.done).length; const c = document.createElement("span"); c.className = "chip"; c.textContent = "☑ " + d + "/" + t.subtasks.length; li.append(c); }
+      if (t.status === "active") { const b = document.createElement("span"); b.className = "badge"; b.textContent = "진행 중 ▶"; li.append(b); }
+      else { const s = document.createElement("button"); s.className = "send-btn"; s.innerHTML = "➜"; s.title = cur ? "이걸로 원씽 교체" : "오른쪽 원씽으로 보내기"; s.addEventListener("click", () => sendToOneThing(t.id)); li.append(s); }
+      const more = document.createElement("button"); more.className = "more-btn"; more.textContent = "⋯"; more.title = "더보기"; more.addEventListener("click", () => { if (expanded.has(t.id)) expanded.delete(t.id); else expanded.add(t.id); render(); }); li.append(more);
+
+      if (expanded.has(t.id)) li.append(buildDetail(t));
+
+      li.addEventListener("dragstart", (e) => { dragId = t.id; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", t.id); } catch (_) {} });
+      li.addEventListener("dragend", () => { dragId = null; li.classList.remove("dragging"); document.querySelectorAll(".drop-before").forEach((n) => n.classList.remove("drop-before")); });
+      li.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId && dragId !== t.id) li.classList.add("drop-before"); });
+      li.addEventListener("dragleave", () => li.classList.remove("drop-before"));
+      li.addEventListener("drop", (e) => { e.preventDefault(); li.classList.remove("drop-before"); if (dragId && dragId !== t.id) reorder(dragId, t.id, false); });
+      ul.append(li);
+    });
+    if (vis.length === 0) { const li = document.createElement("li"); li.className = "todo"; li.style.color = "#b3a888"; li.textContent = searchQuery ? "검색 결과가 없어요." : "위 칸에 할 일을 적어 시작하세요 ✎"; ul.append(li); }
+  }
+  function buildDetail(t) {
+    const d = document.createElement("div"); d.className = "detail";
+    const ul = document.createElement("ul"); ul.className = "sub-list";
+    (t.subtasks || []).forEach((s) => {
+      const li = document.createElement("li");
+      const cb = document.createElement("button"); cb.className = "check scheck"; cb.textContent = s.done ? "✓" : ""; cb.addEventListener("click", () => toggleSub(t.id, s.id));
+      const tx = document.createElement("span"); tx.className = "stext" + (s.done ? " done" : ""); tx.textContent = s.text;
+      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.addEventListener("click", () => delSub(t.id, s.id));
+      li.append(cb, tx, x); ul.append(li);
+    });
+    d.append(ul);
+    const sa = document.createElement("div"); sa.className = "sub-add";
+    const si = document.createElement("input"); si.placeholder = "+ 하위 할 일 추가 후 Enter";
+    si.addEventListener("keydown", (e) => { if (e.key === "Enter") { addSub(t.id, si.value); } });
+    sa.append(si); d.append(sa);
+    const act = document.createElement("div"); act.className = "detail-actions";
+    const due = document.createElement("input"); due.type = "date"; due.value = t.due || ""; due.title = "마감일"; due.addEventListener("change", () => setDue(t.id, due.value));
+    const rep = document.createElement("button"); rep.textContent = t.repeat ? (t.repeat === "daily" ? "🔁 매일" : "🔁 매주") : "🔁 반복 없음"; rep.addEventListener("click", () => cycleRepeat(t.id));
+    const lat = document.createElement("button"); lat.textContent = "🗂 나중에"; lat.addEventListener("click", () => toggleLater(t.id));
+    const del = document.createElement("button"); del.className = "del"; del.textContent = "🗑 삭제"; del.addEventListener("click", () => deleteTodo(t.id));
+    act.append(due, rep, lat, del); d.append(act);
+    return d;
+  }
+  // 원씽 카드에 표시할 하위 할 일 (할 일을 원씽으로 보내면 하위 할 일도 함께 따라온다)
+  function buildOtSubs(t) {
+    const wrap = document.createElement("div"); wrap.className = "ot-subs";
+    const subs = t.subtasks || [];
+    const doneN = subs.filter((s) => s.done).length;
+    const head = document.createElement("div"); head.className = "ot-subs-head";
+    head.textContent = subs.length ? ("☑ " + doneN + "/" + subs.length + " · 하위 할 일") : "하위 할 일 — 작게 쪼개기";
+    wrap.append(head);
+    const ul = document.createElement("ul"); ul.className = "ot-sub-list";
+    subs.forEach((s) => {
+      const li = document.createElement("li");
+      const cb = document.createElement("button"); cb.className = "check scheck"; cb.textContent = s.done ? "✓" : ""; cb.addEventListener("click", () => toggleSub(t.id, s.id));
+      const tx = document.createElement("span"); tx.className = "stext" + (s.done ? " done" : ""); tx.textContent = s.text;
+      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.addEventListener("click", () => delSub(t.id, s.id));
+      li.append(cb, tx, x); ul.append(li);
+    });
+    wrap.append(ul);
+    const sa = document.createElement("div"); sa.className = "sub-add";
+    const si = document.createElement("input"); si.placeholder = "+ 하위 할 일 추가 후 Enter";
+    si.addEventListener("keydown", (e) => { if (e.key === "Enter") addSub(t.id, si.value); });
+    sa.append(si); wrap.append(sa);
+    return wrap;
+  }
+  function renderDone() {
+    const wrap = $id("doneWrap"), list = $id("doneList"); const dones = doneTodos();
+    wrap.classList.toggle("collapsed", !!state.doneCollapsed);
+    $id("doneCount").textContent = dones.length ? "(" + dones.length + ")" : "";
+    list.innerHTML = "";
+    dones.slice().reverse().forEach((t) => {
+      const li = document.createElement("li"); li.className = "done";
+      const mark = document.createElement("span"); mark.className = "check"; mark.style.borderColor = "var(--done)"; mark.style.color = "var(--accent)"; mark.textContent = "✓"; mark.style.cursor = "pointer"; mark.title = "되돌리기"; mark.addEventListener("click", () => restoreTodo(t.id));
+      const text = document.createElement("span"); text.className = "done-text"; text.textContent = t.text;
+      const restore = document.createElement("button"); restore.className = "restore"; restore.textContent = "↩"; restore.title = "다시 할 일로"; restore.addEventListener("click", () => restoreTodo(t.id));
+      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.title = "휴지통으로"; x.addEventListener("click", () => deleteTodo(t.id));
+      li.append(mark, text, restore, x); list.append(li);
+    });
+  }
+  function renderRight() {
+    const today = todayStr(); const isToday = viewDate === today;
+    $id("todayDate").textContent = fmtNice(viewDate);
+    $id("todayBtn").hidden = isToday;
+    const dayHist = state.history.filter((h) => h.date === viewDate);
+    $id("goalBadge").hidden = !(isToday && dayHist.length > 0);
+
+    const hist = $id("historyList"); hist.innerHTML = "";
+    dayHist.forEach((h, i) => {
+      const li = document.createElement("li"); li.className = "hist";
+      const num = document.createElement("span"); num.className = "hist-num"; num.textContent = (i + 1) + ".";
+      const ck = document.createElement("span"); ck.className = "check done"; ck.textContent = "✓";
+      const tx = document.createElement("span"); tx.className = "hist-text"; tx.textContent = h.text; makeEditable(tx, "history", h.id);
+      li.append(num, ck, tx);
+      if (h.focusSec) { const tm = document.createElement("span"); tm.className = "hist-time"; tm.textContent = "⏱ " + fmtDur(h.focusSec); li.append(tm); }
+      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.title = "기록 삭제"; x.addEventListener("click", () => deleteHistory(h.id)); li.append(x);
+      hist.append(li);
+    });
+
+    const slot = $id("activeSlot"); slot.innerHTML = ""; const cur = activeTodo();
+    if (isToday && cur) {
+      const card = document.createElement("div"); card.className = "onething-card";
+      const text = document.createElement("div"); text.className = "ot-text"; text.textContent = cur.text; text.title = "더블클릭하면 수정"; makeEditable(text, "todo", cur.id);
+      const timer = document.createElement("div"); timer.className = "timer";
+      timer.innerHTML = '<span class="time" id="timeDisp">' + fmtMMSS(timerRemaining > 0 ? timerRemaining : pomoSec()) + '</span>'
+        + '<button id="timerToggle">' + (timerRunning ? "⏸ 일시정지" : "▶ 집중 시작") + '</button>'
+        + '<button id="timerReset">↺</button><span class="focus-acc" id="focusAcc">집중 ' + fmtDur(cur.focusSec || 0) + '</span>';
+      const presetEl = document.createElement("div"); presetEl.className = "timer-presets";
+      const pm = state.settings.pomodoroMin || 25; const presets = [15, 25, 30, 45, 60];
+      let ph = '<span class="tp-label">길이</span>';
+      presets.forEach((n) => { ph += '<button data-min="' + n + '"' + (n === pm ? ' class="sel"' : '') + '>' + n + '</button>'; });
+      ph += '<button data-min="custom"' + (presets.indexOf(pm) < 0 ? ' class="sel"' : '') + '>직접</button><span class="tp-unit">분</span>';
+      presetEl.innerHTML = ph;
+      const foot = document.createElement("div"); foot.className = "ot-foot";
+      const done = document.createElement("button"); done.className = "complete-btn"; done.innerHTML = '<span class="box"></span> 완료'; done.addEventListener("click", () => completeTodo(cur.id));
+      const back = document.createElement("button"); back.className = "putback"; back.textContent = "↩ 다시 선택"; back.addEventListener("click", () => putBack(cur.id));
+      foot.append(done, back); card.append(text, buildOtSubs(cur), timer, presetEl, foot); slot.append(card);
+      $id("rightHint").textContent = "이 하나만 끝내면 됩니다. 타이머는 끝나도 자동 완료되지 않아요.";
+      setTimeout(() => { const tb = $id("timerToggle"), tr = $id("timerReset"); if (tb) tb.onclick = toggleTimer; if (tr) tr.onclick = () => resetTimer(); }, 0);
+    } else if (isToday) {
+      const empty = document.createElement("div"); empty.className = "empty-ot"; empty.innerHTML = "지금 집중할 단 하나를<br>왼쪽에서 <span class='arrow'>➜</span> 눌러 보내세요"; slot.append(empty);
+      $id("rightHint").textContent = dayHist.length ? "오늘 " + dayHist.length + "개의 원씽을 끝냈어요. 다음 하나를 골라보세요." : "여러 할 일 중 가장 중요한 ‘하나’를 고르는 것이 핵심이에요.";
+    } else {
+      const empty = document.createElement("div"); empty.className = "empty-ot readonly";
+      empty.innerHTML = dayHist.length ? "이 날의 원씽 기록이에요 ☝" : "이 날엔 끝낸 원씽이 없어요";
+      slot.append(empty);
+      $id("rightHint").textContent = "‘오늘’ 버튼으로 돌아오면 원씽을 고를 수 있어요.";
+    }
+  }
+  function render() {
+    renderTodos(); renderDone(); renderRight();
+    const active = activeTodo(); if (!active) leftUnlocked = false;
+    const locked = !!active && !leftUnlocked && viewDate === todayStr();
+    $(".notebook").classList.toggle("locked", locked);
+    $id("relockBtn").hidden = !(active && leftUnlocked);
+    applyTheme();
+  }
+  function applyTheme() {
+    document.body.dataset.theme = state.settings.theme || "paper";
+    document.body.dataset.font = state.settings.font || "gowun";
+  }
+
+  // ---------- modals: stats / trash / later / backup / settings ----------
+  function openStats() {
+    const set = new Set(state.history.map((h) => h.date));
+    let streak = 0, day = todayStr(); if (!set.has(day)) day = addDaysStr(day, -1);
+    while (set.has(day)) { streak++; day = addDaysStr(day, -1); }
+    const total = state.history.length;
+    let week = 0; for (let i = 0; i < 7; i++) if (set.has(addDaysStr(todayStr(), -i))) {}
+    const counts = {}; state.history.forEach((h) => { counts[h.date] = (counts[h.date] || 0) + 1; });
+    let weekCount = 0; for (let i = 0; i < 7; i++) weekCount += counts[addDaysStr(todayStr(), -i)] || 0;
+    let html = '<div class="stat-row">'
+      + '<div class="stat-card"><div class="num">🔥' + streak + '</div><div class="lbl">연속 일수</div></div>'
+      + '<div class="stat-card"><div class="num">' + weekCount + '</div><div class="lbl">이번 주 원씽</div></div>'
+      + '<div class="stat-card"><div class="num">' + total + '</div><div class="lbl">전체 원씽</div></div></div>';
+    html += '<div class="mlabel" style="margin:6px 0">최근 12주 (진할수록 많이 한 날)</div><div class="heat" id="heat"></div>';
+    $id("statsBody").innerHTML = html;
+    const heat = $id("heat"); const start = addDaysStr(todayStr(), -83);
+    // align to Sunday-start columns
+    let d0 = parseDate(start); d0.setDate(d0.getDate() - d0.getDay());
+    for (let c = 0; c < 13; c++) for (let r = 0; r < 7; r++) {
+      const ds = dstr(new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + c * 7 + r));
+      const cell = document.createElement("div"); cell.className = "cell";
+      const n = counts[ds] || 0; if (n >= 4) cell.className += " l4"; else if (n === 3) cell.className += " l3"; else if (n === 2) cell.className += " l2"; else if (n === 1) cell.className += " l1";
+      if (ds <= todayStr()) cell.title = ds + " · " + n + "개";
+      heat.appendChild(cell);
+    }
+    $id("statsModal").hidden = false;
+  }
+  function openTrash() {
+    const list = $id("trashList"); list.innerHTML = "";
+    if (!state.trash.length) { list.innerHTML = '<div class="empty-note">휴지통이 비어 있어요.</div>'; }
+    state.trash.forEach((t) => {
+      const li = document.createElement("li");
+      const tx = document.createElement("span"); tx.className = "mtext"; tx.textContent = t.text;
+      const r = document.createElement("button"); r.textContent = "↩ 복구"; r.addEventListener("click", () => restoreTrash(t.id));
+      const x = document.createElement("button"); x.textContent = "🗑 완전삭제"; x.addEventListener("click", () => purgeTrash(t.id));
+      li.append(tx, r, x); list.append(li);
+    });
+    $id("trashModal").hidden = false;
+  }
+  function openLater() {
+    const list = $id("laterList"); list.innerHTML = "";
+    const items = laterTodos();
+    if (!items.length) list.innerHTML = '<div class="empty-note">‘나중에’로 미뤄둔 일이 없어요.</div>';
+    items.forEach((t) => {
+      const li = document.createElement("li");
+      const tx = document.createElement("span"); tx.className = "mtext"; tx.textContent = t.text;
+      const n = document.createElement("button"); n.textContent = "▶ 지금 하기"; n.addEventListener("click", () => { toggleLater(t.id); openLater(); });
+      const x = document.createElement("button"); x.textContent = "🗑"; x.addEventListener("click", () => { deleteTodo(t.id); openLater(); });
+      li.append(tx, n, x); list.append(li);
+    });
+    $id("laterModal").hidden = false;
+  }
+  function exportBackup() {
+    try {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+      a.download = "onething-backup-" + todayStr() + ".json"; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+      toast("백업 파일을 내보냈어요 💾");
+    } catch (e) { toast("내보내기에 실패했어요"); }
+  }
+  function importBackup(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const obj = JSON.parse(reader.result);
+        if (!obj || !Array.isArray(obj.todos)) { toast("올바른 백업 파일이 아니에요"); return; }
+        if (!confirm("불러오면 지금 내용을 덮어씁니다. 진행할까요?")) return;
+        state = migrate(obj); save(); render();
+        $id("backupModal").hidden = true; toast("백업을 불러왔어요 ✓");
+      } catch (e) { toast("불러오기에 실패했어요"); }
+    };
+    reader.readAsText(file);
+  }
+  function openSettings() {
+    $id("themeSeg").querySelectorAll("button").forEach((b) => b.classList.toggle("sel", b.dataset.theme === (state.settings.theme || "paper")));
+    $id("fontSeg").querySelectorAll("button").forEach((b) => b.classList.toggle("sel", b.dataset.font === (state.settings.font || "gowun")));
+    $id("pomoInput").value = state.settings.pomodoroMin || 25;
+    $id("reminderToggle").textContent = state.settings.reminder ? "켜짐 ✓" : "꺼짐";
+    $id("settingsModal").hidden = false;
+  }
+
+  // ---------- cloud sync ----------
+  const SYNC_CODE_KEY = "onething-sync-code", CLIENT_KEY = "onething-client";
+  let clientId = localStorage.getItem(CLIENT_KEY); if (!clientId) { clientId = uid() + uid(); try { localStorage.setItem(CLIENT_KEY, clientId); } catch (_) {} }
+  let syncRef = null, cloudReady = false, lastTs = 0, applyingRemote = false;
+  function getSyncCode() { return (localStorage.getItem(SYNC_CODE_KEY) || "").trim(); }
+  function cloudConfigured() { return typeof firebase !== "undefined" && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL; }
+  function initSync() {
+    if (!cloudConfigured()) { setSyncStatus("unconfigured"); return; }
+    const code = getSyncCode(); if (!code) { setSyncStatus("nocode"); return; }
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      const db = firebase.database(); if (syncRef) { syncRef.off(); syncRef = null; }
+      cloudReady = false; lastTs = 0; syncRef = db.ref("notes/" + code);
+      syncRef.on("value", (snap) => {
+        cloudReady = true; const val = snap.val();
+        if (!val) { setSyncStatus("ok", code); pushCloud(); return; }
+        if (val.origin === clientId) { lastTs = Math.max(lastTs, val.ts || 0); setSyncStatus("ok", code); return; }
+        if ((val.ts || 0) <= lastTs) { setSyncStatus("ok", code); return; }
+        applyingRemote = true; state = migrate(val.data); lastTs = val.ts || 0;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
+        render(); applyingRemote = false; setSyncStatus("ok", code); toast("다른 기기의 변경을 받아왔어요 ☁️");
+      }, () => setSyncStatus("error"));
+    } catch (e) { setSyncStatus("error"); }
+  }
+  function pushCloud() { if (!cloudReady || !syncRef || applyingRemote) return; const ts = Date.now(); lastTs = ts; try { syncRef.set({ data: state, ts: ts, origin: clientId }); } catch (_) {} }
+  function setSyncStatus(kind, code) {
+    const chip = $id("syncChip"), stateEl = $id("syncState"); if (!chip) return; chip.classList.remove("on", "warn", "err");
+    let c, m, cls;
+    if (kind === "ok") { chip.classList.add("on"); c = "✅ 동기화 켜짐"; m = "켜짐 · 코드: " + (code || getSyncCode()); cls = "on"; }
+    else if (kind === "nocode") { chip.classList.add("warn"); c = "☁️ 코드 입력"; m = "Firebase 설정 완료! 이제 아래에서 동기화 코드를 정하세요."; cls = "warn"; }
+    else if (kind === "error") { chip.classList.add("err"); c = "⚠️ 동기화 오류"; m = "연결에 문제가 있어요. 설정값과 인터넷을 확인하세요."; cls = "err"; }
+    else { c = "☁️ 동기화 설정"; m = "아직 클라우드 설정이 비어 있어요."; cls = "warn"; }
+    chip.textContent = c; if (stateEl) { stateEl.textContent = m; stateEl.className = "sync-state " + cls; }
+  }
+  function refreshSyncState() { if (!cloudConfigured()) setSyncStatus("unconfigured"); else if (!getSyncCode()) setSyncStatus("nocode"); else if (cloudReady) setSyncStatus("ok"); else setSyncStatus("nocode"); }
+  function saveSyncCode(code) { code = (code || "").trim(); try { localStorage.setItem(SYNC_CODE_KEY, code); } catch (_) {} initSync(); refreshSyncState(); if (code && cloudConfigured()) toast("동기화 코드를 저장했어요 — 다른 기기에도 같은 코드를 넣으세요"); }
+  function genCode() { const p = () => Math.random().toString(36).slice(2, 6); return "note-" + p() + p(); }
+  function openSync() {
+    $id("syncCodeInput").value = getSyncCode();
+    $id("syncHelp").textContent = "① 윈도우·맥북 두 곳에서 이 노트를 엽니다.\n② 똑같은 ‘동기화 코드’를 양쪽에 입력하면 자동으로 같은 내용이 됩니다.\n③ 코드는 남이 못 맞히게 길고 특이하게 정하세요.";
+    refreshSyncState(); $id("syncModal").hidden = false;
+  }
+
+  // ---------- daily reminder ----------
+  function checkReminder() {
+    if (!state.settings.reminder) return;
+    const today = todayStr(); if (state.lastReminderDate === today) return;
+    const doneToday = state.history.some((h) => h.date === today);
+    if (!activeTodo() && !doneToday) {
+      requestNotify();
+      try { if (window.Notification && Notification.permission === "granted") new Notification("✦ 오늘의 원씽", { body: "오늘 집중할 단 하나를 정해보세요." }); } catch (e) {}
+      toast("✦ 오늘 집중할 단 하나를 정해보세요");
+    }
+    state.lastReminderDate = today; save();
+  }
+
+  // ---------- PWA (호스팅 시에만 설치형으로 동작) ----------
+  function setupPWA() {
+    try {
+      if (location.protocol === "http:" || location.protocol === "https:") {
+        const manifest = { name: "The One Thing", short_name: "OneThing", display: "standalone", background_color: "#fbf6e9", theme_color: "#c2603f", start_url: "." };
+        const blob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
+        const l = document.createElement("link"); l.rel = "manifest"; l.href = URL.createObjectURL(blob); document.head.appendChild(l);
+      }
+    } catch (e) {}
+  }
+
+  // ---------- events ----------
+  $id("addBtn").addEventListener("click", () => { const i = $id("newTodo"); addTodo(i.value); i.value = ""; i.focus(); });
+  $id("newTodo").addEventListener("keydown", (e) => { if (e.key === "Enter") { addTodo(e.target.value); e.target.value = ""; } });
+  $id("doneHead").addEventListener("click", () => { state.doneCollapsed = !state.doneCollapsed; save(); renderDone(); });
+  $id("todoList").addEventListener("dragover", (e) => e.preventDefault());
+  $id("todoList").addEventListener("drop", (e) => { if (e.target.id === "todoList" && dragId) { e.preventDefault(); reorder(dragId, null, false); } });
+  $id("searchInput").addEventListener("input", (e) => { searchQuery = e.target.value; renderTodos(); });
+
+  $id("prevDay").addEventListener("click", () => { viewDate = addDaysStr(viewDate, -1); render(); });
+  $id("nextDay").addEventListener("click", () => { viewDate = addDaysStr(viewDate, 1); render(); });
+  $id("todayBtn").addEventListener("click", () => { viewDate = todayStr(); render(); });
+
+  // 타이머 길이 선택 (원씽 카드의 15·25·30·45·60·직접)
+  $id("activeSlot").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-min]"); if (!b) return;
+    let v;
+    if (b.dataset.min === "custom") {
+      const inp = prompt("집중 시간을 분 단위로 입력하세요 (1~180)", state.settings.pomodoroMin || 25);
+      if (inp === null) return; v = parseInt(inp, 10);
+    } else v = parseInt(b.dataset.min, 10);
+    if (!v || v < 1) { if (b.dataset.min === "custom") toast("1~180 사이 숫자를 입력하세요"); return; }
+    v = Math.min(180, v);
+    state.settings.pomodoroMin = v;
+    if (!timerRunning) timerRemaining = v * 60;
+    save(); render();
+    toast("집중 시간을 " + v + "분으로 정했어요");
+  });
+
+  $id("lockOverlay").addEventListener("click", openPuzzle);
+  $id("puzzleClose").addEventListener("click", () => { $id("puzzleModal").hidden = true; });
+  $id("relockBtn").addEventListener("click", () => { leftUnlocked = false; render(); toast("다시 집중 모드 — 왼쪽을 잠갔어요"); });
+
+  $(".tools").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return; const act = b.dataset.act;
+    if (act === "later") openLater(); else if (act === "stats") openStats(); else if (act === "trash") openTrash();
+    else if (act === "backup") $id("backupModal").hidden = false; else if (act === "settings") openSettings(); else if (act === "help") $id("helpModal").hidden = false;
+  });
+
+  // sync panel
+  $id("syncChip").addEventListener("click", openSync);
+  $id("syncClose").addEventListener("click", () => { $id("syncModal").hidden = true; });
+  $id("syncSaveBtn").addEventListener("click", () => saveSyncCode($id("syncCodeInput").value));
+  $id("syncCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveSyncCode(e.target.value); });
+  $id("syncGenBtn").addEventListener("click", () => { $id("syncCodeInput").value = genCode(); });
+  $id("syncCopyBtn").addEventListener("click", () => { const v = $id("syncCodeInput").value.trim(); if (!v) return; if (navigator.clipboard) navigator.clipboard.writeText(v).then(() => toast("코드를 복사했어요"), () => {}); else toast("이 환경에선 복사를 못 해요 — 직접 적어두세요"); });
+
+  // settings
+  $id("settingsClose").addEventListener("click", () => { $id("settingsModal").hidden = true; });
+  $id("themeSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.settings.theme = b.dataset.theme; save(); openSettings(); applyTheme(); });
+  $id("fontSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.settings.font = b.dataset.font; save(); openSettings(); applyTheme(); });
+  $id("pomoInput").addEventListener("change", (e) => { const v = Math.max(1, Math.min(180, parseInt(e.target.value, 10) || 25)); state.settings.pomodoroMin = v; if (!timerRunning) resetTimer(); save(); });
+  $id("reminderToggle").addEventListener("click", () => { state.settings.reminder = !state.settings.reminder; if (state.settings.reminder) requestNotify(); $id("reminderToggle").textContent = state.settings.reminder ? "켜짐 ✓" : "꺼짐"; save(); });
+
+  // stats / trash / later / backup / help closes
+  $id("statsClose").addEventListener("click", () => { $id("statsModal").hidden = true; });
+  $id("trashClose").addEventListener("click", () => { $id("trashModal").hidden = true; });
+  $id("trashEmptyBtn").addEventListener("click", emptyTrash);
+  $id("laterClose").addEventListener("click", () => { $id("laterModal").hidden = true; });
+  $id("backupClose").addEventListener("click", () => { $id("backupModal").hidden = true; });
+  $id("exportBtn").addEventListener("click", exportBackup);
+  $id("importBtn").addEventListener("click", () => $id("importFile").click());
+  $id("importFile").addEventListener("change", (e) => { if (e.target.files && e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ""; });
+  $id("helpClose").addEventListener("click", () => { $id("helpModal").hidden = true; });
+
+  // backdrop click closes any modal
+  document.querySelectorAll(".modal").forEach((m) => m.addEventListener("click", (e) => { if (e.target === m) m.hidden = true; }));
+
+  // shortcuts
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { document.querySelectorAll(".modal").forEach((m) => (m.hidden = true)); return; }
+    const tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || e.target.isContentEditable) return;
+    if (e.key === "n" || e.key === "N") { e.preventDefault(); $id("newTodo").focus(); }
+    else if (e.key === "/") { e.preventDefault(); $id("searchInput").focus(); }
+    else if (e.key === "s" || e.key === "S") openStats();
+    else if (e.key === "t" || e.key === "T") { state.settings.theme = (state.settings.theme === "dark") ? "paper" : "dark"; save(); applyTheme(); toast("테마: " + state.settings.theme); }
+    else if (e.key === "?") $id("helpModal").hidden = false;
+  });
+
+  // ---------- init ----------
+  // 30일 지난 휴지통 자동 정리
+  state.trash = (state.trash || []).filter((t) => !t.deletedAt || (Date.now() - t.deletedAt) < 30 * 864e5);
+  if (activeTodo()) timerRemaining = pomoSec();
+  setupPWA();
+  applyTheme();
+  render();
+  initSync();
+  checkReminder();
+  $id("newTodo").focus();
+})();
+</script>
+</body>
+</html>
