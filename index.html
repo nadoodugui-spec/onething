@@ -426,14 +426,15 @@
     cursor: pointer; font-family: var(--font-body); font-size: .85rem; text-decoration: underline; }
   .unread-badge { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 9px;
     background: var(--accent); color: #fff; font-size: .72rem; line-height: 18px; text-align: center; }
-  .rq-zone { margin-top: 18px; padding-top: 12px; border-top: 1px dashed var(--line); }
-  .rq-zone[hidden] { display: none; }
-  .rq-h { color: var(--ink); font-family: var(--font-hand); font-size: 1.1rem; margin: 0 0 8px; }
-  .rq-count { color: var(--ink-soft); opacity: .8; font-size: .85rem; }
+  .requests-zone { display: flex; gap: 16px; flex-wrap: wrap; max-width: 980px; margin: 14px auto 44px; padding: 0 14px; }
+  .requests-zone[hidden] { display: none; }
+  .rq-col { flex: 1 1 320px; }
+  .rq-h { color: #f3ead4; font-family: var(--font-hand); font-size: 1.15rem; margin: 0 0 8px; }
+  .rq-count { color: #d8cfbb; opacity: .8; font-size: .85rem; }
   .rq-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-  .rq-empty { color: var(--ink-soft); opacity: .8; font-size: .9rem; padding: 6px 2px; }
-  .rq-card { background: var(--card1); color: var(--ink); border-radius: 12px; padding: 12px 14px; box-shadow: 0 4px 12px rgba(0,0,0,.14); }
-  .rq-card.unread { box-shadow: 0 0 0 2px var(--accent), 0 4px 12px rgba(0,0,0,.14); }
+  .rq-empty { color: #d8cfbb; opacity: .8; font-size: .9rem; padding: 6px 2px; }
+  .rq-card { background: var(--card1); color: var(--ink); border-radius: 12px; padding: 12px 14px; box-shadow: 0 6px 18px rgba(0,0,0,.22); }
+  .rq-card.unread { box-shadow: 0 0 0 2px var(--accent), 0 6px 18px rgba(0,0,0,.22); }
   .rq-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .rq-who { font-weight: 700; }
   .rq-meta { color: var(--ink-soft); font-size: .78rem; white-space: nowrap; }
@@ -504,10 +505,6 @@
           </div>
           <ul class="done-list" id="doneList"></ul>
         </div>
-        <div class="rq-zone" id="rqInboxZone" hidden>
-          <h3 class="rq-h"><span data-i18n="rq_inbox_h">📥 받은 요청</span> <span class="rq-count" id="rqInboxCount"></span></h3>
-          <ul class="rq-list" id="rqInboxList"></ul>
-        </div>
       </div>
       <div class="lock-overlay" id="lockOverlay" data-i18n-title="lock_title" title="조각을 맞추면 잠깐 열려요">
         <div class="lock-card">
@@ -537,13 +534,19 @@
         <div id="activeSlot"></div>
         <div class="hint" id="rightHint"></div>
       </div>
-      <div class="rq-zone" id="rqSentZone" hidden>
-        <h3 class="rq-h"><span data-i18n="rq_sent_h">📤 보낸 요청</span> <span class="rq-count" id="rqSentCount"></span></h3>
-        <ul class="rq-list" id="rqSentList"></ul>
-      </div>
     </section>
   </div>
 
+  <section class="requests-zone" id="requestsZone" hidden>
+    <div class="rq-col">
+      <h3 class="rq-h"><span data-i18n="rq_inbox_h">📥 받은 요청</span> <span class="rq-count" id="rqInboxCount"></span></h3>
+      <ul class="rq-list" id="rqInboxList"></ul>
+    </div>
+    <div class="rq-col">
+      <h3 class="rq-h"><span data-i18n="rq_sent_h">📤 보낸 요청</span> <span class="rq-count" id="rqSentCount"></span></h3>
+      <ul class="rq-list" id="rqSentList"></ul>
+    </div>
+  </section>
 
   <div class="toast" id="toast"></div>
   <canvas id="confetti"></canvas>
@@ -1638,17 +1641,16 @@
 
   // 아래 4개는 Task 2/4에서 본문이 채워진다. Task 1 시점엔 안전한 no-op 스텁.
   function updateLoginGate() {
-    const chip = $id("userChip"), send = $id("sendReqBtn"), gate = $id("loginGate");
-    const zoneIn = $id("rqInboxZone"), zoneSent = $id("rqSentZone");
+    const chip = $id("userChip"), send = $id("sendReqBtn"), zone = $id("requestsZone"), gate = $id("loginGate");
     if (!cloudConfigured()) {                       // 메시징 비활성 — 기존 앱 그대로
       if (chip) chip.hidden = true; if (send) send.hidden = true;
-      if (zoneIn) zoneIn.hidden = true; if (zoneSent) zoneSent.hidden = true; if (gate) gate.hidden = true;
+      if (zone) zone.hidden = true; if (gate) gate.hidden = true;
       return;
     }
     const loggedIn = !!currentUser;
     if (chip) { chip.hidden = false; const n = $id("userChipName"); if (n) n.textContent = loggedIn ? currentUser.name : t("uc_login"); }
     if (send) send.hidden = !loggedIn;
-    if (zoneIn) zoneIn.hidden = !loggedIn; if (zoneSent) zoneSent.hidden = !loggedIn;
+    if (zone) zone.hidden = !loggedIn;
     if (loggedIn && gate) gate.hidden = true;
     renderUnreadBadge();
     if (loggedIn) renderRequests();
