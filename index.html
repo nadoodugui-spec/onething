@@ -20,6 +20,7 @@
     --accent: #c2603f; --highlight: #ffe9a8; --done: #b6ab97; --binding: #cdbf9c;
     --desk1: #6a5e4d; --desk2: #4f4639; --desk3: #3c352b;
     --card1: #fffdf5; --card2: #fdf3d4;
+    --prio-urgent: #cf3a2a; --prio-important: #8a45c9;
     --font-body: 'Gowun Dodum', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
     --font-hand: 'Gaegu', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   }
@@ -29,6 +30,7 @@
     --accent: #e0916c; --highlight: #5a4a2a; --done: #7a7263; --binding: #1d1b17;
     --desk1: #1b1915; --desk2: #131210; --desk3: #0c0b09;
     --card1: #38332c; --card2: #2d2820;
+    --prio-urgent: #f1907f; --prio-important: #c79aea;
   }
   body[data-theme="sky"] {
     --paper: #eef5fb; --paper-edge: #dfeaf4; --line: #c4d6e6;
@@ -132,7 +134,7 @@
   .add-row button:hover, .ghost-btn:hover { filter: brightness(1.06); }
 
   /* ===== Todo list ===== */
-  ul.list { list-style: none; margin: 0; padding: 0 0 0 12px; }
+  .list { list-style: none; margin: 0; padding: 0 0 0 12px; }
   li.todo {
     display: flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 4px;
     font-size: 1.28rem; line-height: 36px; border-radius: 6px; flex-wrap: wrap;
@@ -172,6 +174,23 @@
   .send-btn:hover { background: var(--highlight); }
   .more-btn { flex: none; cursor: pointer; border: none; background: transparent; color: #b6aa90; font-size: 1.2rem; padding: 0 4px; }
   .more-btn:hover { color: var(--accent); }
+
+  /* ===== Priority groups (긴급/중요/일반) ===== */
+  .prio-group { margin: 2px 0 6px; border-radius: 8px; transition: background .15s ease; }
+  .prio-head { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-family: var(--font-hand); font-size: 1.35rem; padding: 3px 4px; }
+  .prio-head .tri { transition: transform .15s ease; font-size: .85rem; color: var(--ink-soft); }
+  .prio-group.collapsed .tri { transform: rotate(-90deg); }
+  .prio-head .ph-label { font-weight: 700; }
+  .prio-head.urgent .ph-label { color: var(--prio-urgent); }
+  .prio-head.important .ph-label { color: var(--prio-important); }
+  .prio-head.normal .ph-label { color: var(--ink); }
+  .prio-count { font-size: .95rem; color: #b3a888; }
+  .prio-list { list-style: none; margin: 0; padding: 0 0 2px 6px; min-height: 6px; }
+  .prio-group.collapsed .prio-list { display: none; }
+  li.prio-empty { color: #b3a888; font-size: .98rem; font-style: italic; min-height: 28px; line-height: 28px; padding-left: 10px; }
+  .prio-group.drop-into { background: rgba(194,96,63,.12); box-shadow: inset 0 0 0 2px var(--accent); }
+  li.todo.prio-urgent .todo-text { color: var(--prio-urgent); }
+  li.todo.prio-important .todo-text { color: var(--prio-important); }
 
   /* todo detail panel */
   .detail {
@@ -504,7 +523,7 @@
           <input id="newTodo" type="text" data-i18n-ph="new_ph" placeholder="해야 할 일을 적어보세요…" maxlength="200" autocomplete="off" />
           <button id="addBtn" data-i18n="add_btn" data-i18n-title="add_title" title="추가">＋ 추가</button>
         </div>
-        <ul class="list" id="todoList"></ul>
+        <div class="list" id="todoList"></div>
         <div class="later-wrap collapsed" id="laterWrap">
           <div class="later-head" id="laterHead">
             <span class="tri">▾</span><span data-i18n="later_h">📁 나중에</span>
@@ -792,6 +811,10 @@
     ti_more: { ko: "더보기", en: "More" },
     no_results: { ko: "검색 결과가 없어요.", en: "No results." },
     empty_list: { ko: "위 칸에 할 일을 적어 시작하세요 ✎", en: "Write a to-do above to start ✎" },
+    prio_urgent: { ko: "🔴 긴급", en: "🔴 Urgent" },
+    prio_important: { ko: "🟣 중요", en: "🟣 Important" },
+    prio_normal: { ko: "⚫ 일반", en: "⚫ Normal" },
+    prio_drop: { ko: "여기로 끌어다 놓기", en: "Drag items here" },
     sub_ph: { ko: "+ 하위 할 일 추가 후 Enter", en: "+ Add a subtask, then Enter" },
     ti_due: { ko: "마감일", en: "Due date" },
     ti_later: { ko: "📁 나중에", en: "📁 Later" },
@@ -961,12 +984,15 @@
   function migrate(s) {
     const base = { version: 2, todos: [], history: [], trash: [],
       settings: { theme: "paper", font: "gowun", pomodoroMin: 25, reminder: false, lang: "ko" },
-      doneCollapsed: false, laterCollapsed: true, lastReminderDate: null };
+      doneCollapsed: false, laterCollapsed: true,
+      prioCollapsed: { urgent: false, important: false, normal: false }, lastReminderDate: null };
     if (!s || typeof s !== "object") return base;
     const out = Object.assign({}, base, s);
     out.settings = Object.assign({}, base.settings, s.settings || {});
+    out.prioCollapsed = Object.assign({}, base.prioCollapsed, s.prioCollapsed || {});
     out.todos = Array.isArray(s.todos) ? s.todos.map((t) => ({
       id: t.id || uid(), text: t.text || "", color: t.color || null, due: t.due || null,
+      priority: (t.priority === "urgent" || t.priority === "important") ? t.priority : "normal",
       subtasks: Array.isArray(t.subtasks) ? t.subtasks : [], repeat: t.repeat || null,
       later: !!t.later, status: (t.status === "active" || t.status === "done") ? t.status : "todo",
       activatedAt: t.activatedAt || null, focusSec: t.focusSec || 0,
@@ -1015,7 +1041,7 @@
   // ---------- actions ----------
   function addTodo(text) {
     text = (text || "").trim(); if (!text) return;
-    state.todos.push({ id: uid(), text, color: null, due: null, subtasks: [], repeat: null,
+    state.todos.push({ id: uid(), text, color: null, priority: "normal", due: null, subtasks: [], repeat: null,
       later: false, status: "todo", activatedAt: null, focusSec: 0, createdAt: Date.now(), completedAt: null });
     save(); render();
   }
@@ -1042,7 +1068,7 @@
       pauseTimer();
     }
     if (t.repeat) {
-      state.todos.push({ id: uid(), text: t.text, color: t.color, due: null,
+      state.todos.push({ id: uid(), text: t.text, color: t.color, priority: t.priority || "normal", due: null,
         subtasks: (t.subtasks || []).map((s) => ({ id: uid(), text: s.text, done: false })),
         repeat: t.repeat, later: false, status: "todo", activatedAt: null, focusSec: 0,
         createdAt: Date.now(), completedAt: null });
@@ -1080,7 +1106,9 @@
 
   // ---------- drag reorder ----------
   let dragId = null;
-  function reorder(draggedId, targetId, after) {
+  function reorder(draggedId, targetId, after, destPriority) {
+    const dragged = state.todos.find((t) => t.id === draggedId); if (!dragged) return;
+    if (destPriority) dragged.priority = destPriority;
     const vis = visibleTodos().map((t) => t.id);
     const from = vis.indexOf(draggedId); if (from < 0) return;
     vis.splice(from, 1);
@@ -1245,31 +1273,55 @@
   }
 
   // ---------- render ----------
+  const PRIO_GROUPS = ["urgent", "important", "normal"];
+  function buildTodoLi(td, cur) {
+    const li = document.createElement("li");
+    li.className = "todo prio-" + (td.priority || "normal") + (td.status === "active" ? " active" : "");
+    li.dataset.id = td.id; li.draggable = true;
+    const grip = document.createElement("span"); grip.className = "grip"; grip.textContent = "⠿";
+    const check = document.createElement("button"); check.className = "check"; check.title = t("ti_done"); check.addEventListener("click", () => completeTodo(td.id));
+    const dot = document.createElement("button"); dot.className = "dot" + (td.color ? " " + td.color : ""); dot.title = t("ti_color"); dot.addEventListener("click", () => cycleColor(td.id));
+    const text = document.createElement("span"); text.className = "todo-text"; text.textContent = td.text; text.title = t("ti_edit"); makeEditable(text, "todo", td.id);
+    li.append(grip, check, dot, text);
+    if (td.due) { const c = document.createElement("span"); const today = todayStr(); c.className = "chip" + (td.due < today ? " due-over" : td.due === today ? " due-soon" : ""); c.textContent = "📅 " + td.due.slice(5); li.append(c); }
+    if (td.repeat) { const c = document.createElement("span"); c.className = "chip"; c.textContent = td.repeat === "daily" ? t("rep_daily") : t("rep_weekly"); li.append(c); }
+    if (td.subtasks && td.subtasks.length) { const d = td.subtasks.filter((s) => s.done).length; const c = document.createElement("span"); c.className = "chip"; c.textContent = "☑ " + d + "/" + td.subtasks.length; li.append(c); }
+    if (td.status === "active") { const b = document.createElement("span"); b.className = "badge"; b.textContent = t("badge_prog"); li.append(b); }
+    else { const s = document.createElement("button"); s.className = "send-btn"; s.innerHTML = "➜"; s.title = cur ? t("send_swap") : t("send_to"); s.addEventListener("click", () => sendToOneThing(td.id)); li.append(s); }
+    const more = document.createElement("button"); more.className = "more-btn"; more.textContent = "⋯"; more.title = t("ti_more"); more.addEventListener("click", () => { if (expanded.has(td.id)) expanded.delete(td.id); else expanded.add(td.id); render(); }); li.append(more);
+    if (expanded.has(td.id)) li.append(buildDetail(td));
+    li.addEventListener("dragstart", (e) => { dragId = td.id; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", td.id); } catch (_) {} });
+    li.addEventListener("dragend", () => { dragId = null; li.classList.remove("dragging"); document.querySelectorAll(".drop-before, .drop-into").forEach((n) => n.classList.remove("drop-before", "drop-into")); });
+    li.addEventListener("dragover", (e) => { e.preventDefault(); e.stopPropagation(); if (dragId && dragId !== td.id) li.classList.add("drop-before"); });
+    li.addEventListener("dragleave", () => li.classList.remove("drop-before"));
+    li.addEventListener("drop", (e) => { e.preventDefault(); e.stopPropagation(); li.classList.remove("drop-before"); if (dragId && dragId !== td.id) reorder(dragId, td.id, false, td.priority || "normal"); });
+    return li;
+  }
   function renderTodos() {
-    const ul = $id("todoList"); ul.innerHTML = "";
+    const box = $id("todoList"); box.innerHTML = "";
     const vis = visibleTodos(), cur = activeTodo();
-    vis.forEach((td) => {
-      const li = document.createElement("li"); li.className = "todo" + (td.status === "active" ? " active" : ""); li.dataset.id = td.id; li.draggable = true;
-      const grip = document.createElement("span"); grip.className = "grip"; grip.textContent = "⠿";
-      const check = document.createElement("button"); check.className = "check"; check.title = t("ti_done"); check.addEventListener("click", () => completeTodo(td.id));
-      const dot = document.createElement("button"); dot.className = "dot" + (td.color ? " " + td.color : ""); dot.title = t("ti_color"); dot.addEventListener("click", () => cycleColor(td.id));
-      const text = document.createElement("span"); text.className = "todo-text"; text.textContent = td.text; text.title = t("ti_edit"); makeEditable(text, "todo", td.id);
-      li.append(grip, check, dot, text);
-      if (td.due) { const c = document.createElement("span"); const today = todayStr(); c.className = "chip" + (td.due < today ? " due-over" : td.due === today ? " due-soon" : ""); c.textContent = "📅 " + td.due.slice(5); li.append(c); }
-      if (td.repeat) { const c = document.createElement("span"); c.className = "chip"; c.textContent = td.repeat === "daily" ? t("rep_daily") : t("rep_weekly"); li.append(c); }
-      if (td.subtasks && td.subtasks.length) { const d = td.subtasks.filter((s) => s.done).length; const c = document.createElement("span"); c.className = "chip"; c.textContent = "☑ " + d + "/" + td.subtasks.length; li.append(c); }
-      if (td.status === "active") { const b = document.createElement("span"); b.className = "badge"; b.textContent = t("badge_prog"); li.append(b); }
-      else { const s = document.createElement("button"); s.className = "send-btn"; s.innerHTML = "➜"; s.title = cur ? t("send_swap") : t("send_to"); s.addEventListener("click", () => sendToOneThing(td.id)); li.append(s); }
-      const more = document.createElement("button"); more.className = "more-btn"; more.textContent = "⋯"; more.title = t("ti_more"); more.addEventListener("click", () => { if (expanded.has(td.id)) expanded.delete(td.id); else expanded.add(td.id); render(); }); li.append(more);
-      if (expanded.has(td.id)) li.append(buildDetail(td));
-      li.addEventListener("dragstart", (e) => { dragId = td.id; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", td.id); } catch (_) {} });
-      li.addEventListener("dragend", () => { dragId = null; li.classList.remove("dragging"); document.querySelectorAll(".drop-before").forEach((n) => n.classList.remove("drop-before")); });
-      li.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId && dragId !== td.id) li.classList.add("drop-before"); });
-      li.addEventListener("dragleave", () => li.classList.remove("drop-before"));
-      li.addEventListener("drop", (e) => { e.preventDefault(); li.classList.remove("drop-before"); if (dragId && dragId !== td.id) reorder(dragId, td.id, false); });
-      ul.append(li);
+    if (vis.length === 0) {
+      const e = document.createElement("li"); e.className = "prio-empty"; e.style.listStyle = "none";
+      e.textContent = searchQuery ? t("no_results") : t("empty_list"); box.append(e); return;
+    }
+    PRIO_GROUPS.forEach((key) => {
+      const items = vis.filter((td) => (td.priority || "normal") === key);
+      const collapsed = !!(state.prioCollapsed && state.prioCollapsed[key]);
+      const group = document.createElement("div"); group.className = "prio-group" + (collapsed ? " collapsed" : ""); group.dataset.prio = key;
+      const head = document.createElement("div"); head.className = "prio-head " + key;
+      head.innerHTML = '<span class="tri">▾</span><span class="ph-label">' + t("prio_" + key) + '</span>';
+      const cnt = document.createElement("span"); cnt.className = "prio-count"; cnt.textContent = items.length ? "(" + items.length + ")" : ""; head.append(cnt);
+      head.addEventListener("click", () => { state.prioCollapsed[key] = !state.prioCollapsed[key]; save(); renderTodos(); });
+      group.append(head);
+      const ul = document.createElement("ul"); ul.className = "prio-list"; ul.dataset.prio = key;
+      items.forEach((td) => ul.append(buildTodoLi(td, cur)));
+      if (items.length === 0 && !searchQuery) { const e = document.createElement("li"); e.className = "prio-empty"; e.textContent = t("prio_drop"); ul.append(e); }
+      group.append(ul);
+      group.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId) group.classList.add("drop-into"); });
+      group.addEventListener("dragleave", (e) => { if (!group.contains(e.relatedTarget)) group.classList.remove("drop-into"); });
+      group.addEventListener("drop", (e) => { e.preventDefault(); group.classList.remove("drop-into"); if (dragId) reorder(dragId, null, true, key); });
+      box.append(group);
     });
-    if (vis.length === 0) { const li = document.createElement("li"); li.className = "todo"; li.style.color = "#b3a888"; li.textContent = searchQuery ? t("no_results") : t("empty_list"); ul.append(li); }
   }
   function buildDetail(td) {
     const d = document.createElement("div"); d.className = "detail";
