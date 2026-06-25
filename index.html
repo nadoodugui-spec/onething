@@ -630,6 +630,19 @@
     </div>
   </div>
 
+  <div class="modal" id="sendReqModal" hidden>
+    <div class="modal-box">
+      <div class="modal-head"><span data-i18n="sr_head">✉️ 요청 보내기</span><button class="modal-close" id="sendReqClose">✕</button></div>
+      <div class="mrow"><span class="mlabel" data-i18n="sr_to">받는 사람</span>
+        <select id="sendReqTo" style="flex:1;padding:8px;border:none;border-bottom:2px dashed var(--line);background:transparent;color:var(--ink);font-family:var(--font-body);font-size:1rem;outline:none"></select>
+      </div>
+      <textarea id="sendReqText" rows="3" maxlength="500" data-i18n-ph="sr_text_ph" placeholder="요청 내용을 적어보세요…"
+        style="width:100%;margin-top:10px;padding:10px;border:2px dashed var(--line);border-radius:10px;background:transparent;color:var(--ink);font-family:var(--font-body);font-size:1rem;outline:none;resize:vertical"></textarea>
+      <div class="mrow" style="margin-top:12px"><button id="sendReqSend" class="mbtn" data-i18n="sr_send">보내기</button></div>
+      <div class="login-msg" id="sendReqMsg"></div>
+    </div>
+  </div>
+
 <script>
 (function () {
   "use strict";
@@ -1568,6 +1581,29 @@
   }
   function logoutUser() { localStorage.removeItem(USER_KEY); currentUser = null; updateLoginGate(); }
 
+  function openSendReq() {
+    if (!currentUser) { showLoginGate(); return; }
+    const sel = $id("sendReqTo"); sel.innerHTML = "";
+    const others = Object.keys(usersCache).filter((id) => id !== currentUser.id);
+    if (!others.length) { const o = document.createElement("option"); o.value = ""; o.textContent = t("sr_no_one"); sel.appendChild(o); }
+    else others.forEach((id) => { const o = document.createElement("option"); o.value = id; o.textContent = (usersCache[id] || {}).name || "?"; sel.appendChild(o); });
+    $id("sendReqText").value = ""; $id("sendReqMsg").textContent = "";
+    $id("sendReqModal").hidden = false;
+  }
+  function sendRequest() {
+    if (!currentUser || !msgDb) { $id("sendReqMsg").textContent = t("rq_offline"); return; }
+    const to = $id("sendReqTo").value; const text = $id("sendReqText").value.trim();
+    if (!to) { $id("sendReqMsg").textContent = t("sr_no_one"); return; }
+    if (!text) { $id("sendReqMsg").textContent = t("sr_need_text"); return; }
+    const id = uid();
+    msgDb.ref("requests/" + id).set({
+      from: currentUser.id, fromName: currentUser.name,
+      to: to, toName: (usersCache[to] || {}).name || "?",
+      text: text, ts: Date.now(), status: "sent", replies: [], hiddenFor: []
+    });
+    $id("sendReqModal").hidden = true; toast(t("sr_sent"));
+  }
+
   // 아래 4개는 Task 2/4에서 본문이 채워진다. Task 1 시점엔 안전한 no-op 스텁.
   function updateLoginGate() {
     const chip = $id("userChip"), send = $id("sendReqBtn"), zone = $id("requestsZone"), gate = $id("loginGate");
@@ -1680,6 +1716,8 @@
   $id("lgSkip").addEventListener("click", hideLoginGate);
   $id("userClose").addEventListener("click", () => { $id("userModal").hidden = true; });
   $id("switchUserBtn").addEventListener("click", () => { $id("userModal").hidden = true; logoutUser(); showLoginGate(); });
+  $id("sendReqClose").addEventListener("click", () => { $id("sendReqModal").hidden = true; });
+  $id("sendReqSend").addEventListener("click", sendRequest);
 
   $id("syncChip").addEventListener("click", openSync);
   $id("syncClose").addEventListener("click", () => { $id("syncModal").hidden = true; });
