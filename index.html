@@ -1509,7 +1509,7 @@
       cloudReady = false; lastTs = 0; syncRef = db.ref("notes/user_" + currentUser.id);
       syncRef.on("value", (snap) => {
         cloudReady = true; const val = snap.val();
-        if (!val) { setSyncStatus("ok"); maybeMigrateLegacy(); pushCloud(); return; }
+        if (!val) { setSyncStatus("ok"); pushCloud(); return; }
         if (val.origin === clientId) { lastTs = Math.max(lastTs, val.ts || 0); setSyncStatus("ok"); return; }
         if ((val.ts || 0) <= lastTs) { setSyncStatus("ok"); return; }
         applyingRemote = true; state = migrate(val.data); lastTs = val.ts || 0;
