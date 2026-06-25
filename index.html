@@ -538,6 +538,17 @@
     </section>
   </div>
 
+  <section class="requests-zone" id="requestsZone" hidden>
+    <div class="rq-col">
+      <h3 class="rq-h"><span data-i18n="rq_inbox_h">📥 받은 요청</span> <span class="rq-count" id="rqInboxCount"></span></h3>
+      <ul class="rq-list" id="rqInboxList"></ul>
+    </div>
+    <div class="rq-col">
+      <h3 class="rq-h"><span data-i18n="rq_sent_h">📤 보낸 요청</span> <span class="rq-count" id="rqSentCount"></span></h3>
+      <ul class="rq-list" id="rqSentList"></ul>
+    </div>
+  </section>
+
   <div class="toast" id="toast"></div>
   <canvas id="confetti"></canvas>
   <input type="file" id="importFile" accept="application/json" hidden />
@@ -1373,7 +1384,7 @@
   }
   function toggleLang() {
     state.settings.lang = (LANG === "ko") ? "en" : "ko";
-    save(); applyLang(); render(); refreshSyncState();
+    save(); applyLang(); render(); refreshSyncState(); renderRequests(); renderLoginUsers();
   }
 
   // ---------- modals: stats / trash / later / backup / settings ----------
@@ -1639,8 +1650,53 @@
   }
   function showLoginGate() { const g = $id("loginGate"); if (g && cloudConfigured()) { g.hidden = false; renderLoginUsers(); const m = $id("lgMsg"); if (m) m.textContent = ""; } }
   function hideLoginGate() { const g = $id("loginGate"); if (g) g.hidden = true; }
-  function renderRequests() { /* Task 4에서 구현 */ }
-  function renderUnreadBadge() { /* Task 4에서 구현 */ }
+  function renderRequests() {
+    const inboxUl = $id("rqInboxList"), sentUl = $id("rqSentList");
+    if (!inboxUl || !sentUl || !currentUser) return;
+    const all = Object.keys(requestsCache).map((id) => Object.assign({ id }, requestsCache[id]));
+    const mine = (r) => !((r.hiddenFor || []).includes(currentUser.id));
+    const inbox = all.filter((r) => r.to === currentUser.id && mine(r)).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const sent = all.filter((r) => r.from === currentUser.id && mine(r)).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    renderReqList(inboxUl, inbox, "inbox");
+    renderReqList(sentUl, sent, "sent");
+    $id("rqInboxCount").textContent = inbox.length || "";
+    $id("rqSentCount").textContent = sent.length || "";
+  }
+  function renderReqList(ul, items, kind) {
+    ul.innerHTML = "";
+    if (!items.length) { const li = document.createElement("li"); li.className = "rq-empty"; li.textContent = t(kind === "inbox" ? "rq_inbox_empty" : "rq_sent_empty"); ul.appendChild(li); return; }
+    items.forEach((r) => ul.appendChild(buildReqCard(r, kind)));
+  }
+  function buildReqCard(r, kind) {
+    const li = document.createElement("li");
+    li.className = "rq-card" + (kind === "inbox" && r.status === "sent" ? " unread" : "");
+    const head = document.createElement("div"); head.className = "rq-card-head";
+    const who = document.createElement("span"); who.className = "rq-who";
+    who.textContent = kind === "inbox" ? (r.fromName || "?") : (t("rq_to_prefix") + " " + (r.toName || "?"));
+    const meta = document.createElement("span"); meta.className = "rq-meta";
+    meta.textContent = fmtReqTime(r.ts) + " · " + t("rq_status_" + (r.status || "sent"));
+    head.append(who, meta);
+    const body = document.createElement("div"); body.className = "rq-text"; body.textContent = r.text || "";
+    li.append(head, body);
+    (r.replies || []).forEach((rep) => {
+      const re = document.createElement("div"); re.className = "rq-reply";
+      re.textContent = "↩ " + ((rep && rep.fromName) || "?") + ": " + ((rep && rep.text) || "");
+      li.appendChild(re);
+    });
+    const acts = document.createElement("div"); acts.className = "rq-acts";
+    li.appendChild(acts);   // 버튼은 Task 5/6에서 채운다
+    if (kind === "inbox" && r.status === "sent") li.addEventListener("click", (e) => { if (!e.target.closest(".rq-acts")) markRead(r.id); });
+    return li;
+  }
+  function reqBtn(label, fn) { const b = document.createElement("button"); b.className = "rq-btn"; b.textContent = label; b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); return b; }
+  function fmtReqTime(ts) { if (!ts) return ""; const d = new Date(ts); return (d.getMonth() + 1) + "/" + d.getDate() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
+  function markRead(id) { const r = requestsCache[id]; if (r && r.status === "sent" && msgDb) msgDb.ref("requests/" + id + "/status").set("read"); }
+  function renderUnreadBadge() {
+    const b = $id("unreadBadge"); if (!b) return;
+    if (!currentUser) { b.hidden = true; return; }
+    const n = Object.keys(requestsCache).filter((id) => { const r = requestsCache[id]; return r && r.to === currentUser.id && r.status === "sent" && !((r.hiddenFor || []).includes(currentUser.id)); }).length;
+    b.textContent = n; b.hidden = n === 0;
+  }
 
   // ---------- daily reminder ----------
   function checkReminder() {
