@@ -761,7 +761,49 @@
     tp_range: { ko: "1~180 사이 숫자를 입력하세요", en: "Enter a number between 1 and 180" },
     tp_set: { ko: "집중 시간을 {0}분으로 정했어요", en: "Set focus time to {0} min" },
     relock_toast: { ko: "다시 집중 모드 — 왼쪽을 잠갔어요", en: "Refocus mode — left page locked" },
-    theme_toast: { ko: "테마: {0}", en: "Theme: {0}" }
+    theme_toast: { ko: "테마: {0}", en: "Theme: {0}" },
+    rq_need_name: { ko: "이름을 입력하세요", en: "Enter a name" },
+    rq_need_pin: { ko: "숫자 4자리를 입력하세요", en: "Enter a 4-digit PIN" },
+    rq_offline: { ko: "인터넷 연결이 필요해요 (요청 기능)", en: "Internet required for requests" },
+    rq_dup_name: { ko: "이미 있는 이름이에요 — 본인이면 목록에서 골라 로그인하세요", en: "Name taken — if it's you, pick it to log in" },
+    rq_no_user: { ko: "사용자를 찾을 수 없어요", en: "User not found" },
+    rq_wrong_pin: { ko: "비밀번호가 틀렸어요", en: "Wrong PIN" },
+    uc_login: { ko: "로그인", en: "Log in" },
+    t_sendreq: { ko: "✉️ 요청 보내기", en: "✉️ Send request" },
+    lg_title: { ko: "누구로 시작할까요?", en: "Who are you?" },
+    lg_or: { ko: "또는 새로 등록", en: "Or register" },
+    lg_name_ph: { ko: "이름", en: "Name" },
+    lg_pin_ph: { ko: "숫자 4자리", en: "4-digit PIN" },
+    lg_register: { ko: "등록하고 시작", en: "Register & start" },
+    lg_empty: { ko: "아직 등록된 사람이 없어요 — 아래에서 새로 등록하세요", en: "No users yet — register below" },
+    lg_skip: { ko: "그냥 둘러보기 →", en: "Just browse →" },
+    lg_pin_prompt: { ko: "{0} 님의 4자리 비밀번호를 입력하세요", en: "Enter {0}'s 4-digit PIN" },
+    lg_welcome: { ko: "{0} 님 환영합니다", en: "Welcome, {0}" },
+    um_head: { ko: "👤 사용자", en: "👤 User" },
+    um_who: { ko: "현재 로그인: {0}", en: "Logged in as {0}" },
+    um_switch: { ko: "사용자 바꾸기 / 로그아웃", en: "Switch user / Log out" },
+    sr_head: { ko: "✉️ 요청 보내기", en: "✉️ Send request" },
+    sr_to: { ko: "받는 사람", en: "To" },
+    sr_text_ph: { ko: "요청 내용을 적어보세요…", en: "Write your request…" },
+    sr_send: { ko: "보내기", en: "Send" },
+    sr_no_one: { ko: "보낼 상대가 없어요 (상대가 먼저 등록해야 해요)", en: "No one to send to (they must register first)" },
+    sr_need_text: { ko: "내용을 입력하세요", en: "Enter a message" },
+    sr_sent: { ko: "요청을 보냈어요", en: "Request sent" },
+    rq_inbox_h: { ko: "📥 받은 요청", en: "📥 Received" },
+    rq_sent_h: { ko: "📤 보낸 요청", en: "📤 Sent" },
+    rq_inbox_empty: { ko: "받은 요청이 없어요", en: "No received requests" },
+    rq_sent_empty: { ko: "보낸 요청이 없어요", en: "No sent requests" },
+    rq_to_prefix: { ko: "받는 사람:", en: "To:" },
+    rq_status_sent: { ko: "안 읽음", en: "Unread" },
+    rq_status_read: { ko: "읽음", en: "Read" },
+    rq_status_done: { ko: "완료", en: "Done" },
+    rq_to_todo: { ko: "내 할 일로 추가", en: "Add to my todos" },
+    rq_done: { ko: "완료/확인", en: "Done" },
+    rq_delete: { ko: "삭제", en: "Delete" },
+    rq_added_todo: { ko: "할 일에 추가했어요", en: "Added to your todos" },
+    rq_reply: { ko: "↩ 답장", en: "↩ Reply" },
+    rq_reply_prompt: { ko: "답장을 입력하세요", en: "Enter your reply" },
+    rq_replied: { ko: "답장을 보냈어요", en: "Reply sent" }
   };
   function t(key) {
     const e = I18N[key]; let s = e ? (e[LANG] || e.ko) : key;
@@ -1402,6 +1444,71 @@
     refreshSyncState(); $id("syncModal").hidden = false;
   }
 
+  // ===== 요청(메신저) — 노트와 분리된 별도 데이터 =====
+  const USER_KEY = "onething-user";   // 이 기기에 기억되는 로그인: JSON {id,name}
+  let usersCache = {};                 // { userId: {name, pin, createdAt} }
+  let requestsCache = {};              // { reqId: {from, fromName, to, toName, text, ts, status, replies, hiddenFor} }
+  let currentUser = null;             // { id, name, ... }
+  let msgDb = null;                    // firebase database (messaging)
+
+  function ensureFirebase() {
+    if (!cloudConfigured()) return null;
+    try { if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return firebase.database(); }
+    catch (e) { return null; }
+  }
+  function initMessaging() {
+    msgDb = ensureFirebase();
+    if (!msgDb) { updateLoginGate(); return; }   // Firebase 미설정/오프라인 → 메시징 비활성
+    msgDb.ref("users").on("value", (snap) => {
+      usersCache = snap.val() || {};
+      resolveCurrentUser(); renderLoginUsers();
+    });
+    msgDb.ref("requests").on("value", (snap) => {
+      requestsCache = snap.val() || {};
+      renderRequests(); renderUnreadBadge();
+    });
+  }
+
+  function resolveCurrentUser() {
+    let local = null;
+    try { local = JSON.parse(localStorage.getItem(USER_KEY) || "null"); } catch (_) {}
+    if (local && local.id) currentUser = Object.assign({ id: local.id, name: local.name || "?" }, usersCache[local.id] || {});
+    else currentUser = null;
+    updateLoginGate();
+  }
+  function findUserByName(name) {
+    name = (name || "").trim();
+    for (const id in usersCache) if (((usersCache[id] || {}).name || "").trim() === name) return Object.assign({ id }, usersCache[id]);
+    return null;
+  }
+  function registerUser(name, pin) {
+    name = (name || "").trim(); pin = (pin || "").trim();
+    if (!name) return { ok: false, msg: t("rq_need_name") };
+    if (!/^\d{4}$/.test(pin)) return { ok: false, msg: t("rq_need_pin") };
+    if (!msgDb) return { ok: false, msg: t("rq_offline") };
+    if (findUserByName(name)) return { ok: false, msg: t("rq_dup_name") };
+    const id = uid(); const rec = { name, pin, createdAt: Date.now() };
+    msgDb.ref("users/" + id).set(rec);
+    usersCache[id] = rec;                                   // 낙관적 반영
+    localStorage.setItem(USER_KEY, JSON.stringify({ id, name }));
+    resolveCurrentUser();
+    return { ok: true };
+  }
+  function loginUser(id, pin) {
+    const u = usersCache[id]; if (!u) return { ok: false, msg: t("rq_no_user") };
+    if ((u.pin || "") !== (pin || "").trim()) return { ok: false, msg: t("rq_wrong_pin") };
+    localStorage.setItem(USER_KEY, JSON.stringify({ id, name: u.name }));
+    resolveCurrentUser();
+    return { ok: true };
+  }
+  function logoutUser() { localStorage.removeItem(USER_KEY); currentUser = null; updateLoginGate(); }
+
+  // 아래 4개는 Task 2/4에서 본문이 채워진다. Task 1 시점엔 안전한 no-op 스텁.
+  function updateLoginGate() { /* Task 2에서 구현 */ }
+  function renderLoginUsers() { /* Task 2에서 구현 */ }
+  function renderRequests() { /* Task 4에서 구현 */ }
+  function renderUnreadBadge() { /* Task 4에서 구현 */ }
+
   // ---------- daily reminder ----------
   function checkReminder() {
     if (!state.settings.reminder) return;
@@ -1508,6 +1615,8 @@
   applyLang();
   render();
   initSync();
+  resolveCurrentUser();
+  initMessaging();
   checkReminder();
   $id("newTodo").focus();
 })();
