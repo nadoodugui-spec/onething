@@ -405,7 +405,7 @@
     .sync-chip { bottom: calc(14px + env(safe-area-inset-bottom)); }
   }
   /* ===== 요청(메신저) ===== */
-  .login-gate { position: fixed; inset: 0; z-index: 200; background: rgba(40,34,28,.86);
+  .login-gate { position: fixed; inset: 0; z-index: 200; background: var(--desk2);
     display: flex; align-items: center; justify-content: center; padding: 18px; }
   .login-gate[hidden] { display: none; }
   .login-card { background: var(--card1); color: var(--ink); width: min(420px, 94vw);
@@ -459,7 +459,6 @@
         <button id="lgRegisterBtn" class="mbtn" data-i18n="lg_register">등록하고 시작</button>
       </div>
       <div class="login-msg" id="lgMsg"></div>
-      <button id="lgSkip" class="login-skip" data-i18n="lg_skip">그냥 둘러보기 →</button>
     </div>
   </div>
 
@@ -1533,9 +1532,10 @@
   function saveSyncCode(code) { code = (code || "").trim(); try { localStorage.setItem(SYNC_CODE_KEY, code); } catch (_) {} initSync(); refreshSyncState(); if (code && cloudConfigured()) toast(t("s_saved")); }
   function genCode() { const p = () => Math.random().toString(36).slice(2, 6); return "note-" + p() + p(); }
   function openSync() {
-    $id("syncCodeInput").value = getSyncCode();
-    $id("syncHelp").textContent = t("sync_help");
-    refreshSyncState(); $id("syncModal").hidden = false;
+    const box = $id("syncModal");
+    box.querySelectorAll(".mlabel, .sync-row, .mrow").forEach((el) => { el.style.display = "none"; });
+    $id("syncHelp").textContent = t("sync_acct_help");
+    refreshSyncState(); box.hidden = false;
   }
 
   // ===== 요청(메신저) — 노트와 분리된 별도 데이터 =====
@@ -1818,7 +1818,6 @@
     else { const m = $id("lgMsg"); if (m) m.textContent = r.msg; }
   });
   $id("lgPin").addEventListener("keydown", (e) => { if (e.key === "Enter") $id("lgRegisterBtn").click(); });
-  $id("lgSkip").addEventListener("click", hideLoginGate);
   $id("userClose").addEventListener("click", () => { $id("userModal").hidden = true; });
   $id("switchUserBtn").addEventListener("click", () => { $id("userModal").hidden = true; logoutUser(); showLoginGate(); });
   $id("sendReqClose").addEventListener("click", () => { $id("sendReqModal").hidden = true; });
