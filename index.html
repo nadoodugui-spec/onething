@@ -945,8 +945,10 @@
     out.version = 2;
     return out;
   }
+  let currentUser = null;   // 로그인 계정 (notebookKey가 참조 — loadState보다 먼저 선언해야 함)
+  function notebookKey() { return currentUser ? "onething-notebook::" + currentUser.id : STORAGE_KEY; }
   function loadState() {
-    try { const raw = localStorage.getItem(STORAGE_KEY); return migrate(raw ? JSON.parse(raw) : null); }
+    try { const raw = localStorage.getItem(notebookKey()); return migrate(raw ? JSON.parse(raw) : null); }
     catch (e) { return migrate(null); }
   }
   let state = loadState();
@@ -955,7 +957,7 @@
   const expanded = new Set();
 
   function save() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    try { localStorage.setItem(notebookKey(), JSON.stringify(state)); } catch (e) {}
     pushCloud();
   }
 
@@ -1068,7 +1070,7 @@
     timerIv = setInterval(() => {
       if (!timerRunning) return; const act = activeTodo(); if (!act) { pauseTimer(); return; }
       timerRemaining--; act.focusSec = (act.focusSec || 0) + 1;
-      if (act.focusSec % 15 === 0) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} pushCloud(); }
+      if (act.focusSec % 15 === 0) { try { localStorage.setItem(notebookKey(), JSON.stringify(state)); } catch (e) {} pushCloud(); }
       updateTimerUI();
       if (timerRemaining <= 0) { pauseTimer(); save(); alarmDone(); }
     }, 1000);
@@ -1537,7 +1539,6 @@
   const USER_KEY = "onething-user";   // 이 기기에 기억되는 로그인: JSON {id,name}
   let usersCache = {};                 // { userId: {name, pin, createdAt} }
   let requestsCache = {};              // { reqId: {from, fromName, to, toName, text, ts, status, replies, hiddenFor} }
-  let currentUser = null;             // { id, name, ... }
   let msgDb = null;                    // firebase database (messaging)
 
   function ensureFirebase() {
