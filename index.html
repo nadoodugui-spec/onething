@@ -1684,13 +1684,38 @@
       li.appendChild(re);
     });
     const acts = document.createElement("div"); acts.className = "rq-acts";
-    li.appendChild(acts);   // 버튼은 Task 5/6에서 채운다
+    if (kind === "inbox") {
+      acts.appendChild(reqBtn(t("rq_to_todo"), () => { markRead(r.id); addTodo(r.text || ""); toast(t("rq_added_todo")); }));
+      acts.appendChild(reqBtn(t("rq_done"), () => { markRead(r.id); setReqStatus(r.id, "done"); }));
+      acts.appendChild(reqBtn(t("rq_reply"), () => { markRead(r.id); doReply(r.id); }));
+      acts.appendChild(reqBtn(t("rq_delete"), () => hideRequest(r.id)));
+    } else {
+      acts.appendChild(reqBtn(t("rq_reply"), () => doReply(r.id)));
+      acts.appendChild(reqBtn(t("rq_delete"), () => hideRequest(r.id)));
+    }
+    li.appendChild(acts);
     if (kind === "inbox" && r.status === "sent") li.addEventListener("click", (e) => { if (!e.target.closest(".rq-acts")) markRead(r.id); });
     return li;
   }
   function reqBtn(label, fn) { const b = document.createElement("button"); b.className = "rq-btn"; b.textContent = label; b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); return b; }
   function fmtReqTime(ts) { if (!ts) return ""; const d = new Date(ts); return (d.getMonth() + 1) + "/" + d.getDate() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
   function markRead(id) { const r = requestsCache[id]; if (r && r.status === "sent" && msgDb) msgDb.ref("requests/" + id + "/status").set("read"); }
+  function setReqStatus(id, st) { if (msgDb) msgDb.ref("requests/" + id + "/status").set(st); }
+  function hideRequest(id) {
+    const r = requestsCache[id]; if (!r || !msgDb || !currentUser) return;
+    const hf = Array.isArray(r.hiddenFor) ? r.hiddenFor.slice() : [];
+    if (!hf.includes(currentUser.id)) hf.push(currentUser.id);
+    msgDb.ref("requests/" + id + "/hiddenFor").set(hf);
+  }
+  function doReply(id) {
+    const r = requestsCache[id]; if (!r || !msgDb || !currentUser) return;
+    const txt = prompt(t("rq_reply_prompt")); if (txt === null) return;
+    const text = txt.trim(); if (!text) return;
+    const reps = Array.isArray(r.replies) ? r.replies.slice() : [];
+    reps.push({ from: currentUser.id, fromName: currentUser.name, text: text, ts: Date.now() });
+    msgDb.ref("requests/" + id + "/replies").set(reps);
+    toast(t("rq_replied"));
+  }
   function renderUnreadBadge() {
     const b = $id("unreadBadge"); if (!b) return;
     if (!currentUser) { b.hidden = true; return; }
