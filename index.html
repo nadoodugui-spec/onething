@@ -445,6 +445,9 @@
   .rq-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; max-height: 56vh; overflow: auto; }
   .rq-list[hidden] { display: none; }
   .rq-empty { color: var(--ink-soft); opacity: .85; font-size: .95rem; padding: 14px 2px; }
+  .rq-more { display: flex; justify-content: center; padding: 4px 0 2px; }
+  .rq-more-btn { border: none; background: var(--paper-edge); color: var(--ink-soft); border-radius: 999px; padding: 7px 18px; font-size: .9rem; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+  .rq-more-btn:hover { background: var(--highlight); }
   .rq-card { background: var(--card1); color: var(--ink); border-radius: 12px; padding: 12px 14px; box-shadow: 0 6px 18px rgba(0,0,0,.22); }
   .rq-card.unread { box-shadow: 0 0 0 2px var(--accent), 0 6px 18px rgba(0,0,0,.22); }
   .rq-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
@@ -918,6 +921,7 @@
     rq_modal_head: { ko: "✉️ 요청", en: "✉️ Requests" },
     rq_tab_inbox: { ko: "받은 요청", en: "Received" },
     rq_tab_sent: { ko: "보낸 요청", en: "Sent" },
+    rq_more: { ko: "더 보기 ({0}개 더)", en: "Show {0} more" },
     rq_new: { ko: "🔔 {0}님이 요청을 보냈어요", en: "🔔 {0} sent you a request" },
     rq_inbox_title: { ko: "받은 요청", en: "Inbox" },
     rq_tray_title: { ko: "✉️ 요청함", en: "✉️ Requests" },
@@ -1574,6 +1578,8 @@
   let msgDb = null;                    // firebase database (messaging)
   let knownReqIds = null;              // 토스트용: 이미 본 요청 id 집합(null=첫 로드 전)
   let reqTab = null;                   // 요청 팝업 활성 탭(null=닫힘)
+  const REQ_PAGE = 10;                 // 한 번에 보여줄 요청 수
+  let reqShown = { inbox: REQ_PAGE, sent: REQ_PAGE };  // 받은/보낸 현재 표시 개수
 
   function ensureFirebase() {
     if (!cloudConfigured()) return null;
@@ -1720,7 +1726,16 @@
   function renderReqList(ul, items, kind) {
     ul.innerHTML = "";
     if (!items.length) { const li = document.createElement("li"); li.className = "rq-empty"; li.textContent = t(kind === "inbox" ? "rq_inbox_empty" : "rq_sent_empty"); ul.appendChild(li); return; }
-    items.forEach((r) => ul.appendChild(buildReqCard(r, kind)));
+    const limit = reqShown[kind] || REQ_PAGE;
+    items.slice(0, limit).forEach((r) => ul.appendChild(buildReqCard(r, kind)));
+    const rest = items.length - limit;
+    if (rest > 0) {
+      const li = document.createElement("li"); li.className = "rq-more";
+      const btn = document.createElement("button"); btn.className = "rq-more-btn"; btn.type = "button";
+      btn.textContent = t("rq_more", rest);
+      btn.addEventListener("click", () => { reqShown[kind] = limit + REQ_PAGE; renderRequests(); });
+      li.appendChild(btn); ul.appendChild(li);
+    }
   }
   function buildReqCard(r, kind) {
     const li = document.createElement("li");
@@ -1791,6 +1806,7 @@
   function closeReqPopup() { $id("reqPopup").hidden = true; setReqTab(null); }
   function setReqTab(tab) {
     reqTab = tab;
+    if (tab === "inbox" || tab === "sent") reqShown[tab] = REQ_PAGE;   // 탭 열 때 최신 10개부터
     const tabIn = $id("rqTabInbox"), tabSent = $id("rqTabSent"), inboxList = $id("rqInboxList"), sentList = $id("rqSentList");
     if (tabIn) tabIn.classList.toggle("active", tab === "inbox");
     if (tabSent) tabSent.classList.toggle("active", tab === "sent");
