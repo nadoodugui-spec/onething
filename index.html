@@ -892,7 +892,10 @@
     rq_added_todo: { ko: "할 일에 추가했어요", en: "Added to your todos" },
     rq_reply: { ko: "↩ 답장", en: "↩ Reply" },
     rq_reply_prompt: { ko: "답장을 입력하세요", en: "Enter your reply" },
-    rq_replied: { ko: "답장을 보냈어요", en: "Reply sent" }
+    rq_replied: { ko: "답장을 보냈어요", en: "Reply sent" },
+    s_on_acct: { ko: "계정 기준으로 자동 동기화 중 — {0}", en: "Auto-syncing by account — {0}" },
+    sync_acct_help: { ko: "로그인한 계정 기준으로 자동 동기화됩니다. 같은 계정으로 다른 기기에서 로그인하면 같은 할 일이 보여요.", en: "Auto-syncs by your account. Log in with the same account on another device to see the same todos." },
+    acct_migrated: { ko: "기존 할 일을 이 계정으로 가져왔어요", en: "Imported your existing todos into this account" }
   };
   function t(key) {
     const e = I18N[key]; let s = e ? (e[LANG] || e.ko) : key;
@@ -1500,19 +1503,19 @@
   function cloudConfigured() { return typeof firebase !== "undefined" && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL; }
   function initSync() {
     if (!cloudConfigured()) { setSyncStatus("unconfigured"); return; }
-    const code = getSyncCode(); if (!code) { setSyncStatus("nocode"); return; }
+    if (!currentUser) { if (syncRef) { syncRef.off(); syncRef = null; } cloudReady = false; setSyncStatus("nocode"); return; }
     try {
-      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-      const db = firebase.database(); if (syncRef) { syncRef.off(); syncRef = null; }
-      cloudReady = false; lastTs = 0; syncRef = db.ref("notes/" + code);
+      const db = ensureFirebase(); if (!db) { setSyncStatus("error"); return; }
+      if (syncRef) { syncRef.off(); syncRef = null; }
+      cloudReady = false; lastTs = 0; syncRef = db.ref("notes/user_" + currentUser.id);
       syncRef.on("value", (snap) => {
         cloudReady = true; const val = snap.val();
-        if (!val) { setSyncStatus("ok", code); pushCloud(); return; }
-        if (val.origin === clientId) { lastTs = Math.max(lastTs, val.ts || 0); setSyncStatus("ok", code); return; }
-        if ((val.ts || 0) <= lastTs) { setSyncStatus("ok", code); return; }
+        if (!val) { setSyncStatus("ok"); maybeMigrateLegacy(); pushCloud(); return; }
+        if (val.origin === clientId) { lastTs = Math.max(lastTs, val.ts || 0); setSyncStatus("ok"); return; }
+        if ((val.ts || 0) <= lastTs) { setSyncStatus("ok"); return; }
         applyingRemote = true; state = migrate(val.data); lastTs = val.ts || 0;
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
-        applyLang(); render(); applyingRemote = false; setSyncStatus("ok", code); toast(t("s_pulled"));
+        try { localStorage.setItem(notebookKey(), JSON.stringify(state)); } catch (_) {}
+        applyLang(); render(); applyingRemote = false; setSyncStatus("ok"); toast(t("s_pulled"));
       }, () => setSyncStatus("error"));
     } catch (e) { setSyncStatus("error"); }
   }
@@ -1520,13 +1523,13 @@
   function setSyncStatus(kind, code) {
     const chip = $id("syncChip"), stateEl = $id("syncState"); if (!chip) return; chip.classList.remove("on", "warn", "err");
     let c, m, cls;
-    if (kind === "ok") { chip.classList.add("on"); c = t("s_on"); m = t("s_on_msg", code || getSyncCode()); cls = "on"; }
+    if (kind === "ok") { chip.classList.add("on"); c = t("s_on"); m = t("s_on_acct", currentUser ? currentUser.name : ""); cls = "on"; }
     else if (kind === "nocode") { chip.classList.add("warn"); c = t("s_nocode"); m = t("s_nocode_msg"); cls = "warn"; }
     else if (kind === "error") { chip.classList.add("err"); c = t("s_err"); m = t("s_err_msg"); cls = "err"; }
     else { c = t("s_unconf"); m = t("s_unconf_msg"); cls = "warn"; }
     chip.textContent = c; if (stateEl) { stateEl.textContent = m; stateEl.className = "sync-state " + cls; }
   }
-  function refreshSyncState() { if (!cloudConfigured()) setSyncStatus("unconfigured"); else if (!getSyncCode()) setSyncStatus("nocode"); else if (cloudReady) setSyncStatus("ok"); else setSyncStatus("nocode"); }
+  function refreshSyncState() { if (!cloudConfigured()) setSyncStatus("unconfigured"); else if (!currentUser) setSyncStatus("nocode"); else if (cloudReady) setSyncStatus("ok"); else setSyncStatus("nocode"); }
   function saveSyncCode(code) { code = (code || "").trim(); try { localStorage.setItem(SYNC_CODE_KEY, code); } catch (_) {} initSync(); refreshSyncState(); if (code && cloudConfigured()) toast(t("s_saved")); }
   function genCode() { const p = () => Math.random().toString(36).slice(2, 6); return "note-" + p() + p(); }
   function openSync() {
@@ -1581,17 +1584,37 @@
     msgDb.ref("users/" + id).set(rec);
     usersCache[id] = rec;                                   // 낙관적 반영
     localStorage.setItem(USER_KEY, JSON.stringify({ id, name }));
-    resolveCurrentUser();
+    resolveCurrentUser(); switchNotebook();
     return { ok: true };
   }
   function loginUser(id, pin) {
     const u = usersCache[id]; if (!u) return { ok: false, msg: t("rq_no_user") };
     if ((u.pin || "") !== (pin || "").trim()) return { ok: false, msg: t("rq_wrong_pin") };
     localStorage.setItem(USER_KEY, JSON.stringify({ id, name: u.name }));
-    resolveCurrentUser();
+    resolveCurrentUser(); switchNotebook();
     return { ok: true };
   }
-  function logoutUser() { localStorage.removeItem(USER_KEY); currentUser = null; updateLoginGate(); }
+  function logoutUser() {
+    localStorage.removeItem(USER_KEY); currentUser = null;
+    if (syncRef) { syncRef.off(); syncRef = null; } cloudReady = false;
+    state = migrate(null); render(); updateLoginGate(); refreshSyncState();
+  }
+  function switchNotebook() {
+    state = loadState();
+    state.trash = (state.trash || []).filter((td) => !td.deletedAt || (Date.now() - td.deletedAt) < 30 * 864e5);
+    if (activeTodo()) timerRemaining = pomoSec();
+    applyLang(); render(); initSync();
+  }
+  function maybeMigrateLegacy() {
+    if (!currentUser || currentUser.name !== "나두혁") return;
+    if (localStorage.getItem("onething-acct-migrated")) return;
+    if ((state.todos || []).length || (state.history || []).length) { localStorage.setItem("onething-acct-migrated", "1"); return; }
+    let legacy = null; try { legacy = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch (_) {}
+    if (legacy && ((legacy.todos || []).length || (legacy.history || []).length)) {
+      state = migrate(legacy); save(); render(); toast(t("acct_migrated"));
+    }
+    localStorage.setItem("onething-acct-migrated", "1");
+  }
 
   function openSendReq() {
     if (!currentUser) { showLoginGate(); return; }
@@ -1841,12 +1864,12 @@
   if (activeTodo()) timerRemaining = pomoSec();
   setupPWA();
   applyTheme();
-  applyLang();
-  render();
-  initSync();
   resolveCurrentUser();
   initMessaging();
   if (cloudConfigured() && !currentUser) showLoginGate();
+  if (currentUser) switchNotebook();
+  else { applyLang(); render(); }
+  refreshSyncState();
   checkReminder();
   $id("newTodo").focus();
 })();
