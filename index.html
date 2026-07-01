@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet" />
 <!-- 클라우드 동기화용 Firebase (인터넷이 없으면 자동으로 이 컴퓨터에만 저장됩니다) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
   :root {
@@ -1583,10 +1584,12 @@
   const SYNC_CODE_KEY = "onething-sync-code", CLIENT_KEY = "onething-client";
   let clientId = localStorage.getItem(CLIENT_KEY); if (!clientId) { clientId = uid() + uid(); try { localStorage.setItem(CLIENT_KEY, clientId); } catch (_) {} }
   let syncRef = null, cloudReady = false, lastTs = 0, applyingRemote = false;
+  let authReady = false, cloudStarted = false;   // 익명 인증 완료/클라우드 연결 시작 여부
   function getSyncCode() { return (localStorage.getItem(SYNC_CODE_KEY) || "").trim(); }
   function cloudConfigured() { return typeof firebase !== "undefined" && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL; }
   function initSync() {
     if (!cloudConfigured()) { setSyncStatus("unconfigured"); return; }
+    if (!cloudStarted) { return; }   // 인증 결과(성공/실패)가 나온 뒤 startCloud()에서 연결
     if (!currentUser) { if (syncRef) { syncRef.off(); syncRef = null; } cloudReady = false; setSyncStatus("nocode"); return; }
     try {
       const db = ensureFirebase(); if (!db) { setSyncStatus("error"); return; }
@@ -1650,6 +1653,25 @@
       notifyNewRequests();
       renderRequests(); renderUnreadBadge();
     });
+  }
+  // 익명 인증 성공 후 한 번만 클라우드(메신저+노트) 연결
+  function startCloud() {
+    if (cloudStarted) return; cloudStarted = true;
+    initMessaging();
+    if (currentUser) initSync();
+    refreshSyncState();
+  }
+  // 눈에 안 보이는 익명 인증. 성공 시 startCloud(). 실패/오프라인이면 로컬 저장만 유지.
+  function ensureAuth() {
+    const db = ensureFirebase();
+    if (!db) return;   // Firebase 미설정/오프라인 → 이 컴퓨터에만 저장(기존 동작)
+    try {
+      const auth = firebase.auth();
+      auth.onAuthStateChanged((user) => { if (user) { authReady = true; startCloud(); } });
+      // 익명 로그인 시도. 아직 콘솔에서 익명 로그인을 안 켰거나 실패해도(규칙이 열려 있는 동안엔)
+      // startCloud()로 폴백 연결 → 앱이 끊기지 않음. 익명 로그인을 켜면 다음 새로고침부터 자동 인증.
+      if (!auth.currentUser) auth.signInAnonymously().catch(() => { startCloud(); });
+    } catch (e) { startCloud(); }
   }
 
   function resolveCurrentUser() {
@@ -1997,11 +2019,11 @@
   setupPWA();
   applyTheme();
   resolveCurrentUser();
-  initMessaging();
   if (cloudConfigured() && !currentUser) showLoginGate();
-  if (currentUser) switchNotebook();
+  if (currentUser) switchNotebook();   // 로컬 데이터로 즉시 렌더 (initSync는 인증 후 startCloud에서 연결)
   else { applyLang(); render(); }
   refreshSyncState();
+  ensureAuth();                        // 익명 인증 → 성공 시 startCloud()에서 클라우드 연결
   checkReminder();
   $id("newTodo").focus();
 })();
