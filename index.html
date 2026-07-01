@@ -497,6 +497,20 @@
     </div>
   </div>
 
+  <div class="modal" id="pinModal" hidden style="z-index:300">
+    <div class="modal-box" style="width:min(94vw,340px)">
+      <div class="modal-head"><span data-i18n="lg_pin_head">🔒 비밀번호 입력</span><button class="modal-close" id="pinClose">✕</button></div>
+      <p class="modal-desc" id="pinModalDesc"></p>
+      <input id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="●●●●" autocomplete="off"
+        style="width:100%;padding:10px 12px;border:2px dashed var(--line);border-radius:10px;background:transparent;color:var(--ink);font-family:var(--font-body);font-size:1.4rem;letter-spacing:.5em;text-align:center;outline:none;box-sizing:border-box" />
+      <div class="mrow" style="margin-top:14px;justify-content:flex-end">
+        <button id="pinCancel" class="mbtn ghost" data-i18n="lg_pin_cancel">취소</button>
+        <button id="pinConfirm" class="mbtn" data-i18n="lg_pin_confirm">확인</button>
+      </div>
+      <div class="login-msg" id="pinMsg"></div>
+    </div>
+  </div>
+
   <button class="sync-chip" id="syncChip" type="button" data-i18n-title="sync_title">☁️ 동기화</button>
 
   <div class="toolbar">
@@ -916,6 +930,9 @@
     lg_empty: { ko: "아직 등록된 사람이 없어요 — 아래에서 새로 등록하세요", en: "No users yet — register below" },
     lg_skip: { ko: "그냥 둘러보기 →", en: "Just browse →" },
     lg_pin_prompt: { ko: "{0} 님의 4자리 비밀번호를 입력하세요", en: "Enter {0}'s 4-digit PIN" },
+    lg_pin_head: { ko: "🔒 비밀번호 입력", en: "🔒 Enter PIN" },
+    lg_pin_confirm: { ko: "확인", en: "OK" },
+    lg_pin_cancel: { ko: "취소", en: "Cancel" },
     lg_welcome: { ko: "{0} 님 환영합니다", en: "Welcome, {0}" },
     um_head: { ko: "👤 사용자", en: "👤 User" },
     um_who: { ko: "현재 로그인: {0}", en: "Logged in as {0}" },
@@ -1772,18 +1789,29 @@
     ids.forEach((id) => {
       const li = document.createElement("li"); li.className = "login-user";
       li.textContent = "👤 " + ((usersCache[id] || {}).name || "?");
-      li.addEventListener("click", () => {
-        const pin = prompt(t("lg_pin_prompt", (usersCache[id] || {}).name || ""));
-        if (pin === null) return;
-        const r = loginUser(id, pin.trim());
-        if (r.ok) { hideLoginGate(); toast(t("lg_welcome", currentUser.name)); }
-        else { const m = $id("lgMsg"); if (m) m.textContent = r.msg; }
-      });
+      li.addEventListener("click", () => openPinModal(id));
       ul.appendChild(li);
     });
   }
   function showLoginGate() { const g = $id("loginGate"); if (g && cloudConfigured()) { g.hidden = false; renderLoginUsers(); const m = $id("lgMsg"); if (m) m.textContent = ""; } }
   function hideLoginGate() { const g = $id("loginGate"); if (g) g.hidden = true; }
+  // 비밀번호(PIN) 입력 모달 — native prompt 대체, 입력값을 ● 로 가림
+  let pinTargetId = null;
+  function openPinModal(id) {
+    pinTargetId = id;
+    $id("pinModalDesc").textContent = t("lg_pin_prompt", (usersCache[id] || {}).name || "?");
+    const inp = $id("pinInput"); inp.value = "";
+    $id("pinMsg").textContent = "";
+    $id("pinModal").hidden = false;
+    setTimeout(() => inp.focus(), 30);
+  }
+  function closePinModal() { $id("pinModal").hidden = true; pinTargetId = null; }
+  function submitPin() {
+    if (!pinTargetId) return;
+    const r = loginUser(pinTargetId, ($id("pinInput").value || "").trim());
+    if (r.ok) { closePinModal(); hideLoginGate(); toast(t("lg_welcome", currentUser.name)); }
+    else { $id("pinMsg").textContent = r.msg; const inp = $id("pinInput"); inp.value = ""; inp.focus(); }
+  }
   function renderRequests() {
     const inboxUl = $id("rqInboxList"), sentUl = $id("rqSentList");
     if (!inboxUl || !sentUl || !currentUser) return;
@@ -1966,6 +1994,11 @@
     else { const m = $id("lgMsg"); if (m) m.textContent = r.msg; }
   });
   $id("lgPin").addEventListener("keydown", (e) => { if (e.key === "Enter") $id("lgRegisterBtn").click(); });
+  $id("pinConfirm").addEventListener("click", submitPin);
+  $id("pinCancel").addEventListener("click", closePinModal);
+  $id("pinClose").addEventListener("click", closePinModal);
+  $id("pinInput").addEventListener("keydown", (e) => { if (e.key === "Enter") submitPin(); else if (e.key === "Escape") closePinModal(); });
+  $id("pinModal").addEventListener("click", (e) => { if (e.target.id === "pinModal") closePinModal(); });
   $id("userClose").addEventListener("click", () => { $id("userModal").hidden = true; });
   $id("switchUserBtn").addEventListener("click", () => { $id("userModal").hidden = true; logoutUser(); showLoginGate(); });
   $id("sendReqClose").addEventListener("click", () => { $id("sendReqModal").hidden = true; });
