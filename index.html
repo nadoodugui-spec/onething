@@ -196,6 +196,10 @@
   .group-tabs .gt-new { margin-left: 4px; margin-bottom: 5px; padding: 3px 11px; border: 1px dashed var(--border); border-radius: 999px; font-size: .82rem; }
   .group-tabs .gt-new:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
   .group-tabs button.drop-into { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); border-radius: 8px; }
+  .group-tabs .gt-prj .icon { color: var(--text-soft); }
+  .group-tabs .gt-prj.active .icon { color: var(--accent); }
+  li.todo.prj-done .todo-text { text-decoration: line-through; color: var(--done); }
+  li.todo.prj-done .check { color: var(--accent); border-color: var(--done); }
 
   /* todo detail panel */
   .detail {
@@ -1289,6 +1293,13 @@
     rq_fwd_by: { ko: "{0}님이 전달", en: "Forwarded by {0}" },
     rq_search_ph: { ko: "요청 검색(내용·이름)…", en: "Search requests…" },
     rq_due_sum: { ko: "오늘 마감 {0}건 · 지난 마감 {1}건이 있어요", en: "{0} due today · {1} overdue" },
+    prj_add: { ko: "＋ Project", en: "＋ Project" },
+    prj_add_t: { ko: "팀과 공유하는 프로젝트 목록 만들기", en: "Create a shared project list" },
+    prj_name_prompt: { ko: "Project 이름을 입력하세요", en: "Project name" },
+    prj_del_t: { ko: "Project 삭제(팀 전체에서 삭제됨)", en: "Delete project (for everyone)" },
+    prj_del_confirm: { ko: "'{0}' Project를 삭제할까요? 팀 전체에서 사라지며 되돌릴 수 없어요.", en: "Delete project '{0}'? It disappears for everyone." },
+    prj_empty: { ko: "팀과 함께 쓰는 목록이에요 — 첫 할 일을 적어보세요", en: "A shared list — add the first item" },
+    prj_todo_del: { ko: "이 항목을 삭제할까요? (팀 전체에서 삭제)", en: "Delete this item for everyone?" },
     rq_modal_head: { ko: "요청", en: "Requests" },
     rq_tab_inbox: { ko: "받은 요청", en: "Received" },
     rq_tab_sent: { ko: "보낸 요청", en: "Sent" },
@@ -1760,6 +1771,7 @@
   }
   function renderTodos() {
     const box = $id("todoList"); box.innerHTML = "";
+    if (currentProject) { renderProjectTodos(box); return; }   // 공유 프로젝트 보기
     const vis = visibleTodos(), cur = activeTodo();
     if (vis.length === 0) {
       const e = document.createElement("li"); e.className = "prio-empty"; e.style.listStyle = "none";
@@ -1784,6 +1796,66 @@
       box.append(group);
     });
   }
+  // ----- 공유 Project (팀 공동 할 일 목록, Firebase) -----
+  let projectsCache = {};        // { pid: {name, owner, ownerName, createdAt} }
+  let projectTodosCache = {};    // { pid: { tid: {text, done, ts, by, doneBy, doneAt} } }
+  let currentProject = null;     // 보고 있는 프로젝트 id (null=개인 목록)
+  function projectStats(pid) {
+    const todos = projectTodosCache[pid] || {};
+    const keys = Object.keys(todos);
+    return { total: keys.length, done: keys.filter((k) => todos[k] && todos[k].done).length };
+  }
+  function addProject() {
+    if (!currentUser || !msgDb) { toast(t("rq_offline")); return; }
+    const name = (prompt(t("prj_name_prompt"), "") || "").trim(); if (!name) return;
+    const pid = uid();
+    try { msgDb.ref("projects/" + pid).set({ name: name, owner: currentUser.id, ownerName: currentUser.name, createdAt: Date.now() }); } catch (_) {}
+    projectsCache[pid] = { name: name, owner: currentUser.id };   // 낙관적 반영
+    currentProject = pid; currentGroup = null;
+    render();
+  }
+  function deleteProject(pid) {
+    const p = projectsCache[pid]; if (!p || !msgDb) return;
+    if (!(isAdmin() || p.owner === currentUser.id)) return;
+    if (!confirm(t("prj_del_confirm", p.name))) return;
+    try { msgDb.ref("projects/" + pid).remove(); msgDb.ref("projectTodos/" + pid).remove(); } catch (_) {}
+    delete projectsCache[pid];
+    if (currentProject === pid) currentProject = null;
+    render();
+  }
+  function renderProjectTodos(box) {
+    const pid = currentProject;
+    const todos = projectTodosCache[pid] || {};
+    const q = searchQuery.trim().toLowerCase();
+    const items = Object.keys(todos).map((k) => Object.assign({ id: k }, todos[k]))
+      .filter((td) => !q || (td.text || "").toLowerCase().includes(q))
+      .sort((a, b) => (!!a.done === !!b.done ? (a.ts || 0) - (b.ts || 0) : (a.done ? 1 : -1)));
+    if (!items.length) {
+      const e = document.createElement("li"); e.className = "prio-empty"; e.style.listStyle = "none";
+      e.textContent = q ? t("no_results") : t("prj_empty"); box.append(e); return;
+    }
+    items.forEach((td) => {
+      const li = document.createElement("li"); li.className = "todo" + (td.done ? " prj-done" : "");
+      const check = document.createElement("button"); check.className = "check"; check.textContent = td.done ? "✓" : "";
+      check.title = t("ti_done");
+      check.addEventListener("click", () => {
+        if (!msgDb || !currentUser) return;
+        try {
+          msgDb.ref("projectTodos/" + pid + "/" + td.id).update(
+            td.done ? { done: false, doneBy: null, doneAt: null } : { done: true, doneBy: currentUser.name, doneAt: Date.now() });
+        } catch (_) {}
+      });
+      const text = document.createElement("span"); text.className = "todo-text"; text.textContent = td.text || "";
+      li.append(check, text);
+      const byName = td.done ? (td.doneBy || "") : (td.by || "");
+      if (byName) { const c = document.createElement("span"); c.className = "chip"; c.textContent = (td.done ? "✓ " : "") + byName; li.append(c); }
+      const x = document.createElement("button"); x.className = "more-btn"; x.textContent = "✕"; x.title = t("ti_delete");
+      x.addEventListener("click", () => { if (msgDb && confirm(t("prj_todo_del"))) { try { msgDb.ref("projectTodos/" + pid + "/" + td.id).remove(); } catch (_) {} } });
+      li.append(x);
+      box.append(li);
+    });
+  }
+
   // ----- 폴더 탭 — 각 폴더는 독립된 할 일 목록 -----
   function openTodosOf(gid) {
     const groupIds = new Set((state.groups || []).map((g) => g.id));
@@ -1797,11 +1869,11 @@
     box.innerHTML = "";
     const mkTab = (gid, name) => {
       const b = document.createElement("button"); b.type = "button";
-      b.className = gid === currentGroup ? "active" : "";
+      b.className = (gid === currentGroup && !currentProject) ? "active" : "";
       const lab = document.createElement("span"); lab.textContent = name; b.append(lab);
       const n = openTodosOf(gid);
       if (n) { const c = document.createElement("span"); c.className = "gt-count"; c.textContent = "(" + n + ")"; b.append(c); }
-      b.addEventListener("click", () => { if (currentGroup !== gid) { currentGroup = gid; render(); } });
+      b.addEventListener("click", () => { if (currentGroup !== gid || currentProject) { currentGroup = gid; currentProject = null; render(); } });
       // 드래그한 할 일을 탭에 떨어뜨리면 그 폴더로 이동
       b.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId) b.classList.add("drop-into"); });
       b.addEventListener("dragleave", () => b.classList.remove("drop-into"));
@@ -1828,10 +1900,42 @@
       }
       box.append(b);
     });
+    // 공유 Project 탭 (팀 공동 목록 — 진행률 표시)
+    if (currentUser && cloudConfigured()) {
+      Object.keys(projectsCache).sort((a, b) => ((projectsCache[a] || {}).createdAt || 0) - ((projectsCache[b] || {}).createdAt || 0)).forEach((pid) => {
+        const p = projectsCache[pid] || {};
+        const b = document.createElement("button"); b.type = "button";
+        b.className = (currentProject === pid ? "active " : "") + "gt-prj";
+        b.innerHTML = '<svg class="icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c1-2.7 3-4 5.5-4s4.5 1.3 5.5 4"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.6c2.3.2 4 1.4 4.8 3.4"/></svg>';
+        const lab = document.createElement("span"); lab.textContent = p.name || "?"; b.append(lab);
+        const s = projectStats(pid);
+        const c = document.createElement("span"); c.className = "gt-count"; c.textContent = "(" + s.done + "/" + s.total + ")"; b.append(c);
+        b.addEventListener("click", () => { if (currentProject !== pid) { currentProject = pid; render(); } });
+        if (currentProject === pid) {
+          if (isAdmin() || p.owner === (currentUser || {}).id) {
+            lab.title = t("grp_rename_t");
+            b.addEventListener("dblclick", () => {
+              const name = (prompt(t("prj_name_prompt"), p.name) || "").trim();
+              if (name && msgDb) { try { msgDb.ref("projects/" + pid + "/name").set(name); } catch (_) {} }
+            });
+            const del = document.createElement("button"); del.className = "row-x"; del.textContent = "✕"; del.title = t("prj_del_t");
+            del.addEventListener("click", (e) => { e.stopPropagation(); deleteProject(pid); });
+            b.append(del);
+          }
+        }
+        box.append(b);
+      });
+    }
     const add = document.createElement("button"); add.type = "button"; add.className = "gt-new";
     add.textContent = t("grp_add"); add.title = t("grp_add_t");
     add.addEventListener("click", addGroup);
     box.append(add);
+    if (currentUser && cloudConfigured()) {
+      const addP = document.createElement("button"); addP.type = "button"; addP.className = "gt-new";
+      addP.textContent = t("prj_add"); addP.title = t("prj_add_t");
+      addP.addEventListener("click", addProject);
+      box.append(addP);
+    }
   }
   function addGroup() {
     const name = (prompt(t("grp_name_prompt"), "") || "").trim(); if (!name) return;
@@ -1990,6 +2094,11 @@
   }
   function render() {
     renderGroupTabs(); renderTodos(); renderLater(); renderDone(); renderRight();
+    // 프로젝트 보기에서는 나중에/끝난 일 섹션 숨김 (프로젝트는 자체 완료 표시)
+    const lw = $id("laterWrap"), dw = $id("doneWrap"), ah = $id("addHint");
+    if (lw) lw.style.display = currentProject ? "none" : "";
+    if (dw) dw.style.display = currentProject ? "none" : "";
+    if (ah && currentProject) ah.hidden = true;
     const active = activeTodo(); if (!active) leftUnlocked = false;
     const locked = !!active && !leftUnlocked && viewDate === todayStr();
     $(".notebook").classList.toggle("locked", locked);
@@ -2464,6 +2573,16 @@
       statusCache = snap.val() || {};
       renderMyStatus(); renderTeamBoard();
       const m = $id("sendReqModal"); if (m && !m.hidden) { renderToChips(); updateToStatus(); }
+    });
+    msgDb.ref("projects").on("value", (snap) => {
+      projectsCache = snap.val() || {};
+      if (currentProject && !projectsCache[currentProject]) { currentProject = null; render(); }
+      else renderGroupTabs();
+    });
+    msgDb.ref("projectTodos").on("value", (snap) => {
+      projectTodosCache = snap.val() || {};
+      renderGroupTabs();
+      if (currentProject) renderTodos();
     });
   }
   // 익명 인증 성공 후 한 번만 클라우드(메신저+노트) 연결
@@ -3339,6 +3458,12 @@
   // ---------- events ----------
   function addFromInput(prio) {
     const i = $id("newTodo");
+    if (currentProject) {   // 프로젝트에 추가 (공유)
+      const text = (i.value || "").trim(); if (!text) return;
+      if (!msgDb || !currentUser) { toast(t("rq_offline")); return; }
+      try { msgDb.ref("projectTodos/" + currentProject + "/" + uid()).set({ text: text, done: false, ts: Date.now(), by: currentUser.name }); } catch (_) {}
+      i.value = ""; i.focus(); return;
+    }
     addTodo(i.value, { priority: prio || "normal" });
     i.value = ""; i.focus();
   }
@@ -3349,7 +3474,7 @@
     e.preventDefault();
     addFromInput(e.ctrlKey || e.metaKey ? "urgent" : e.shiftKey ? "important" : null);
   });
-  $id("newTodo").addEventListener("focus", () => { const h = $id("addHint"); if (h) h.hidden = false; });
+  $id("newTodo").addEventListener("focus", () => { const h = $id("addHint"); if (h) h.hidden = !!currentProject; });
   $id("newTodo").addEventListener("blur", () => { const h = $id("addHint"); if (h) h.hidden = true; });
   $id("doneHead").addEventListener("click", () => { state.doneCollapsed = !state.doneCollapsed; save(); renderDone(); });
   $id("laterHead").addEventListener("click", () => { state.laterCollapsed = !state.laterCollapsed; save(); renderLater(); });
