@@ -4,7 +4,7 @@
     ".write": "auth != null",
     "status": {
       "$uid": {
-        ".validate": "newData.hasChildren(['state', 'ts']) && newData.child('state').val().matches(/^(focus|work|away)$/)"
+        ".validate": "newData.hasChildren(['state', 'ts']) && newData.child('state').val().matches(/^(focus|work|away|vacation)$/)"
       }
     },
     "requests": {

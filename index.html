@@ -513,6 +513,8 @@
   .st-dot.st-focus { background: #8b5cf6; }
   .st-dot.st-work { background: var(--ok); }
   .st-dot.st-away { background: #9aa1ad; }
+  .st-dot.st-vacation { background: #5b91d8; }
+  .sp-av.st-vacation { border-color: #5b91d8; }
   .st-options { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
   .st-opt { display: grid; grid-template-columns: 14px 1fr; align-items: center; column-gap: 9px; text-align: left;
     border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 10px;
@@ -951,6 +953,7 @@
         <button class="st-opt" data-st="focus" type="button"><span class="st-dot st-focus"></span><span data-i18n="st_focus">원씽 중</span><small data-i18n="st_focus_d">초집중 — 새 요청 알림이 조용히 쌓여요</small></button>
         <button class="st-opt" data-st="work" type="button"><span class="st-dot st-work"></span><span data-i18n="st_work">업무 중</span><small data-i18n="st_work_d">요청이 오면 바로 알림을 받아요</small></button>
         <button class="st-opt" data-st="away" type="button"><span class="st-dot st-away"></span><span data-i18n="st_away">자리비움</span><small data-i18n="st_away_d">자리에 없음 — 알림은 그대로 표시돼요</small></button>
+        <button class="st-opt" data-st="vacation" type="button"><span class="st-dot st-vacation"></span><span data-i18n="st_vacation">휴가 중</span><small data-i18n="st_vacation_d">복귀일과 대리인을 알려요</small></button>
       </div>
     </div>
   </div>
@@ -1076,6 +1079,19 @@
       <input id="progText" type="text" maxlength="120" data-i18n-ph="rq_prog_ph" placeholder="예: 자료 절반 수집 완료, 내일 마무리 예정"
         style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.95rem;outline:none;box-sizing:border-box" />
       <div class="mrow" style="margin-top:14px;justify-content:flex-end"><button id="progSave" class="mbtn" data-i18n="save_btn">저장</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="vacModal" hidden style="z-index:120">
+    <div class="modal-box" style="width:min(94vw,360px)">
+      <div class="modal-head"><span data-i18n="vac_head">휴가 설정</span><button class="modal-close" id="vacClose">✕</button></div>
+      <div class="mrow" style="margin-top:12px"><span class="mlabel" data-i18n="vac_until">복귀일</span>
+        <input id="vacDate" type="date" style="flex:1;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);padding:7px 10px;outline:none" />
+      </div>
+      <div class="mrow"><span class="mlabel" data-i18n="vac_deputy">대리인(선택)</span>
+        <select id="vacDeputy" style="flex:1;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);padding:7px 8px;outline:none"></select>
+      </div>
+      <div class="mrow" style="margin-top:12px;justify-content:flex-end"><button id="vacSave" class="mbtn" data-i18n="save_btn">저장</button></div>
     </div>
   </div>
 
@@ -1490,6 +1506,13 @@
     st_changed: { ko: "상태: {0}", en: "Status: {0}" },
     st_focus_hint: { ko: "지금 '단 하나'에 집중하는 중이에요 — 급하지 않다면 잠시 지켜주세요", en: "Focusing on their one thing — if it can wait, let it wait" },
     st_focus_req: { ko: "원씽을 먼저 정하면 '원씽 중'이 돼요", en: "Pick your One Thing first to go 'Focusing'" },
+    st_vacation: { ko: "휴가 중", en: "On vacation" },
+    st_vacation_d: { ko: "복귀일과 대리인을 알려요", en: "Show return date and deputy" },
+    vac_head: { ko: "휴가 설정", en: "Vacation" },
+    vac_until: { ko: "복귀일", en: "Return date" },
+    vac_deputy: { ko: "대리인(선택)", en: "Deputy (optional)" },
+    vac_need_date: { ko: "복귀일을 선택하세요", en: "Pick a return date" },
+    vac_deputy_is: { ko: "급하면 {0}님에게", en: "If urgent, ask {0}" },
     // 쪽지 / 업무 요청
     kind_memo: { ko: "쪽지", en: "Memo" },
     kind_task: { ko: "업무 요청", en: "Work request" },
@@ -2737,6 +2760,9 @@
   let statusCache = {};                        // { userId: {state, ts} }
   let prevManualStatus = localStorage.getItem(STATUS_KEY) || "work";
   if (prevManualStatus === "focus") prevManualStatus = "work";   // focus는 수동 상태가 아님 — 과거 잔류값 정리
+  let vacInfo = {};   // {until(ms), deputy, deputyName}
+  try { vacInfo = JSON.parse(localStorage.getItem("onething-vac") || "{}") || {}; } catch (_) {}
+  if (prevManualStatus === "vacation" && (!vacInfo.until || vacInfo.until < Date.now())) prevManualStatus = "work";   // 복귀일 지남 → 자동 복귀
   let beforeFocusStatus = null;                // 타이머 자동 전환 전 상태(복원용)
   let presenceUid = null;                      // onDisconnect가 등록된 사용자 id
   function myStatus() {
@@ -2748,6 +2774,10 @@
     const leavingFocus = myStatus() === "focus" && state !== "focus";
     if ((!opts || !opts.auto) && state !== "focus") { prevManualStatus = state; try { localStorage.setItem(STATUS_KEY, state); } catch (_) {} }
     const rec = { state: state, ts: Date.now() };
+    if (state === "vacation" && vacInfo.until) {
+      rec.until = vacInfo.until;
+      if (vacInfo.deputy) { rec.deputy = vacInfo.deputy; rec.deputyName = vacInfo.deputyName || ""; }
+    }
     // 타이머 종료 예정 시각 — 설정에서 공개를 켠 경우에만 공유
     if (state === "focus" && opts && opts.until && sharesFocusTime()) rec.until = opts.until;
     // 오늘의 원씽 공개(선택제)
@@ -2821,6 +2851,7 @@
     if (h < 24) return t("ago_hr", h);
     return t("ago_day", Math.floor(h / 24));
   }
+  function fmtShortDate(ts) { const d = new Date(ts); return (d.getMonth() + 1) + "/" + d.getDate(); }
   function spAvatar(id) {
     const st = ((statusCache[id] || {}).state) || "away";
     const av = document.createElement("span"); av.className = "sp-av st-" + st;
@@ -2870,7 +2901,8 @@
     if (sum) {
       const cnt = (st) => ids.filter((id) => stOf(id) === st).length;
       sum.textContent = t("sp_sum", ids.length) + " · " + t("st_focus") + " " + cnt("focus")
-        + " · " + t("st_work") + " " + cnt("work") + " · " + t("st_away") + " " + cnt("away");
+        + " · " + t("st_work") + " " + cnt("work") + " · " + t("st_away") + " " + cnt("away")
+        + (cnt("vacation") ? " · " + t("st_vacation") + " " + cnt("vacation") : "");
     }
     // 내 카드 (상태 전환 포함)
     const meBox = $id("spMe");
@@ -2902,7 +2934,7 @@
     list.innerHTML = "";
     const q = spQuery.trim().toLowerCase();
     const match = (id) => !q || (((usersCache[id] || {}).name || "").toLowerCase().includes(q));
-    ["focus", "work", "away"].forEach((st) => {
+    ["focus", "work", "away", "vacation"].forEach((st) => {
       const members = ids.filter((id) => id !== currentUser.id && stOf(id) === st && match(id))
         .sort((a, b) => (((usersCache[a] || {}).name || "")).localeCompare((usersCache[b] || {}).name || ""));
       if (!members.length) return;
@@ -2927,6 +2959,9 @@
             const fill = document.createElement("div"); fill.className = "sp-bar-fill"; fill.style.width = fi.pct + "%";
             bar.appendChild(fill); body.appendChild(bar);
           }
+        } else if (st === "vacation") {
+          if (s.until) info = "~" + fmtShortDate(s.until);
+          if (s.deputyName) info += (info ? " · " : "") + t("vac_deputy_is", s.deputyName);
         } else if (st === "away" && s.ts) info = fmtAgo(s.ts) + " " + t("st_away");
         else if (s.ot) info = s.ot;
         if (info) { const inf = document.createElement("div"); inf.className = "sp-m-info"; inf.textContent = info; body.appendChild(inf); }
@@ -3252,6 +3287,10 @@
     if (st === "focus") {
       const leftMin = s.until && s.until > Date.now() ? Math.max(1, Math.round((s.until - Date.now()) / 60000)) : null;
       txt += " · " + (leftMin ? t("st_until", leftMin) : t("st_focus_hint"));
+      box.classList.add("focus-warn");
+    } else if (st === "vacation") {
+      if (s.until) txt += " · ~" + fmtShortDate(s.until);
+      if (s.deputyName) txt += " · " + t("vac_deputy_is", s.deputyName);
       box.classList.add("focus-warn");
     }
     lbl.textContent = txt;
@@ -4040,9 +4079,30 @@
   $id("statusModal").addEventListener("click", (e) => {
     const b = e.target.closest(".st-opt"); if (!b) return;
     if (b.dataset.st === "focus" && !activeTodo()) { toast(t("st_focus_req")); return; }
+    if (b.dataset.st === "vacation") {   // 복귀일·대리인 입력 후 설정
+      $id("statusModal").hidden = true;
+      const sel = $id("vacDeputy"); sel.innerHTML = "";
+      const o0 = document.createElement("option"); o0.value = ""; o0.textContent = t("kb_unassign"); sel.appendChild(o0);
+      Object.keys(usersCache).filter((u) => u !== currentUser.id).forEach((u) => {
+        const o = document.createElement("option"); o.value = u; o.textContent = (usersCache[u] || {}).name || "?"; sel.appendChild(o);
+      });
+      $id("vacDate").value = "";
+      $id("vacModal").hidden = false;
+      return;
+    }
     setMyStatus(b.dataset.st);
     $id("statusModal").hidden = true;
     toast(t("st_changed", t("st_" + b.dataset.st)));
+  });
+  $id("vacClose").addEventListener("click", () => { $id("vacModal").hidden = true; });
+  $id("vacSave").addEventListener("click", () => {
+    const d = $id("vacDate").value; if (!d) { toast(t("vac_need_date")); return; }
+    const dep = $id("vacDeputy").value;
+    vacInfo = { until: parseDate(d).getTime() + 864e5 - 1, deputy: dep || null, deputyName: dep ? ((usersCache[dep] || {}).name || "") : null };
+    try { localStorage.setItem("onething-vac", JSON.stringify(vacInfo)); } catch (_) {}
+    setMyStatus("vacation");
+    $id("vacModal").hidden = true;
+    toast(t("st_changed", t("st_vacation")));
   });
 
   $id("lgRegisterBtn").addEventListener("click", () => {
