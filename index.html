@@ -910,6 +910,20 @@
       <p class="modal-desc" id="replyToWho"></p>
       <textarea id="replyText" rows="5" maxlength="500" data-i18n-ph="rp_ph" placeholder="답장 내용을 적어보세요…"
         style="width:100%;margin-top:4px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.95rem;outline:none;resize:vertical;box-sizing:border-box"></textarea>
+      <div id="replyRich" hidden>
+        <div class="ed-toolbar" id="edToolbar2">
+          <button type="button" data-cmd="bold" title="굵게"><b>B</b></button>
+          <button type="button" data-cmd="underline" title="밑줄"><u>U</u></button>
+          <button type="button" data-color="#c33d3d" title="빨강"><span class="ed-color" style="background:#c33d3d"></span></button>
+          <button type="button" data-color="#3b5bdb" title="파랑"><span class="ed-color" style="background:#3b5bdb"></span></button>
+          <button type="button" data-color="#2f9e6e" title="초록"><span class="ed-color" style="background:#2f9e6e"></span></button>
+          <button type="button" data-color="default" title="기본색"><span class="ed-color ed-color-def"></span></button>
+          <button type="button" data-cmd="insertUnorderedList" title="목록">•—</button>
+          <button type="button" data-ins="table" title="표 삽입">표</button>
+          <button type="button" data-ins="check" title="체크리스트">☑</button>
+        </div>
+        <div id="replyEditor" class="sr-editor" contenteditable="true" style="min-height:220px"></div>
+      </div>
       <div class="mrow" style="margin-top:14px;justify-content:space-between;align-items:center">
         <span class="add-hint" style="padding:0;margin:0" data-i18n-html="sr_hint"><kbd>Ctrl+Enter</kbd> 보내기</span>
         <button id="replySend" class="mbtn" data-i18n="sr_send">보내기</button>
@@ -2708,7 +2722,11 @@
     (r.replies || []).forEach((rep, i) => {
       const re = document.createElement("div");
       re.className = "rq-reply" + (currentUser && i >= seenN && rep && rep.from !== currentUser.id ? " rq-reply-new" : "");
-      re.textContent = "↩ " + ((rep && rep.fromName) || "?") + ": " + ((rep && rep.text) || "");
+      if (rep && rep.html) {   // 서식 답장(업무 요청)
+        const whoEl = document.createElement("b"); whoEl.textContent = "↩ " + (rep.fromName || "?") + ":";
+        const bd = document.createElement("div"); bd.className = "rq-html"; bd.innerHTML = sanitizeHtml(rep.html);
+        re.append(whoEl, bd);
+      } else re.textContent = "↩ " + ((rep && rep.fromName) || "?") + ": " + ((rep && rep.text) || "");
       li.appendChild(re);
     });
     const acts = document.createElement("div"); acts.className = "rq-acts";
@@ -2782,22 +2800,34 @@
     msgDb.ref("requests/" + id + "/hiddenFor").set(hf);
   }
   let replyTargetId = null;
+  let replyRich = false;   // 업무 요청 답장 = 서식 에디터
   function doReply(id) {
     const r = requestsCache[id]; if (!r || !currentUser) return;
     replyTargetId = id;
+    replyRich = reqKindOf(r) === "task";
     const other = r.from === currentUser.id ? r.toName : r.fromName;
     $id("replyToWho").textContent = t("rp_to", other || "?");
-    $id("replyText").value = ""; $id("replyMsg").textContent = "";
+    $id("replyText").value = ""; $id("replyEditor").innerHTML = ""; $id("replyMsg").textContent = "";
+    $id("replyText").style.display = replyRich ? "none" : "";
+    $id("replyRich").hidden = !replyRich;
+    const box = $id("replyModal").querySelector(".modal-box");
+    if (box) { box.style.width = replyRich ? "min(94vw, 900px)" : "min(94vw, 520px)"; }
     $id("replyModal").hidden = false;
-    setTimeout(() => $id("replyText").focus(), 30);
+    setTimeout(() => (replyRich ? $id("replyEditor") : $id("replyText")).focus(), 30);
   }
   function sendReply() {
     const r = requestsCache[replyTargetId];
     if (!r || !msgDb || !currentUser) { $id("replyMsg").textContent = t("rq_offline"); return; }
-    const text = $id("replyText").value.trim();
+    let text, html = null;
+    if (replyRich) {
+      html = sanitizeHtml($id("replyEditor").innerHTML);
+      text = $id("replyEditor").textContent.trim();
+    } else text = $id("replyText").value.trim();
     if (!text) { $id("replyMsg").textContent = t("sr_need_text"); return; }
     const reps = Array.isArray(r.replies) ? r.replies.slice() : [];
-    reps.push({ from: currentUser.id, fromName: currentUser.name, text: text, ts: Date.now() });
+    const rep = { from: currentUser.id, fromName: currentUser.name, text: text, ts: Date.now() };
+    if (replyRich && html) rep.html = html;
+    reps.push(rep);
     msgDb.ref("requests/" + replyTargetId + "/replies").set(reps);
     msgDb.ref("requests/" + replyTargetId + "/replySeen/" + currentUser.id).set(reps.length);   // 내 답장은 본 것으로
     $id("replyModal").hidden = true; replyTargetId = null;
@@ -3083,21 +3113,26 @@
   });
   $id("rqKindMemo").addEventListener("click", () => setReqKind("memo"));
   $id("rqKindTask").addEventListener("click", () => setReqKind("task"));
-  // 서식 에디터 툴바
-  $id("edToolbar").addEventListener("mousedown", (e) => e.preventDefault());   // 에디터 포커스 유지
-  $id("edToolbar").addEventListener("click", (e) => {
-    const b = e.target.closest("button"); if (!b) return;
-    $id("srEditor").focus();
-    if (b.dataset.cmd) document.execCommand(b.dataset.cmd, false, null);
-    else if (b.dataset.color) {
-      document.execCommand("foreColor", false, b.dataset.color === "default" ? (document.body.dataset.theme === "dark" ? "#e4e7ee" : "#1f2430") : b.dataset.color);
-    } else if (b.dataset.ins === "table") {
-      document.execCommand("insertHTML", false,
-        "<table><tbody><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table><p><br></p>");
-    } else if (b.dataset.ins === "check") {
-      document.execCommand("insertHTML", false, '<ul class="cklist"><li><input type="checkbox"> 항목</li></ul><p><br></p>');
-    }
-  });
+  // 서식 에디터 툴바 (작성·답장 공용)
+  function bindEditorToolbar(tbId, edId) {
+    const tb = $id(tbId); if (!tb) return;
+    tb.addEventListener("mousedown", (e) => e.preventDefault());   // 에디터 포커스 유지
+    tb.addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      $id(edId).focus();
+      if (b.dataset.cmd) document.execCommand(b.dataset.cmd, false, null);
+      else if (b.dataset.color) {
+        document.execCommand("foreColor", false, b.dataset.color === "default" ? (document.body.dataset.theme === "dark" ? "#e4e7ee" : "#1f2430") : b.dataset.color);
+      } else if (b.dataset.ins === "table") {
+        document.execCommand("insertHTML", false,
+          "<table><tbody><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table><p><br></p>");
+      } else if (b.dataset.ins === "check") {
+        document.execCommand("insertHTML", false, '<ul class="cklist"><li><input type="checkbox"> 항목</li></ul><p><br></p>');
+      }
+    });
+  }
+  bindEditorToolbar("edToolbar", "srEditor");
+  bindEditorToolbar("edToolbar2", "replyEditor");
   // 템플릿: 선택 시 제목/본문 채움, 저장/삭제
   $id("srTplSel").addEventListener("change", () => {
     const i = $id("srTplSel").value; if (i === "") return;
@@ -3148,6 +3183,7 @@
   $id("replyClose").addEventListener("click", () => { $id("replyModal").hidden = true; });
   $id("replySend").addEventListener("click", sendReply);
   $id("replyText").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendReply(); } });
+  $id("replyEditor").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendReply(); } });
   $id("rqTabInbox").addEventListener("click", () => setReqTab("inbox"));
   $id("rqTabSent").addEventListener("click", () => setReqTab("sent"));
   $id("reqPopClose").addEventListener("click", closeReqPopup);
