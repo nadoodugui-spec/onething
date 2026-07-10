@@ -163,12 +163,19 @@
   .prio-group.collapsed .prio-list { display: none; }
   li.prio-empty { color: var(--text-soft); font-size: .98rem; font-style: italic; min-height: 28px; line-height: 28px; padding-left: 10px; }
   .prio-group.drop-into { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
-  .grp-head { color: var(--text); }
-  .grp-head .icon { color: var(--text-soft); }
-  .grp-head .row-x { opacity: 0; margin-left: 2px; }
-  .grp-head:hover .row-x { opacity: 1; }
-  .add-group-btn { border: 1px solid var(--border) !important; background: var(--surface) !important; color: var(--text-soft) !important; box-shadow: none !important; font-weight: 500 !important; }
-  .add-group-btn:hover { background: var(--surface-2) !important; color: var(--text) !important; }
+  /* 폴더 탭 — 독립된 할 일 목록 전환 */
+  .group-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 2px; padding-left: 12px; }
+  .group-tabs button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-soft); border-radius: 8px 8px 0 0; border-bottom: none; padding: 6px 13px; cursor: pointer;
+    font-family: var(--font-body); font-size: .88rem; font-weight: 600; }
+  .group-tabs button:hover { background: var(--surface-2); }
+  .group-tabs button.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .group-tabs button .gt-count { font-size: .78rem; opacity: .75; font-weight: 600; }
+  .group-tabs button .row-x { opacity: 0; font-size: .85rem; padding: 0; }
+  .group-tabs button.active .row-x { opacity: .7; }
+  .group-tabs button .row-x:hover { opacity: 1; color: var(--danger); }
+  .group-tabs .gt-new { border-style: dashed; border-bottom-style: dashed; border-radius: 8px; font-weight: 500; }
+  .group-tabs button.drop-into { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); }
   li.todo.prio-urgent .todo-text { color: var(--prio-urgent); }
   li.todo.prio-important .todo-text { color: var(--prio-important); }
 
@@ -585,10 +592,10 @@
           <h1 class="page-title" data-i18n="left_title">오늘 할 일들</h1>
           <button id="relockBtn" class="relock-btn" data-i18n="relock" hidden>🔒 다시 집중</button>
         </div>
+        <div class="group-tabs" id="groupTabs"></div>
         <div class="add-row">
           <input id="newTodo" type="text" data-i18n-ph="new_ph" placeholder="해야 할 일을 적어보세요…" maxlength="200" autocomplete="off" />
           <button id="addBtn" data-i18n="add_btn" data-i18n-title="add_title" title="추가">＋ 추가</button>
-          <button id="addGroupBtn" class="add-group-btn" type="button" data-i18n="grp_add" data-i18n-title="grp_add_t" title="할 일 폴더 만들기">＋ 폴더</button>
         </div>
         <div class="list" id="todoList"></div>
         <div class="later-wrap collapsed" id="laterWrap">
@@ -1119,11 +1126,12 @@
     wk_reqsent: { ko: "보낸 요청", en: "Requests sent" },
     // 할 일 폴더 / 관리자
     grp_add: { ko: "＋ 폴더", en: "＋ Folder" },
-    grp_add_t: { ko: "할 일 폴더 만들기", en: "Create a to-do folder" },
+    grp_add_t: { ko: "새 폴더(독립된 할 일 목록) 만들기", en: "Create a folder (separate to-do list)" },
+    grp_main: { ko: "메인", en: "Main" },
     grp_name_prompt: { ko: "폴더 이름을 입력하세요", en: "Folder name" },
     grp_rename_t: { ko: "더블클릭하면 이름 변경", en: "Double-click to rename" },
-    grp_del_t: { ko: "폴더 삭제(할 일은 목록으로 이동)", en: "Delete folder (to-dos move back)" },
-    grp_del_confirm: { ko: "'{0}' 폴더를 삭제할까요? 안의 할 일은 목록으로 돌아갑니다.", en: "Delete folder '{0}'? Its to-dos move back to the list." },
+    grp_del_t: { ko: "폴더 삭제(할 일은 메인으로 이동)", en: "Delete folder (to-dos move to Main)" },
+    grp_del_confirm: { ko: "'{0}' 폴더를 삭제할까요? 안의 할 일은 메인 목록으로 이동합니다.", en: "Delete folder '{0}'? Its to-dos move to the Main list." },
     um_members: { ko: "구성원 관리 (관리자)", en: "Members (admin)" },
     um_del: { ko: "삭제", en: "Delete" },
     um_del_confirm: { ko: "'{0}' 사용자를 삭제할까요? 로그인 계정과 상태 정보가 삭제됩니다. (되돌릴 수 없음)", en: "Delete user '{0}'? Their account and status will be removed. (Cannot be undone)" },
@@ -1203,14 +1211,20 @@
   }
 
   // ---------- helpers ----------
+  let currentGroup = null;   // 현재 보고 있는 폴더 id (null = 메인 목록)
+  function inCurrentGroup(t) {
+    const groupIds = new Set((state.groups || []).map((g) => g.id));
+    const g = t.group && groupIds.has(t.group) ? t.group : null;   // 없는 폴더 소속은 메인 취급
+    return g === currentGroup;
+  }
   function activeTodo() { return state.todos.find((t) => t.status === "active") || null; }
   function visibleTodos() {
     const q = searchQuery.trim().toLowerCase();
-    return state.todos.filter((t) => t.status !== "done" && !t.later &&
+    return state.todos.filter((t) => t.status !== "done" && !t.later && inCurrentGroup(t) &&
       (!q || (t.text || "").toLowerCase().includes(q)));
   }
-  function doneTodos() { return state.todos.filter((t) => t.status === "done"); }
-  function laterTodos() { return state.todos.filter((t) => t.later && t.status !== "done"); }
+  function doneTodos() { return state.todos.filter((t) => t.status === "done" && inCurrentGroup(t)); }
+  function laterTodos() { return state.todos.filter((t) => t.later && t.status !== "done" && inCurrentGroup(t)); }
 
   let toastTimer = null;
   function toast(msg) {
@@ -1223,7 +1237,7 @@
     text = (text || "").trim(); if (!text) return;
     state.todos.push({ id: uid(), text, color: null, priority: "normal", due: (opts && opts.due) || null, subtasks: [], repeat: null,
       later: false, status: "todo", activatedAt: null, focusSec: 0, createdAt: Date.now(), completedAt: null,
-      reqId: (opts && opts.reqId) || null });
+      reqId: (opts && opts.reqId) || null, group: (opts && opts.group !== undefined) ? opts.group : currentGroup });
     save(); render();
   }
   function sendToOneThing(id) {
@@ -1503,14 +1517,12 @@
   function renderTodos() {
     const box = $id("todoList"); box.innerHTML = "";
     const vis = visibleTodos(), cur = activeTodo();
-    if (vis.length === 0 && !(state.groups || []).length) {
+    if (vis.length === 0) {
       const e = document.createElement("li"); e.className = "prio-empty"; e.style.listStyle = "none";
       e.textContent = searchQuery ? t("no_results") : t("empty_list"); box.append(e); return;
     }
-    const groupIds = new Set((state.groups || []).map((g) => g.id));
-    const ungrouped = vis.filter((td) => !td.group || !groupIds.has(td.group));
     PRIO_GROUPS.forEach((key) => {
-      const items = ungrouped.filter((td) => (td.priority || "normal") === key);
+      const items = vis.filter((td) => (td.priority || "normal") === key);
       const collapsed = !!(state.prioCollapsed && state.prioCollapsed[key]);
       const group = document.createElement("div"); group.className = "prio-group" + (collapsed ? " collapsed" : ""); group.dataset.prio = key;
       const head = document.createElement("div"); head.className = "prio-head " + key;
@@ -1524,49 +1536,74 @@
       group.append(ul);
       group.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId) group.classList.add("drop-into"); });
       group.addEventListener("dragleave", (e) => { if (!group.contains(e.relatedTarget)) group.classList.remove("drop-into"); });
-      group.addEventListener("drop", (e) => { e.preventDefault(); group.classList.remove("drop-into"); if (dragId) reorder(dragId, null, true, key, null); });
+      group.addEventListener("drop", (e) => { e.preventDefault(); group.classList.remove("drop-into"); if (dragId) reorder(dragId, null, true, key); });
       box.append(group);
     });
-    // ----- 사용자 정의 폴더(할일 그룹) -----
-    (state.groups || []).forEach((g) => {
-      const items = vis.filter((td) => td.group === g.id);
-      const wrap = document.createElement("div"); wrap.className = "prio-group grp" + (g.collapsed ? " collapsed" : "");
-      const head = document.createElement("div"); head.className = "prio-head grp-head";
-      head.innerHTML = '<span class="tri">▾</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>';
-      const lab = document.createElement("span"); lab.className = "ph-label"; lab.textContent = g.name; lab.title = t("grp_rename_t"); head.append(lab);
-      const cnt = document.createElement("span"); cnt.className = "prio-count"; cnt.textContent = items.length ? "(" + items.length + ")" : ""; head.append(cnt);
-      const del = document.createElement("button"); del.className = "row-x"; del.textContent = "✕"; del.title = t("grp_del_t");
-      del.addEventListener("click", (e) => { e.stopPropagation(); deleteGroup(g.id); });
-      head.append(del);
-      head.addEventListener("click", () => { g.collapsed = !g.collapsed; save(); renderTodos(); });
-      lab.addEventListener("dblclick", (e) => {
-        e.stopPropagation();
-        const name = (prompt(t("grp_name_prompt"), g.name) || "").trim();
-        if (name) { g.name = name; save(); renderTodos(); }
+  }
+  // ----- 폴더 탭 — 각 폴더는 독립된 할 일 목록 -----
+  function openTodosOf(gid) {
+    const groupIds = new Set((state.groups || []).map((g) => g.id));
+    return state.todos.filter((t) => {
+      const g = t.group && groupIds.has(t.group) ? t.group : null;
+      return g === gid && t.status !== "done" && !t.later;
+    }).length;
+  }
+  function renderGroupTabs() {
+    const box = $id("groupTabs"); if (!box) return;
+    box.innerHTML = "";
+    const mkTab = (gid, name) => {
+      const b = document.createElement("button"); b.type = "button";
+      b.className = gid === currentGroup ? "active" : "";
+      const lab = document.createElement("span"); lab.textContent = name; b.append(lab);
+      const n = openTodosOf(gid);
+      if (n) { const c = document.createElement("span"); c.className = "gt-count"; c.textContent = n; b.append(c); }
+      b.addEventListener("click", () => { if (currentGroup !== gid) { currentGroup = gid; render(); } });
+      // 드래그한 할 일을 탭에 떨어뜨리면 그 폴더로 이동
+      b.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId) b.classList.add("drop-into"); });
+      b.addEventListener("dragleave", () => b.classList.remove("drop-into"));
+      b.addEventListener("drop", (e) => {
+        e.preventDefault(); b.classList.remove("drop-into");
+        if (!dragId) return;
+        const td = state.todos.find((x) => x.id === dragId); if (!td) return;
+        td.group = gid; save(); render();
       });
-      wrap.append(head);
-      const ul = document.createElement("ul"); ul.className = "prio-list";
-      items.forEach((td) => ul.append(buildTodoLi(td, cur)));
-      if (!items.length && !searchQuery) { const e = document.createElement("li"); e.className = "prio-empty"; e.textContent = t("prio_drop"); ul.append(e); }
-      wrap.append(ul);
-      wrap.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId) wrap.classList.add("drop-into"); });
-      wrap.addEventListener("dragleave", (e) => { if (!wrap.contains(e.relatedTarget)) wrap.classList.remove("drop-into"); });
-      wrap.addEventListener("drop", (e) => { e.preventDefault(); wrap.classList.remove("drop-into"); if (dragId) reorder(dragId, null, true, null, g.id); });
-      box.append(wrap);
+      return b;
+    };
+    box.append(mkTab(null, t("grp_main")));
+    (state.groups || []).forEach((g) => {
+      const b = mkTab(g.id, g.name);
+      if (g.id === currentGroup) {
+        b.querySelector("span").title = t("grp_rename_t");
+        b.addEventListener("dblclick", () => {
+          const name = (prompt(t("grp_name_prompt"), g.name) || "").trim();
+          if (name) { g.name = name; save(); render(); }
+        });
+        const del = document.createElement("button"); del.className = "row-x"; del.textContent = "✕"; del.title = t("grp_del_t");
+        del.addEventListener("click", (e) => { e.stopPropagation(); deleteGroup(g.id); });
+        b.append(del);
+      }
+      box.append(b);
     });
+    const add = document.createElement("button"); add.type = "button"; add.className = "gt-new";
+    add.textContent = t("grp_add"); add.title = t("grp_add_t");
+    add.addEventListener("click", addGroup);
+    box.append(add);
   }
   function addGroup() {
     const name = (prompt(t("grp_name_prompt"), "") || "").trim(); if (!name) return;
     state.groups = state.groups || [];
-    state.groups.push({ id: uid(), name, collapsed: false });
-    save(); renderTodos();
+    const g = { id: uid(), name, collapsed: false };
+    state.groups.push(g);
+    currentGroup = g.id;   // 새 폴더로 바로 전환 — 빈 목록에서 새로 적기 시작
+    save(); render();
   }
   function deleteGroup(id) {
     const g = (state.groups || []).find((x) => x.id === id); if (!g) return;
     if (!confirm(t("grp_del_confirm", g.name))) return;
-    state.todos.forEach((td) => { if (td.group === id) td.group = null; });   // 할 일은 목록으로 복귀
+    state.todos.forEach((td) => { if (td.group === id) td.group = null; });   // 할 일은 메인으로 복귀
     state.groups = state.groups.filter((x) => x.id !== id);
-    save(); renderTodos();
+    if (currentGroup === id) currentGroup = null;
+    save(); render();
   }
   function buildDetail(td) {
     const d = document.createElement("div"); d.className = "detail";
@@ -1696,7 +1733,7 @@
     });
   }
   function render() {
-    renderTodos(); renderLater(); renderDone(); renderRight();
+    renderGroupTabs(); renderTodos(); renderLater(); renderDone(); renderRight();
     const active = activeTodo(); if (!active) leftUnlocked = false;
     const locked = !!active && !leftUnlocked && viewDate === todayStr();
     $(".notebook").classList.toggle("locked", locked);
@@ -2550,7 +2587,6 @@
 
   // ---------- events ----------
   $id("addBtn").addEventListener("click", () => { const i = $id("newTodo"); addTodo(i.value); i.value = ""; i.focus(); });
-  $id("addGroupBtn").addEventListener("click", addGroup);
   $id("newTodo").addEventListener("keydown", (e) => { if (e.key === "Enter") { addTodo(e.target.value); e.target.value = ""; } });
   $id("doneHead").addEventListener("click", () => { state.doneCollapsed = !state.doneCollapsed; save(); renderDone(); });
   $id("laterHead").addEventListener("click", () => { state.laterCollapsed = !state.laterCollapsed; save(); renderLater(); });
