@@ -557,6 +557,13 @@
   .rq-kind-tabs .rq-tab { border-radius: 999px; }
   .rq-empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
     color: var(--text-soft); padding: 44px 10px 20px; font-size: .95rem; }
+  .rq-manage { margin-left: auto; display: inline-flex; gap: 4px; }
+  .rq-btn-danger { background: var(--danger); color: #fff; font-weight: 700; }
+  .rq-btn-danger:hover { filter: brightness(1.08); background: var(--danger); }
+  .rq-sel-check { width: 19px; height: 19px; flex: none; border: 2px solid var(--text-soft); border-radius: 5px;
+    background: var(--surface); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    font-size: .8rem; color: #fff; line-height: 1; margin-right: 8px; }
+  .rq-sel-check.on { background: var(--accent); border-color: var(--accent); }
   .rq-prio-pick { display: inline-flex; gap: 4px; }
   .rq-prio-pick[hidden] { display: none; }
   .rq-btn.pk-urgent { color: #fff; background: var(--prio-urgent); font-weight: 700; }
@@ -921,6 +928,12 @@
       <div class="rq-tabs rq-kind-tabs" style="margin-top:10px">
         <button class="rq-tab" id="rqKindMemo" type="button"><span data-i18n="kind_memo">쪽지</span> <span class="rq-num" id="memoUnread"></span></button>
         <button class="rq-tab" id="rqKindTask" type="button"><span data-i18n="kind_task">업무 요청</span> <span class="rq-num" id="taskUnread"></span></button>
+        <span class="rq-manage">
+          <button class="rq-btn" id="rqSelBtn" type="button" data-i18n="rq_sel">선택 삭제</button>
+          <button class="rq-btn rq-btn-danger" id="rqSelDelBtn" type="button" hidden></button>
+          <button class="rq-btn" id="rqSelCancel" type="button" data-i18n="rq_cancel" hidden>취소</button>
+          <button class="rq-btn" id="rqDelAllBtn" type="button" data-i18n="rq_delall">전체 삭제</button>
+        </span>
       </div>
       <ul class="rq-list" id="rqInboxList" hidden></ul>
       <ul class="rq-list" id="rqSentList" hidden></ul>
@@ -1182,6 +1195,12 @@
     rq_done_new: { ko: "{0}님이 요청을 완료했어요", en: "{0} completed your request" },
     rq_done_now_new: { ko: "{0}님이 요청을 즉시완료했어요", en: "{0} instantly completed your request" },
     rq_newrep: { ko: "새 답장 {0}", en: "{0} new" },
+    rq_sel: { ko: "선택 삭제", en: "Select delete" },
+    rq_sel_del: { ko: "삭제 ({0})", en: "Delete ({0})" },
+    rq_cancel: { ko: "취소", en: "Cancel" },
+    rq_delall: { ko: "전체 삭제", en: "Delete all" },
+    rq_del_confirm: { ko: "요청 {0}건을 삭제할까요? 내 요청함에서만 사라지고 상대방에게는 남아 있어요.", en: "Delete {0} request(s)? They disappear only from your box." },
+    rq_deleted: { ko: "{0}건을 삭제했어요", en: "Deleted {0}" },
     rq_modal_head: { ko: "요청", en: "Requests" },
     rq_tab_inbox: { ko: "받은 요청", en: "Received" },
     rq_tab_sent: { ko: "보낸 요청", en: "Sent" },
@@ -2582,6 +2601,7 @@
     const sorter = reqKind === "task" ? byDue : byTs;
     const inbox = inboxAll.filter((r) => reqKindOf(r) === reqKind).sort(sorter);
     const sent = sentAll.filter((r) => reqKindOf(r) === reqKind).sort(sorter);
+    lastLists = { inbox: inbox, sent: sent };
     renderReqList(inboxUl, inbox, "inbox");
     renderReqList(sentUl, sent, "sent");
     // 서브탭별 미처리 수 (받은함 기준 — 즉시완료/할 일로 옮기기 전까지 유지)
@@ -2623,6 +2643,18 @@
     const li = document.createElement("li");
     li.className = "rq-card st-" + st + (kind === "inbox" && st === "sent" ? " unread" : "");
     const head = document.createElement("div"); head.className = "rq-card-head";
+    if (reqSelectMode) {   // 선택 삭제 모드: 체크박스
+      const cb = document.createElement("button"); cb.type = "button";
+      cb.className = "rq-sel-check" + (selectedReqIds.has(r.id) ? " on" : "");
+      cb.textContent = selectedReqIds.has(r.id) ? "✓" : "";
+      cb.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (selectedReqIds.has(r.id)) selectedReqIds.delete(r.id); else selectedReqIds.add(r.id);
+        cb.classList.toggle("on"); cb.textContent = selectedReqIds.has(r.id) ? "✓" : "";
+        updateManageUI();
+      });
+      head.appendChild(cb);
+    }
     const who = document.createElement("span"); who.className = "rq-who";
     who.textContent = kind === "inbox" ? (r.fromName || "?") : (t("rq_to_prefix") + " " + (r.toName || "?"));
     const meta = document.createElement("span"); meta.className = "rq-meta";
@@ -2717,6 +2749,30 @@
     const patch = { status: st };
     if (st === "done") { patch.doneAt = Date.now(); if (instant) patch.instant = true; }
     msgDb.ref("requests/" + id).update(patch);
+  }
+  // ----- 선택/전체 삭제 (내 화면에서만 숨김) -----
+  let reqSelectMode = false;
+  let selectedReqIds = new Set();
+  let lastLists = { inbox: [], sent: [] };   // 현재 탭·종류 기준 전체 목록(페이징 무관)
+  function updateManageUI() {
+    const sel = $id("rqSelBtn"), del = $id("rqSelDelBtn"), cancel = $id("rqSelCancel"), all = $id("rqDelAllBtn");
+    if (!sel) return;
+    sel.hidden = reqSelectMode; all.hidden = reqSelectMode;
+    del.hidden = !reqSelectMode; cancel.hidden = !reqSelectMode;
+    del.textContent = t("rq_sel_del", selectedReqIds.size);
+  }
+  function exitSelectMode() { reqSelectMode = false; selectedReqIds = new Set(); updateManageUI(); renderRequests(); }
+  function hideMany(ids) {
+    if (!msgDb || !currentUser || !ids.length) return;
+    const updates = {};
+    ids.forEach((id) => {
+      const r = requestsCache[id]; if (!r) return;
+      const hf = Array.isArray(r.hiddenFor) ? r.hiddenFor.slice() : [];
+      if (!hf.includes(currentUser.id)) hf.push(currentUser.id);
+      updates[id + "/hiddenFor"] = hf;
+    });
+    try { msgDb.ref("requests").update(updates); } catch (_) {}
+    toast(t("rq_deleted", ids.length));
   }
   function hideRequest(id) {
     const r = requestsCache[id]; if (!r || !msgDb || !currentUser) return;
@@ -2881,7 +2937,7 @@
     knownStatuses = statuses;
   }
   function openReqPopup(tab) { if (!currentUser) { showLoginGate(); return; } setReqTab(tab); setReqKind(reqKind); $id("reqPopup").hidden = false; }
-  function closeReqPopup() { $id("reqPopup").hidden = true; setReqTab(null); }
+  function closeReqPopup() { $id("reqPopup").hidden = true; setReqTab(null); if (reqSelectMode) exitSelectMode(); }
   function setReqTab(tab) {
     reqTab = tab;
     if (tab === "inbox" || tab === "sent") reqShown[tab] = REQ_PAGE;   // 탭 열 때 최신 10개부터
@@ -3073,6 +3129,20 @@
       rd.onload = () => { pendingAtts.push({ name: f.name, type: f.type || "", size: f.size, data: rd.result }); renderAttList(); };
       rd.readAsDataURL(f);
     });
+  });
+  $id("rqSelBtn").addEventListener("click", () => { reqSelectMode = true; selectedReqIds = new Set(); updateManageUI(); renderRequests(); });
+  $id("rqSelCancel").addEventListener("click", exitSelectMode);
+  $id("rqSelDelBtn").addEventListener("click", () => {
+    if (!selectedReqIds.size) return;
+    if (!confirm(t("rq_del_confirm", selectedReqIds.size))) return;
+    hideMany([...selectedReqIds]);
+    exitSelectMode();
+  });
+  $id("rqDelAllBtn").addEventListener("click", () => {
+    const list = lastLists[reqTab === "sent" ? "sent" : "inbox"] || [];
+    if (!list.length) return;
+    if (!confirm(t("rq_del_confirm", list.length))) return;
+    hideMany(list.map((r) => r.id));
   });
   $id("replyClose").addEventListener("click", () => { $id("replyModal").hidden = true; });
   $id("replySend").addEventListener("click", sendReply);
