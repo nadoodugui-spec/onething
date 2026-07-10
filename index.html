@@ -574,6 +574,8 @@
   .side-tab[hidden] { display: none; }
   .side-tab .icon { width: 19px; height: 19px; }
   .side-tab-badge { min-width: 18px; padding: 0 5px; border-radius: 9px; background: #8b5cf6; color: #fff; font-size: .74rem; font-weight: 700; line-height: 18px; text-align: center; }
+  .sent-badge { background: var(--accent) !important; }
+  .unread-badge.zero { background: var(--text-soft) !important; opacity: .55; }
   .side-panel { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; max-width: 86vw; z-index: 90;
     background: var(--surface); border-right: 1px solid var(--border); box-shadow: 8px 0 30px rgba(0,0,0,.12);
     padding: 14px 14px 20px; overflow: auto; }
@@ -628,6 +630,7 @@
     <input id="searchInput" class="search" type="text" data-i18n-ph="search_ph" placeholder="할 일 검색…" autocomplete="off" />
     <div class="tools">
       <button data-act="inbox" type="button" id="tbInboxBtn" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h5l2 3h4l2-3h5M5 6h14l2 7v6H3v-6l2-7z"/></svg><span data-i18n="rq_tab_inbox">받은 요청</span> <span class="unread-badge" id="unreadBadge" hidden>0</span></button>
+      <button data-act="sentbox" type="button" id="tbSentBtn" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4 18-7z"/></svg><span data-i18n="rq_tab_sent">보낸 요청</span> <span class="unread-badge sent-badge" id="sentBadge">0</span></button>
       <button data-act="compose" type="button" id="tbComposeBtn" class="tb-compose" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="t_sendreq">요청 보내기</span></button>
       <button id="langBtn" data-act="lang" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z"/></svg><span id="langLabel">EN</span></button>
       <button data-act="stats" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 20v-8M10 20V5M16 20v-5M21 20H3"/></svg><span data-i18n="t_stats">통계</span></button>
@@ -1150,6 +1153,7 @@
     rq_status_sent: { ko: "안 읽음", en: "Unread" },
     rq_status_read: { ko: "읽음", en: "Read" },
     rq_status_done: { ko: "완료", en: "Done" },
+    rq_status_done_now: { ko: "즉시완료됨", en: "Done instantly" },
     rq_status_onething: { ko: "⭐ 원씽으로 처리 중", en: "⭐ Doing as One Thing" },
     rq_to_todo: { ko: "내 할 일로 추가", en: "Add to my todos" },
     rq_added: { ko: "내 할 일에 추가됨", en: "Added to my todos" },
@@ -2489,7 +2493,7 @@
   // 아래 4개는 Task 2/4에서 본문이 채워진다. Task 1 시점엔 안전한 no-op 스텁.
   function updateLoginGate() {
     const chip = $id("userChip"), gate = $id("loginGate");
-    const msgEls = [$id("tbInboxBtn"), $id("tbComposeBtn"), $id("sideTab")];
+    const msgEls = [$id("tbInboxBtn"), $id("tbSentBtn"), $id("tbComposeBtn"), $id("sideTab")];
     if (!cloudConfigured()) {                       // 메시징 비활성 — 기존 앱 그대로
       if (chip) chip.hidden = true; msgEls.forEach((el) => { if (el) el.hidden = true; });
       const p = $id("sidePanel"); if (p) p.hidden = true;
@@ -2564,12 +2568,12 @@
     const sent = sentAll.filter((r) => reqKindOf(r) === reqKind).sort(sorter);
     renderReqList(inboxUl, inbox, "inbox");
     renderReqList(sentUl, sent, "sent");
-    // 서브탭별 안읽음 수 (받은함 기준)
-    const unreadOf = (k) => inboxAll.filter((r) => reqKindOf(r) === k && r.status === "sent").length;
+    // 서브탭별 미처리 수 (받은함 기준 — 즉시완료/할 일로 옮기기 전까지 유지)
+    const unreadOf = (k) => inboxAll.filter((r) => reqKindOf(r) === k && !isHandledByMe(r.id, r)).length;
     const mu = $id("memoUnread"); if (mu) mu.textContent = unreadOf("memo") || "";
     const tu = $id("taskUnread"); if (tu) tu.textContent = unreadOf("task") || "";
-    const scEl = $id("rqSentCount"); if (scEl) scEl.textContent = sentAll.length || "";
     if (reqTab === "inbox") markInboxRead();
+    renderUnreadBadge();
   }
   const EMPTY_RQ_SVG = '<svg width="84" height="66" viewBox="0 0 84 66" fill="none" aria-hidden="true">'
     + '<rect x="10" y="12" width="64" height="44" rx="7" fill="var(--surface-2)" stroke="var(--border)" stroke-width="1.6"/>'
@@ -2603,7 +2607,8 @@
     const who = document.createElement("span"); who.className = "rq-who";
     who.textContent = kind === "inbox" ? (r.fromName || "?") : (t("rq_to_prefix") + " " + (r.toName || "?"));
     const meta = document.createElement("span"); meta.className = "rq-meta";
-    let metaTxt = fmtReqTime(r.ts) + " · " + t("rq_status_" + (r.status || "sent"));
+    const stKey = (r.status === "done" && r.instant) ? "done_now" : (r.status || "sent");
+    let metaTxt = fmtReqTime(r.ts) + " · " + t("rq_status_" + stKey);
     if (r.status === "read" && r.readAt) metaTxt += " " + fmtReqTime(r.readAt);
     if (r.status === "done" && r.doneAt) metaTxt += " " + fmtReqTime(r.doneAt);
     meta.textContent = metaTxt;
@@ -2664,7 +2669,7 @@
         acts.appendChild(reqBtn(t("rq_to_todo") + " ▾", () => { pick.hidden = !pick.hidden; }));
         acts.appendChild(pick);
       }
-      acts.appendChild(reqBtn(t("rq_done"), () => { markRead(r.id); setReqStatus(r.id, "done"); }));
+      acts.appendChild(reqBtn(t("rq_done"), () => { markRead(r.id); setReqStatus(r.id, "done", true); }));
       acts.appendChild(reqBtn(t("rq_reply"), () => { markRead(r.id); doReply(r.id); }));
       acts.appendChild(reqBtn(t("rq_delete"), () => hideRequest(r.id)));
     } else {
@@ -2678,9 +2683,10 @@
   function reqBtn(label, fn) { const b = document.createElement("button"); b.className = "rq-btn"; b.textContent = label; b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); return b; }
   function fmtReqTime(ts) { if (!ts) return ""; const d = new Date(ts); return (d.getMonth() + 1) + "/" + d.getDate() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
   function markRead(id) { const r = requestsCache[id]; if (r && r.status === "sent" && msgDb) msgDb.ref("requests/" + id).update({ status: "read", readAt: Date.now() }); }
-  function setReqStatus(id, st) {
+  function setReqStatus(id, st, instant) {
     if (!msgDb) return;
-    const patch = { status: st }; if (st === "done") patch.doneAt = Date.now();
+    const patch = { status: st };
+    if (st === "done") { patch.doneAt = Date.now(); if (instant) patch.instant = true; }
     msgDb.ref("requests/" + id).update(patch);
   }
   function hideRequest(id) {
@@ -2711,15 +2717,29 @@
     toast(t("rq_replied"));
   }
   let pendingNotifyIds = new Set();   // 원씽 중(focus)에 조용히 쌓인 새 요청 id
+  // '처리됨' = 즉시완료(완료 상태) 또는 내 할 일로 옮김. 단순히 읽기만 한 건 처리 아님.
+  function isHandledByMe(id, r) {
+    return r.status === "done" || state.todos.some((td) => td.reqId === id);
+  }
   function renderUnreadBadge() {
-    const b = $id("unreadBadge"); if (!b) return;
-    if (!currentUser) { b.hidden = true; return; }
-    let n = Object.keys(requestsCache).filter((id) => { const r = requestsCache[id]; return r && r.to === currentUser.id && r.status === "sent" && !((r.hiddenFor || []).includes(currentUser.id)); }).length;
+    const b = $id("unreadBadge"), sb = $id("sentBadge");
+    if (!currentUser) { if (b) b.hidden = true; if (sb) sb.hidden = true; return; }
+    // 받은 요청: 아직 처리 안 한 건 수
+    let n = Object.keys(requestsCache).filter((id) => {
+      const r = requestsCache[id];
+      return r && r.to === currentUser.id && !((r.hiddenFor || []).includes(currentUser.id)) && !isHandledByMe(id, r);
+    }).length;
     // 원씽 중에는 새로 쌓인 건은 배지에도 반영하지 않음(조용히)
     if (myStatus() === "focus") n -= Object.keys(requestsCache).filter((id) => pendingNotifyIds.has(id)).length;
     n = Math.max(0, n);
-    b.textContent = n; b.hidden = n === 0;
+    if (b) { b.textContent = n; b.hidden = false; b.classList.toggle("zero", n === 0); }
     const pb = $id("popUnread"); if (pb) { pb.textContent = n; pb.hidden = n === 0; }
+    // 보낸 요청: 상대가 아직 확인(읽음)하지 않은 건 수
+    const sn = Object.keys(requestsCache).filter((id) => {
+      const r = requestsCache[id];
+      return r && r.from === currentUser.id && !((r.hiddenFor || []).includes(currentUser.id)) && r.status === "sent";
+    }).length;
+    if (sb) { sb.textContent = sn; sb.hidden = false; sb.classList.toggle("zero", sn === 0); }
   }
   function notifyNewRequests() {
     const ids = Object.keys(requestsCache);
@@ -2835,6 +2855,7 @@
     else if (act === "user") { if (currentUser) { $id("userWho").textContent = t("um_who", currentUser.name); renderMembers(); $id("userModal").hidden = false; } else showLoginGate(); }
     else if (act === "status") { if (currentUser) { renderMyStatus(); $id("statusModal").hidden = false; } else showLoginGate(); }
     else if (act === "inbox") openReqPopup("inbox");
+    else if (act === "sentbox") openReqPopup("sent");
     else if (act === "compose") openSendReq(composeKind);
   });
 
