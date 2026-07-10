@@ -162,7 +162,13 @@
   .prio-list { list-style: none; margin: 0; padding: 0 0 2px 6px; min-height: 6px; }
   .prio-group.collapsed .prio-list { display: none; }
   li.prio-empty { color: var(--text-soft); font-size: .98rem; font-style: italic; min-height: 28px; line-height: 28px; padding-left: 10px; }
-  .prio-group.drop-into { background: rgba(194,96,63,.12); box-shadow: inset 0 0 0 2px var(--accent); }
+  .prio-group.drop-into { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+  .grp-head { color: var(--text); }
+  .grp-head .icon { color: var(--text-soft); }
+  .grp-head .row-x { opacity: 0; margin-left: 2px; }
+  .grp-head:hover .row-x { opacity: 1; }
+  .add-group-btn { border: 1px solid var(--border) !important; background: var(--surface) !important; color: var(--text-soft) !important; box-shadow: none !important; font-weight: 500 !important; }
+  .add-group-btn:hover { background: var(--surface-2) !important; color: var(--text) !important; }
   li.todo.prio-urgent .todo-text { color: var(--prio-urgent); }
   li.todo.prio-important .todo-text { color: var(--prio-important); }
 
@@ -561,6 +567,7 @@
         <div class="add-row">
           <input id="newTodo" type="text" data-i18n-ph="new_ph" placeholder="해야 할 일을 적어보세요…" maxlength="200" autocomplete="off" />
           <button id="addBtn" data-i18n="add_btn" data-i18n-title="add_title" title="추가">＋ 추가</button>
+          <button id="addGroupBtn" class="add-group-btn" type="button" data-i18n="grp_add" data-i18n-title="grp_add_t" title="할 일 폴더 만들기">＋ 폴더</button>
         </div>
         <div class="list" id="todoList"></div>
         <div class="later-wrap collapsed" id="laterWrap">
@@ -723,6 +730,10 @@
       <div class="modal-head"><span data-i18n="um_head">👤 사용자</span><button class="modal-close" id="userClose">✕</button></div>
       <p class="modal-desc" id="userWho"></p>
       <div class="mrow"><button id="switchUserBtn" class="mbtn ghost" data-i18n="um_switch">사용자 바꾸기 / 로그아웃</button></div>
+      <div id="umAdmin" hidden>
+        <div class="section-h" data-i18n="um_members">구성원 관리 (관리자)</div>
+        <ul class="mlist" id="umMemberList"></ul>
+      </div>
     </div>
   </div>
 
@@ -1080,6 +1091,17 @@
     wk_focus: { ko: "집중 시간", en: "Focus time" },
     wk_reqdone: { ko: "받은 요청 처리", en: "Requests done" },
     wk_reqsent: { ko: "보낸 요청", en: "Requests sent" },
+    // 할 일 폴더 / 관리자
+    grp_add: { ko: "＋ 폴더", en: "＋ Folder" },
+    grp_add_t: { ko: "할 일 폴더 만들기", en: "Create a to-do folder" },
+    grp_name_prompt: { ko: "폴더 이름을 입력하세요", en: "Folder name" },
+    grp_rename_t: { ko: "더블클릭하면 이름 변경", en: "Double-click to rename" },
+    grp_del_t: { ko: "폴더 삭제(할 일은 목록으로 이동)", en: "Delete folder (to-dos move back)" },
+    grp_del_confirm: { ko: "'{0}' 폴더를 삭제할까요? 안의 할 일은 목록으로 돌아갑니다.", en: "Delete folder '{0}'? Its to-dos move back to the list." },
+    um_members: { ko: "구성원 관리 (관리자)", en: "Members (admin)" },
+    um_del: { ko: "삭제", en: "Delete" },
+    um_del_confirm: { ko: "'{0}' 사용자를 삭제할까요? 로그인 계정과 상태 정보가 삭제됩니다. (되돌릴 수 없음)", en: "Delete user '{0}'? Their account and status will be removed. (Cannot be undone)" },
+    um_deleted: { ko: "사용자를 삭제했어요", en: "User deleted" },
     set_sharefocus: { ko: "원씽 중일 때 남은 시간 공개", en: "Share remaining focus time" }
   };
   function t(key) {
@@ -1125,7 +1147,7 @@
       priority: (t.priority === "urgent" || t.priority === "important") ? t.priority : "normal",
       subtasks: Array.isArray(t.subtasks) ? t.subtasks : [], repeat: t.repeat || null,
       later: !!t.later, status: (t.status === "active" || t.status === "done") ? t.status : "todo",
-      reqId: t.reqId || null,
+      reqId: t.reqId || null, group: t.group || null,
       activatedAt: t.activatedAt || null, focusSec: t.focusSec || 0,
       createdAt: t.createdAt || Date.now(), completedAt: t.completedAt || null
     })) : [];
@@ -1134,6 +1156,7 @@
       completedAt: h.completedAt || null, focusSec: h.focusSec || 0, note: h.note || ""
     })) : [];
     out.trash = Array.isArray(s.trash) ? s.trash : [];
+    out.groups = Array.isArray(s.groups) ? s.groups.map((g) => ({ id: g.id || uid(), name: g.name || "?", collapsed: !!g.collapsed })) : [];
     out.version = 2;
     return out;
   }
@@ -1242,9 +1265,10 @@
 
   // ---------- drag reorder ----------
   let dragId = null;
-  function reorder(draggedId, targetId, after, destPriority) {
+  function reorder(draggedId, targetId, after, destPriority, destGroup) {
     const dragged = state.todos.find((t) => t.id === draggedId); if (!dragged) return;
     if (destPriority) dragged.priority = destPriority;
+    if (destGroup !== undefined) dragged.group = destGroup;   // null = 폴더 밖으로
     const vis = visibleTodos().map((t) => t.id);
     const from = vis.indexOf(draggedId); if (from < 0) return;
     vis.splice(from, 1);
@@ -1439,18 +1463,20 @@
     li.addEventListener("dragend", () => { dragId = null; li.classList.remove("dragging"); document.querySelectorAll(".drop-before, .drop-into").forEach((n) => n.classList.remove("drop-before", "drop-into")); });
     li.addEventListener("dragover", (e) => { e.preventDefault(); e.stopPropagation(); if (dragId && dragId !== td.id) li.classList.add("drop-before"); });
     li.addEventListener("dragleave", () => li.classList.remove("drop-before"));
-    li.addEventListener("drop", (e) => { e.preventDefault(); e.stopPropagation(); li.classList.remove("drop-before"); if (dragId && dragId !== td.id) reorder(dragId, td.id, false, td.priority || "normal"); });
+    li.addEventListener("drop", (e) => { e.preventDefault(); e.stopPropagation(); li.classList.remove("drop-before"); if (dragId && dragId !== td.id) reorder(dragId, td.id, false, td.priority || "normal", td.group || null); });
     return li;
   }
   function renderTodos() {
     const box = $id("todoList"); box.innerHTML = "";
     const vis = visibleTodos(), cur = activeTodo();
-    if (vis.length === 0) {
+    if (vis.length === 0 && !(state.groups || []).length) {
       const e = document.createElement("li"); e.className = "prio-empty"; e.style.listStyle = "none";
       e.textContent = searchQuery ? t("no_results") : t("empty_list"); box.append(e); return;
     }
+    const groupIds = new Set((state.groups || []).map((g) => g.id));
+    const ungrouped = vis.filter((td) => !td.group || !groupIds.has(td.group));
     PRIO_GROUPS.forEach((key) => {
-      const items = vis.filter((td) => (td.priority || "normal") === key);
+      const items = ungrouped.filter((td) => (td.priority || "normal") === key);
       const collapsed = !!(state.prioCollapsed && state.prioCollapsed[key]);
       const group = document.createElement("div"); group.className = "prio-group" + (collapsed ? " collapsed" : ""); group.dataset.prio = key;
       const head = document.createElement("div"); head.className = "prio-head " + key;
@@ -1464,9 +1490,49 @@
       group.append(ul);
       group.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId) group.classList.add("drop-into"); });
       group.addEventListener("dragleave", (e) => { if (!group.contains(e.relatedTarget)) group.classList.remove("drop-into"); });
-      group.addEventListener("drop", (e) => { e.preventDefault(); group.classList.remove("drop-into"); if (dragId) reorder(dragId, null, true, key); });
+      group.addEventListener("drop", (e) => { e.preventDefault(); group.classList.remove("drop-into"); if (dragId) reorder(dragId, null, true, key, null); });
       box.append(group);
     });
+    // ----- 사용자 정의 폴더(할일 그룹) -----
+    (state.groups || []).forEach((g) => {
+      const items = vis.filter((td) => td.group === g.id);
+      const wrap = document.createElement("div"); wrap.className = "prio-group grp" + (g.collapsed ? " collapsed" : "");
+      const head = document.createElement("div"); head.className = "prio-head grp-head";
+      head.innerHTML = '<span class="tri">▾</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>';
+      const lab = document.createElement("span"); lab.className = "ph-label"; lab.textContent = g.name; lab.title = t("grp_rename_t"); head.append(lab);
+      const cnt = document.createElement("span"); cnt.className = "prio-count"; cnt.textContent = items.length ? "(" + items.length + ")" : ""; head.append(cnt);
+      const del = document.createElement("button"); del.className = "row-x"; del.textContent = "✕"; del.title = t("grp_del_t");
+      del.addEventListener("click", (e) => { e.stopPropagation(); deleteGroup(g.id); });
+      head.append(del);
+      head.addEventListener("click", () => { g.collapsed = !g.collapsed; save(); renderTodos(); });
+      lab.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
+        const name = (prompt(t("grp_name_prompt"), g.name) || "").trim();
+        if (name) { g.name = name; save(); renderTodos(); }
+      });
+      wrap.append(head);
+      const ul = document.createElement("ul"); ul.className = "prio-list";
+      items.forEach((td) => ul.append(buildTodoLi(td, cur)));
+      if (!items.length && !searchQuery) { const e = document.createElement("li"); e.className = "prio-empty"; e.textContent = t("prio_drop"); ul.append(e); }
+      wrap.append(ul);
+      wrap.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId) wrap.classList.add("drop-into"); });
+      wrap.addEventListener("dragleave", (e) => { if (!wrap.contains(e.relatedTarget)) wrap.classList.remove("drop-into"); });
+      wrap.addEventListener("drop", (e) => { e.preventDefault(); wrap.classList.remove("drop-into"); if (dragId) reorder(dragId, null, true, null, g.id); });
+      box.append(wrap);
+    });
+  }
+  function addGroup() {
+    const name = (prompt(t("grp_name_prompt"), "") || "").trim(); if (!name) return;
+    state.groups = state.groups || [];
+    state.groups.push({ id: uid(), name, collapsed: false });
+    save(); renderTodos();
+  }
+  function deleteGroup(id) {
+    const g = (state.groups || []).find((x) => x.id === id); if (!g) return;
+    if (!confirm(t("grp_del_confirm", g.name))) return;
+    state.todos.forEach((td) => { if (td.group === id) td.group = null; });   // 할 일은 목록으로 복귀
+    state.groups = state.groups.filter((x) => x.id !== id);
+    save(); renderTodos();
   }
   function buildDetail(td) {
     const d = document.createElement("div"); d.className = "detail";
@@ -1946,7 +2012,46 @@
     try { local = JSON.parse(localStorage.getItem(USER_KEY) || "null"); } catch (_) {}
     if (local && local.id) currentUser = Object.assign({ id: local.id, name: local.name || "?" }, usersCache[local.id] || {});
     else currentUser = null;
+    claimAdmin();
     updateLoginGate();
+  }
+  // ----- 관리자 -----
+  // 제작자(나두혁) 계정에 최초 1회 admin 플래그를 자동 부여
+  function claimAdmin() {
+    if (!currentUser || !msgDb) return;
+    const rec = usersCache[currentUser.id];
+    if (rec && rec.name === "나두혁" && !rec.admin) {
+      try { msgDb.ref("users/" + currentUser.id + "/admin").set(true); rec.admin = true; } catch (_) {}
+    }
+  }
+  function isAdmin() { return !!(currentUser && usersCache[currentUser.id] && usersCache[currentUser.id].admin); }
+  function renderMembers() {
+    const box = $id("umAdmin"), ul = $id("umMemberList"); if (!box || !ul) return;
+    if (!isAdmin()) { box.hidden = true; return; }
+    box.hidden = false; ul.innerHTML = "";
+    Object.keys(usersCache).forEach((id) => {
+      if (id === currentUser.id) return;
+      const u = usersCache[id] || {};
+      const li = document.createElement("li");
+      const dot = statusDot(id);
+      const tx = document.createElement("span"); tx.className = "mtext"; tx.textContent = u.name || "?";
+      const del = document.createElement("button"); del.textContent = t("um_del");
+      del.addEventListener("click", () => deleteUser(id));
+      li.append(dot, tx, del); ul.append(li);
+    });
+    if (!ul.children.length) { const li = document.createElement("li"); li.className = "empty-note"; li.textContent = t("lg_empty"); ul.append(li); }
+  }
+  function deleteUser(id) {
+    if (!isAdmin() || !msgDb) return;
+    const u = usersCache[id]; if (!u) return;
+    if (!confirm(t("um_del_confirm", u.name || "?"))) return;
+    try {
+      msgDb.ref("users/" + id).remove();
+      msgDb.ref("status/" + id).remove();
+      delete usersCache[id];
+    } catch (_) {}
+    renderMembers(); renderLoginUsers(); renderTeamBoard();
+    toast(t("um_deleted"));
   }
   function findUserByName(name) {
     name = (name || "").trim();
@@ -2375,6 +2480,7 @@
 
   // ---------- events ----------
   $id("addBtn").addEventListener("click", () => { const i = $id("newTodo"); addTodo(i.value); i.value = ""; i.focus(); });
+  $id("addGroupBtn").addEventListener("click", addGroup);
   $id("newTodo").addEventListener("keydown", (e) => { if (e.key === "Enter") { addTodo(e.target.value); e.target.value = ""; } });
   $id("doneHead").addEventListener("click", () => { state.doneCollapsed = !state.doneCollapsed; save(); renderDone(); });
   $id("laterHead").addEventListener("click", () => { state.laterCollapsed = !state.laterCollapsed; save(); renderLater(); });
@@ -2410,7 +2516,7 @@
     if (act === "lang") toggleLang();
     else if (act === "stats") openStats(); else if (act === "trash") openTrash();
     else if (act === "backup") $id("backupModal").hidden = false; else if (act === "settings") openSettings(); else if (act === "help") $id("helpModal").hidden = false;
-    else if (act === "user") { if (currentUser) { $id("userWho").textContent = t("um_who", currentUser.name); $id("userModal").hidden = false; } else showLoginGate(); }
+    else if (act === "user") { if (currentUser) { $id("userWho").textContent = t("um_who", currentUser.name); renderMembers(); $id("userModal").hidden = false; } else showLoginGate(); }
     else if (act === "status") { if (currentUser) { renderMyStatus(); $id("statusModal").hidden = false; } else showLoginGate(); }
   });
 
