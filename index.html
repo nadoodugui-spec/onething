@@ -491,6 +491,13 @@
   .rq-kind-chip { font-size: .72rem; font-weight: 700; border-radius: 6px; padding: 1px 7px; margin-right: 6px; vertical-align: 1px; }
   .rq-kind-chip.memo { background: var(--surface-2); color: var(--text-soft); border: 1px solid var(--border); }
   .rq-kind-chip.task { background: var(--accent-soft); color: var(--accent); }
+
+  /* ===== 팀 현황판 ===== */
+  .team-board { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .team-board[hidden] { display: none; }
+  .tb-item { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--text-soft); }
+  .tb-name { font-weight: 600; color: var(--text); }
+  .tb-ot { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 </head>
 <body data-theme="light" data-lang="ko">
@@ -608,6 +615,7 @@
       </div>
       <button class="req-compose" id="trayComposeBtn" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="t_sendreq">요청 보내기</span></button>
     </div>
+    <div class="team-board" id="teamBoard" hidden></div>
   </section>
 
   <div class="toast" id="toast"></div>
@@ -655,6 +663,9 @@
       </div>
       <div class="mrow"><span class="mlabel" data-i18n="set_sharefocus">원씽 중일 때 남은 시간 공개</span>
         <button id="shareFocusToggle" class="seg-toggle mbtn ghost"></button>
+      </div>
+      <div class="mrow"><span class="mlabel" data-i18n="set_shareot">오늘의 원씽을 팀에 공개</span>
+        <button id="shareOtToggle" class="seg-toggle mbtn ghost"></button>
       </div>
     </div>
   </div>
@@ -730,6 +741,10 @@
           style="width:100%;margin-top:10px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:1rem;font-weight:600;outline:none;box-sizing:border-box" />
         <div class="mrow" style="margin-top:8px"><span class="mlabel" data-i18n="sr_due">마감일</span>
           <input id="srDue" type="date" style="border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);padding:5px 8px;outline:none" />
+          <span class="mlabel" style="margin-left:10px" data-i18n="sr_tpl">템플릿</span>
+          <select id="srTplSel" style="border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);padding:5px 8px;outline:none;max-width:150px"></select>
+          <button id="srTplSave" class="rq-btn" type="button" data-i18n="sr_tpl_save">현재 내용 저장</button>
+          <button id="srTplDel" class="rq-btn" type="button" data-i18n="sr_tpl_del">삭제</button>
         </div>
         <div class="ed-toolbar" id="edToolbar">
           <button type="button" data-cmd="bold" title="굵게"><b>B</b></button>
@@ -1048,6 +1063,15 @@
     st_until: { ko: "약 {0}분 후 종료 예정", en: "ends in ~{0} min" },
     sr_due: { ko: "마감일", en: "Due" },
     rq_due: { ko: "마감 {0}", en: "due {0}" },
+    set_shareot: { ko: "오늘의 원씽을 팀에 공개", en: "Share today's One Thing with team" },
+    tb_me: { ko: "나", en: "me" },
+    sr_tpl: { ko: "템플릿", en: "Template" },
+    sr_tpl_none: { ko: "템플릿 선택…", en: "Choose template…" },
+    sr_tpl_save: { ko: "현재 내용 저장", en: "Save current" },
+    sr_tpl_del: { ko: "삭제", en: "Delete" },
+    sr_tpl_name: { ko: "템플릿 이름을 입력하세요", en: "Template name" },
+    sr_tpl_saved: { ko: "템플릿을 저장했어요", en: "Template saved" },
+    sr_tpl_need: { ko: "저장할 제목/내용을 먼저 적어주세요", en: "Write a title/body first" },
     set_sharefocus: { ko: "원씽 중일 때 남은 시간 공개", en: "Share remaining focus time" }
   };
   function t(key) {
@@ -1081,7 +1105,7 @@
   // ---------- state & migration ----------
   function migrate(s) {
     const base = { version: 2, todos: [], history: [], trash: [],
-      settings: { theme: "light", pomodoroMin: 25, reminder: false, lang: "ko", shareFocusTime: true },
+      settings: { theme: "light", pomodoroMin: 25, reminder: false, lang: "ko", shareFocusTime: true, shareOneThing: false },
       doneCollapsed: false, laterCollapsed: true,
       prioCollapsed: { urgent: false, important: false, normal: false }, lastReminderDate: null };
     if (!s || typeof s !== "object") return base;
@@ -1153,12 +1177,12 @@
     td.status = "active"; td.activatedAt = Date.now();
     state.todos = [td, ...state.todos.filter((x) => x.id !== td.id)];
     leftUnlocked = false; resetTimer(true);
-    save(); render();
+    save(); render(); republishPresence();
     toast(cur ? t("swap_done") : t("sent_done"));
   }
   function putBack(id) {
     const td = state.todos.find((x) => x.id === id); if (!td) return;
-    td.status = "todo"; pauseTimer(); save(); render(); toast(t("putback_done"));
+    td.status = "todo"; pauseTimer(); save(); render(); republishPresence(); toast(t("putback_done"));
   }
   function completeTodo(id) {
     const t = state.todos.find((x) => x.id === id); if (!t || t.status === "done") return;
@@ -1179,7 +1203,7 @@
       try { msgDb.ref("requests/" + t.reqId).update({ status: "done", doneAt: Date.now() }); } catch (_) {}
     }
     save(); render();
-    if (wasActive) { celebrate(); toast(pickCheer()); }
+    if (wasActive) { republishPresence(); celebrate(); toast(pickCheer()); }
   }
   function restoreTodo(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.status = "todo"; t.completedAt = null; save(); render(); }
   function deleteTodo(id) {
@@ -1692,6 +1716,7 @@
     $id("pomoInput").value = state.settings.pomodoroMin || 25;
     $id("reminderToggle").textContent = state.settings.reminder ? t("rem_on") : t("rem_off");
     $id("shareFocusToggle").textContent = state.settings.shareFocusTime !== false ? t("rem_on") : t("rem_off");
+    $id("shareOtToggle").textContent = state.settings.shareOneThing ? t("rem_on") : t("rem_off");
     $id("settingsModal").hidden = false;
   }
 
@@ -1768,21 +1793,27 @@
     const rec = { state: state, ts: Date.now() };
     // 타이머 종료 예정 시각 — 설정에서 공개를 켠 경우에만 공유
     if (state === "focus" && opts && opts.until && sharesFocusTime()) rec.until = opts.until;
+    // 오늘의 원씽 공개(선택제)
+    if (sharesOneThing()) { const a = activeTodo(); if (a) rec.ot = a.text; }
     statusCache[currentUser.id] = rec;   // 낙관적 반영
     try { msgDb.ref("status/" + currentUser.id).set(rec); } catch (_) {}
     renderMyStatus();
     if (leavingFocus) flushPendingNotifies();
   }
   function sharesFocusTime() { return !state || !state.settings || state.settings.shareFocusTime !== false; }
+  function sharesOneThing() { return !!(state && state.settings && state.settings.shareOneThing); }   // 기본: 비공개(선택제)
   let currentFocusUntil = null;   // 재공개(설정 토글)용으로 기억
+  // 상태는 그대로 두고 부가 정보(남은 시간·공개 원씽)만 다시 발행
+  function republishPresence() {
+    if (!currentUser || !msgDb || !presenceUid) return;
+    setMyStatus(myStatus(), { auto: true, until: currentFocusUntil || undefined });
+  }
   function ensureMyPresence() {
     if (!currentUser || !msgDb || presenceUid === currentUser.id) return;
     presenceUid = currentUser.id;
     const ref = msgDb.ref("status/" + currentUser.id);
-    try {
-      ref.set({ state: prevManualStatus || "work", ts: Date.now() });
-      ref.onDisconnect().set({ state: "away", ts: firebase.database.ServerValue.TIMESTAMP });
-    } catch (_) {}
+    try { ref.onDisconnect().set({ state: "away", ts: firebase.database.ServerValue.TIMESTAMP }); } catch (_) {}
+    setMyStatus(prevManualStatus || "work", { auto: true });
   }
   function releaseMyPresence() {
     if (!presenceUid || !msgDb) { presenceUid = null; return; }
@@ -1809,6 +1840,27 @@
     span.className = "st-dot st-" + ((s && s.state) || "away");
     return span;
   }
+  // 팀 현황판 — 요청함 트레이에 구성원 상태(+공개 원씽) 표시
+  function renderTeamBoard() {
+    const box = $id("teamBoard"); if (!box) return;
+    const ids = Object.keys(usersCache);
+    if (!currentUser || ids.length < 2) { box.hidden = true; return; }
+    box.hidden = false; box.innerHTML = "";
+    ids.sort((a, b) => (a === currentUser.id ? -1 : b === currentUser.id ? 1 : 0)).forEach((id) => {
+      const s = statusCache[id] || {};
+      const st = s.state || "away";
+      const item = document.createElement("span"); item.className = "tb-item";
+      item.appendChild(statusDot(id));
+      const nm = document.createElement("span"); nm.className = "tb-name";
+      nm.textContent = ((usersCache[id] || {}).name || "?") + (id === currentUser.id ? " (" + t("tb_me") + ")" : "");
+      item.appendChild(nm);
+      let info = t("st_" + st);
+      if (st === "focus" && s.until && s.until > Date.now()) info += " · ~" + Math.max(1, Math.round((s.until - Date.now()) / 60000)) + t("min_unit");
+      const inf = document.createElement("span"); inf.textContent = info; item.appendChild(inf);
+      if (s.ot) { const ot = document.createElement("span"); ot.className = "tb-ot"; ot.textContent = "— " + s.ot; item.appendChild(ot); }
+      box.appendChild(item);
+    });
+  }
   // focus 해제 시 쌓인 알림 몰아서 표시
   function flushPendingNotifies() {
     if (!pendingNotifyIds.size) return;
@@ -1828,7 +1880,7 @@
     if (!msgDb) { updateLoginGate(); return; }   // Firebase 미설정/오프라인 → 메시징 비활성
     msgDb.ref("users").on("value", (snap) => {
       usersCache = snap.val() || {};
-      resolveCurrentUser(); renderLoginUsers();
+      resolveCurrentUser(); renderLoginUsers(); renderTeamBoard();
     });
     msgDb.ref("requests").on("value", (snap) => {
       requestsCache = snap.val() || {};
@@ -1837,7 +1889,8 @@
     });
     msgDb.ref("status").on("value", (snap) => {
       statusCache = snap.val() || {};
-      renderMyStatus();
+      renderMyStatus(); renderTeamBoard();
+      const m = $id("sendReqModal"); if (m && !m.hidden) updateToStatus();
     });
   }
   // 익명 인증 성공 후 한 번만 클라우드(메신저+노트) 연결
@@ -1968,6 +2021,20 @@
       li.append(nm, sz, x); ul.append(li);
     });
   }
+  // ----- 업무 요청 템플릿 (이 기기·계정에 저장) -----
+  function tplKey() { return "onething-req-tpl::" + (currentUser ? currentUser.id : "anon"); }
+  function loadTpls() { try { return JSON.parse(localStorage.getItem(tplKey()) || "[]") || []; } catch (_) { return []; } }
+  function saveTpls(list) { try { localStorage.setItem(tplKey(), JSON.stringify(list)); } catch (_) {} }
+  function renderTplSel(selName) {
+    const sel = $id("srTplSel"); if (!sel) return; sel.innerHTML = "";
+    const o0 = document.createElement("option"); o0.value = ""; o0.textContent = t("sr_tpl_none"); sel.appendChild(o0);
+    loadTpls().forEach((tp, i) => {
+      const o = document.createElement("option"); o.value = String(i); o.textContent = tp.name;
+      if (selName && tp.name === selName) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
   function updateToStatus() {
     const box = $id("srToStatus"); if (!box) return; box.innerHTML = "";
     const to = $id("sendReqTo").value; if (!to || !statusCache[to]) return;
@@ -1993,6 +2060,7 @@
     pendingAtts = []; renderAttList();
     $id("sendReqMsg").textContent = "";
     setComposeKind(kind === "task" ? "task" : "memo");
+    renderTplSel();
     updateToStatus();
     $id("sendReqModal").hidden = false;
   }
@@ -2357,6 +2425,27 @@
       document.execCommand("insertHTML", false, '<ul class="cklist"><li><input type="checkbox"> 항목</li></ul><p><br></p>');
     }
   });
+  // 템플릿: 선택 시 제목/본문 채움, 저장/삭제
+  $id("srTplSel").addEventListener("change", () => {
+    const i = $id("srTplSel").value; if (i === "") return;
+    const tp = loadTpls()[Number(i)]; if (!tp) return;
+    $id("srTitle").value = tp.title || "";
+    $id("srEditor").innerHTML = sanitizeHtml(tp.html || "");
+  });
+  $id("srTplSave").addEventListener("click", () => {
+    const title = $id("srTitle").value.trim();
+    const html = sanitizeHtml($id("srEditor").innerHTML);
+    if (!title && !$id("srEditor").textContent.trim()) { toast(t("sr_tpl_need")); return; }
+    const name = (prompt(t("sr_tpl_name"), title) || "").trim(); if (!name) return;
+    const list = loadTpls().filter((tp) => tp.name !== name);   // 같은 이름은 덮어쓰기
+    list.push({ name, title, html });
+    saveTpls(list); renderTplSel(name); toast(t("sr_tpl_saved"));
+  });
+  $id("srTplDel").addEventListener("click", () => {
+    const i = $id("srTplSel").value; if (i === "") return;
+    const list = loadTpls(); list.splice(Number(i), 1);
+    saveTpls(list); renderTplSel();
+  });
   // 첨부: 파일당 1MB, 합계 2MB — dataURL로 변환해 DB에 내장
   $id("srAttach").addEventListener("change", (e) => {
     const files = Array.from(e.target.files || []); e.target.value = "";
@@ -2393,6 +2482,11 @@
     save();
     // 지금 타이머로 원씽 중이면 즉시 반영(공개↔비공개)
     if (timerRunning && myStatus() === "focus") setMyStatus("focus", { auto: true, until: currentFocusUntil });
+  });
+  $id("shareOtToggle").addEventListener("click", () => {
+    state.settings.shareOneThing = !state.settings.shareOneThing;
+    $id("shareOtToggle").textContent = state.settings.shareOneThing ? t("rem_on") : t("rem_off");
+    save(); republishPresence();
   });
 
   $id("statsClose").addEventListener("click", () => { $id("statsModal").hidden = true; });
