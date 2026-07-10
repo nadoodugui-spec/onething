@@ -558,6 +558,10 @@
     color: var(--text-soft); padding: 44px 10px 20px; font-size: .95rem; }
   .rq-prio-pick { display: inline-flex; gap: 4px; }
   .rq-prio-pick[hidden] { display: none; }
+  .rq-btn.pk-urgent { color: #fff; background: var(--prio-urgent); font-weight: 700; }
+  .rq-btn.pk-important { color: #fff; background: var(--prio-important); font-weight: 700; }
+  .rq-btn.pk-urgent:hover, .rq-btn.pk-important:hover { filter: brightness(1.08); background: var(--prio-urgent); }
+  .rq-btn.pk-important:hover { background: var(--prio-important); }
   .rq-added { font-size: .82rem; font-weight: 600; color: var(--ok); padding: 5px 4px; }
 
   /* ===== 팀 사이드바 ===== */
@@ -1149,7 +1153,7 @@
     rq_status_onething: { ko: "⭐ 원씽으로 처리 중", en: "⭐ Doing as One Thing" },
     rq_to_todo: { ko: "내 할 일로 추가", en: "Add to my todos" },
     rq_added: { ko: "내 할 일에 추가됨", en: "Added to my todos" },
-    rq_done: { ko: "완료로 표시", en: "Mark done" },
+    rq_done: { ko: "즉시완료", en: "Done now" },
     rp_head: { ko: "답장", en: "Reply" },
     rp_to: { ko: "받는 사람: {0}", en: "To: {0}" },
     rp_ph: { ko: "답장 내용을 적어보세요…", en: "Write your reply…" },
@@ -2649,11 +2653,13 @@
       } else {
         const pick = document.createElement("span"); pick.className = "rq-prio-pick"; pick.hidden = true;
         [["urgent", "prio_urgent"], ["important", "prio_important"], ["normal", "prio_normal"]].forEach((pair) => {
-          pick.appendChild(reqBtn(t(pair[1]), () => {
+          const pb = reqBtn(t(pair[1]), () => {
             markRead(r.id);
             addTodo(r.text || "", { reqId: r.id, due: r.due || null, priority: pair[0], group: null });
             toast(t("rq_added_todo")); renderRequests();
-          }));
+          });
+          pb.classList.add("pk-" + pair[0]);
+          pick.appendChild(pb);
         });
         acts.appendChild(reqBtn(t("rq_to_todo") + " ▾", () => { pick.hidden = !pick.hidden; }));
         acts.appendChild(pick);
