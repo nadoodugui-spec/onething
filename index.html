@@ -493,7 +493,14 @@
   .st-opt small { grid-column: 2; font-weight: 400; color: var(--text-soft); font-size: .82rem; margin-top: 2px; }
   .st-opt:hover { background: var(--surface-2); }
   .st-opt.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
-  .sr-to-status { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--text-soft); }
+  .to-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .to-chip { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); border-radius: 999px; padding: 6px 13px; cursor: pointer; font-family: var(--font-body); font-size: .88rem; font-weight: 600; }
+  .to-chip:hover { background: var(--surface-2); }
+  .to-chip.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .sr-to-status { display: flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--text-soft); margin-top: 8px; }
+  .sr-to-status[hidden] { display: none; }
+  .sr-to-status.focus-warn { background: rgba(242,193,78,.16); color: var(--warn); border-radius: 8px; padding: 7px 10px; }
 
   /* ===== 업무 요청 에디터/첨부 ===== */
   .rq-kind-tabs { margin: 0 0 12px; }
@@ -524,6 +531,18 @@
   .rq-kind-chip { font-size: .72rem; font-weight: 700; border-radius: 6px; padding: 1px 7px; margin-right: 6px; vertical-align: 1px; }
   .rq-kind-chip.memo { background: var(--surface-2); color: var(--text-soft); border: 1px solid var(--border); }
   .rq-kind-chip.task { background: var(--accent-soft); color: var(--accent); }
+  /* 요청함 팝업 — 밑줄형 상위 탭 + 필터 칩, 최소 높이 고정 */
+  #reqPopup .modal-box { width: min(94vw, 520px); min-height: 460px; display: flex; flex-direction: column; }
+  #reqPopup .rq-list { flex: 1; max-height: none; }
+  .pop-tabs { display: flex; gap: 2px; margin-top: 8px; border-bottom: 1px solid var(--border); }
+  .pop-tab { display: inline-flex; align-items: center; gap: 7px; border: none; background: transparent; position: relative;
+    color: var(--text-soft); padding: 9px 14px 10px; cursor: pointer; font-family: var(--font-body); font-size: .92rem; font-weight: 500; border-radius: 8px 8px 0 0; }
+  .pop-tab:hover { background: var(--surface-2); color: var(--text); }
+  .pop-tab.active { color: var(--accent); font-weight: 700; }
+  .pop-tab.active::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2.5px; background: var(--accent); border-radius: 2px 2px 0 0; }
+  .rq-kind-tabs .rq-tab { border-radius: 999px; }
+  .rq-empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
+    color: var(--text-soft); padding: 44px 10px 20px; font-size: .95rem; }
 
   /* ===== 팀 사이드바 ===== */
   .tb-compose { background: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important; }
@@ -612,11 +631,6 @@
         <div class="group-tabs" id="groupTabs"></div>
         <div class="add-row">
           <input id="newTodo" type="text" data-i18n-ph="new_ph" placeholder="해야 할 일을 적어보세요…" maxlength="200" autocomplete="off" />
-          <select id="newPrio" class="new-prio" data-i18n-title="np_title" title="우선순위">
-            <option value="normal" data-i18n="prio_normal">일반</option>
-            <option value="important" data-i18n="prio_important">중요</option>
-            <option value="urgent" data-i18n="prio_urgent">긴급</option>
-          </select>
           <button id="addBtn" data-i18n="add_btn" data-i18n-title="add_title" title="추가">＋ 추가</button>
         </div>
         <div class="add-hint" id="addHint" hidden data-i18n-html="add_hint"><kbd>Enter</kbd> Routine · <kbd>Shift+Enter</kbd> Next · <kbd>Ctrl+Enter</kbd> Now</div>
@@ -797,9 +811,12 @@
         <button class="rq-tab" id="srKindMemo" type="button" data-i18n="kind_memo">쪽지</button>
         <button class="rq-tab" id="srKindTask" type="button" data-i18n="kind_task">업무 요청</button>
       </div>
-      <div class="mrow" style="margin-top:12px"><span class="mlabel" data-i18n="sr_to">받는 사람</span>
-        <select id="sendReqTo" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.95rem;outline:none"></select>
-        <span class="sr-to-status" id="srToStatus"></span>
+      <div class="mrow" style="margin-top:12px;align-items:flex-start"><span class="mlabel" style="margin-top:6px" data-i18n="sr_to">받는 사람</span>
+        <div style="flex:1;min-width:0">
+          <input id="srToSearch" class="sp-search" type="text" data-i18n-ph="sp_search_ph" placeholder="이름 검색…" autocomplete="off" hidden style="margin-bottom:6px" />
+          <div class="to-chips" id="srToChips"></div>
+          <div class="sr-to-status" id="srToStatus" hidden></div>
+        </div>
       </div>
       <textarea id="sendReqText" rows="3" maxlength="500" data-i18n-ph="sr_text_ph" placeholder="요청 내용을 적어보세요…"
         style="width:100%;margin-top:10px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.95rem;outline:none;resize:vertical;box-sizing:border-box"></textarea>
@@ -832,7 +849,10 @@
         </div>
         <ul class="att-list" id="srAttachList"></ul>
       </div>
-      <div class="mrow" style="margin-top:12px"><button id="sendReqSend" class="mbtn" data-i18n="sr_send">보내기</button></div>
+      <div class="mrow" style="margin-top:14px;justify-content:space-between;align-items:center">
+        <span class="add-hint" style="padding:0;margin:0" data-i18n-html="sr_hint"><kbd>Ctrl+Enter</kbd> 보내기</span>
+        <button id="sendReqSend" class="mbtn" data-i18n="sr_send">보내기</button>
+      </div>
       <div class="login-msg" id="sendReqMsg"></div>
     </div>
   </div>
@@ -840,11 +860,11 @@
   <div class="modal" id="reqPopup" hidden>
     <div class="modal-box">
       <div class="modal-head"><span data-i18n="rq_modal_head">✉️ 요청</span><button class="modal-close" id="reqPopClose">✕</button></div>
-      <div class="rq-tabs rq-tabs-pop">
-        <button class="rq-tab" id="rqTabInbox" type="button" data-i18n="rq_tab_inbox">받은 요청</button>
-        <button class="rq-tab" id="rqTabSent" type="button" data-i18n="rq_tab_sent">보낸 요청</button>
+      <div class="pop-tabs">
+        <button class="pop-tab" id="rqTabInbox" type="button"><span data-i18n="rq_tab_inbox">받은 요청</span> <span class="unread-badge" id="popUnread" hidden>0</span></button>
+        <button class="pop-tab" id="rqTabSent" type="button"><span data-i18n="rq_tab_sent">보낸 요청</span></button>
       </div>
-      <div class="rq-tabs rq-kind-tabs">
+      <div class="rq-tabs rq-kind-tabs" style="margin-top:10px">
         <button class="rq-tab" id="rqKindMemo" type="button"><span data-i18n="kind_memo">쪽지</span> <span class="rq-num" id="memoUnread"></span></button>
         <button class="rq-tab" id="rqKindTask" type="button"><span data-i18n="kind_task">업무 요청</span> <span class="rq-num" id="taskUnread"></span></button>
       </div>
@@ -1144,6 +1164,8 @@
     sr_tpl_name: { ko: "템플릿 이름을 입력하세요", en: "Template name" },
     sr_tpl_saved: { ko: "템플릿을 저장했어요", en: "Template saved" },
     sr_tpl_need: { ko: "저장할 제목/내용을 먼저 적어주세요", en: "Write a title/body first" },
+    sr_pick_to: { ko: "받는 사람을 선택하세요", en: "Pick a recipient" },
+    sr_hint: { ko: "<kbd>Ctrl+Enter</kbd> 보내기", en: "<kbd>Ctrl+Enter</kbd> Send" },
     wk_sum_h: { ko: "이번 주 업무 요약", en: "This week's summary" },
     wk_ot: { ko: "원씽 완료", en: "One Things done" },
     wk_focus: { ko: "집중 시간", en: "Focus time" },
@@ -2090,7 +2112,7 @@
           row.addEventListener("click", () => {
             $id("sidePanel").hidden = true;
             openSendReq(composeKind);
-            const sel = $id("sendReqTo"); if (sel) { sel.value = id; updateToStatus(); }
+            composeTo = id; renderToChips(); updateToStatus();
           });
         }
         list.appendChild(row);
@@ -2127,7 +2149,7 @@
     msgDb.ref("status").on("value", (snap) => {
       statusCache = snap.val() || {};
       renderMyStatus(); renderTeamBoard();
-      const m = $id("sendReqModal"); if (m && !m.hidden) updateToStatus();
+      const m = $id("sendReqModal"); if (m && !m.hidden) { renderToChips(); updateToStatus(); }
     });
   }
   // 익명 인증 성공 후 한 번만 클라우드(메신저+노트) 연결
@@ -2318,27 +2340,50 @@
     });
   }
 
+  let composeTo = null;      // 선택된 받는 사람 id
+  let srToQuery = "";        // 받는 사람 검색어(10명 이상일 때)
+  function renderToChips() {
+    const box = $id("srToChips"), search = $id("srToSearch"); if (!box) return;
+    box.innerHTML = "";
+    if (!currentUser) return;
+    const others = Object.keys(usersCache).filter((id) => id !== currentUser.id);
+    if (search) search.hidden = others.length < 10;   // 인원이 많아지면 검색 표시
+    const q = srToQuery.trim().toLowerCase();
+    const shown = others.filter((id) => !q || (((usersCache[id] || {}).name || "").toLowerCase().includes(q)))
+      .sort((a, b) => (((usersCache[a] || {}).name || "")).localeCompare((usersCache[b] || {}).name || ""));
+    if (!others.length) { const e = document.createElement("span"); e.className = "mlabel"; e.textContent = t("sr_no_one"); box.append(e); return; }
+    shown.forEach((id) => {
+      const chip = document.createElement("button"); chip.type = "button";
+      chip.className = "to-chip" + (id === composeTo ? " sel" : "");
+      chip.appendChild(statusDot(id));
+      chip.appendChild(document.createTextNode((usersCache[id] || {}).name || "?"));
+      chip.addEventListener("click", () => { composeTo = id; renderToChips(); updateToStatus(); });
+      box.append(chip);
+    });
+  }
   function updateToStatus() {
-    const box = $id("srToStatus"); if (!box) return; box.innerHTML = "";
-    const to = $id("sendReqTo").value; if (!to || !statusCache[to]) return;
+    const box = $id("srToStatus"); if (!box) return;
+    box.innerHTML = ""; box.className = "sr-to-status"; box.hidden = true;
+    const to = composeTo; if (!to || !statusCache[to]) return;
     const s = statusCache[to] || {};
     const st = s.state || "away";
+    box.hidden = false;
     box.appendChild(statusDot(to));
     const lbl = document.createElement("span");
     let txt = t("st_" + st);
     if (st === "focus") {
       const leftMin = s.until && s.until > Date.now() ? Math.max(1, Math.round((s.until - Date.now()) / 60000)) : null;
       txt += " · " + (leftMin ? t("st_until", leftMin) : t("st_focus_hint"));
+      box.classList.add("focus-warn");
     }
     lbl.textContent = txt;
     box.appendChild(lbl);
   }
   function openSendReq(kind) {
     if (!currentUser) { showLoginGate(); return; }
-    const sel = $id("sendReqTo"); sel.innerHTML = "";
-    const others = Object.keys(usersCache).filter((id) => id !== currentUser.id);
-    if (!others.length) { const o = document.createElement("option"); o.value = ""; o.textContent = t("sr_no_one"); sel.appendChild(o); }
-    else others.forEach((id) => { const o = document.createElement("option"); o.value = id; o.textContent = (usersCache[id] || {}).name || "?"; sel.appendChild(o); });
+    composeTo = null; srToQuery = "";
+    const search = $id("srToSearch"); if (search) search.value = "";
+    renderToChips();
     $id("sendReqText").value = ""; $id("srTitle").value = ""; $id("srEditor").innerHTML = ""; $id("srDue").value = "";
     pendingAtts = []; renderAttList();
     $id("sendReqMsg").textContent = "";
@@ -2349,8 +2394,8 @@
   }
   function sendRequest() {
     if (!currentUser || !msgDb) { $id("sendReqMsg").textContent = t("rq_offline"); return; }
-    const to = $id("sendReqTo").value;
-    if (!to) { $id("sendReqMsg").textContent = t("sr_no_one"); return; }
+    const to = composeTo;
+    if (!to || !usersCache[to]) { $id("sendReqMsg").textContent = t("sr_pick_to"); return; }
     const rec = {
       from: currentUser.id, fromName: currentUser.name,
       to: to, toName: (usersCache[to] || {}).name || "?",
@@ -2461,9 +2506,20 @@
     const scEl = $id("rqSentCount"); if (scEl) scEl.textContent = sentAll.length || "";
     if (reqTab === "inbox") markInboxRead();
   }
+  const EMPTY_RQ_SVG = '<svg width="84" height="66" viewBox="0 0 84 66" fill="none" aria-hidden="true">'
+    + '<rect x="10" y="12" width="64" height="44" rx="7" fill="var(--surface-2)" stroke="var(--border)" stroke-width="1.6"/>'
+    + '<path d="M12 16l30 22 30-22" stroke="var(--text-soft)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+    + '</svg>';
   function renderReqList(ul, items, kind) {
     ul.innerHTML = "";
-    if (!items.length) { const li = document.createElement("li"); li.className = "rq-empty"; li.textContent = t(kind === "inbox" ? "rq_inbox_empty" : "rq_sent_empty"); ul.appendChild(li); return; }
+    if (!items.length) {
+      const li = document.createElement("li"); li.className = "rq-empty-state";
+      li.innerHTML = EMPTY_RQ_SVG + "<div>" + t(kind === "inbox" ? "rq_inbox_empty" : "rq_sent_empty") + "</div>";
+      const b = document.createElement("button"); b.className = "mbtn"; b.type = "button"; b.textContent = t("t_sendreq");
+      b.addEventListener("click", () => { closeReqPopup(); openSendReq(composeKind); });
+      li.appendChild(b);
+      ul.appendChild(li); return;
+    }
     const limit = reqShown[kind] || REQ_PAGE;
     items.slice(0, limit).forEach((r) => ul.appendChild(buildReqCard(r, kind)));
     const rest = items.length - limit;
@@ -2569,6 +2625,7 @@
     if (myStatus() === "focus") n -= Object.keys(requestsCache).filter((id) => pendingNotifyIds.has(id)).length;
     n = Math.max(0, n);
     b.textContent = n; b.hidden = n === 0;
+    const pb = $id("popUnread"); if (pb) { pb.textContent = n; pb.hidden = n === 0; }
   }
   function notifyNewRequests() {
     const ids = Object.keys(requestsCache);
@@ -2635,7 +2692,7 @@
   // ---------- events ----------
   function addFromInput(prio) {
     const i = $id("newTodo");
-    addTodo(i.value, { priority: prio || $id("newPrio").value });
+    addTodo(i.value, { priority: prio || "normal" });
     i.value = ""; i.focus();
   }
   $id("addBtn").addEventListener("click", () => addFromInput());
@@ -2716,7 +2773,13 @@
   $id("sendReqSend").addEventListener("click", sendRequest);
   $id("srKindMemo").addEventListener("click", () => setComposeKind("memo"));
   $id("srKindTask").addEventListener("click", () => setComposeKind("task"));
-  $id("sendReqTo").addEventListener("change", updateToStatus);
+  $id("srToSearch").addEventListener("input", (e) => { srToQuery = e.target.value; renderToChips(); });
+  // Ctrl+Enter = 보내기 (쪽지 본문·업무 요청 제목/본문 공통)
+  ["sendReqText", "srTitle", "srEditor"].forEach((id) => {
+    $id(id).addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendRequest(); }
+    });
+  });
   $id("rqKindMemo").addEventListener("click", () => setReqKind("memo"));
   $id("rqKindTask").addEventListener("click", () => setReqKind("task"));
   // 서식 에디터 툴바
