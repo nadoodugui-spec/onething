@@ -100,6 +100,9 @@
   }
   .add-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   .add-row input::placeholder { color: var(--text-soft); }
+  .new-prio { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-soft);
+    font-family: var(--font-body); font-size: .88rem; padding: 6px 6px; outline: none; cursor: pointer; }
+  .new-prio:focus { border-color: var(--accent); }
   .add-row button, .ghost-btn {
     border: none; cursor: pointer; background: var(--accent); color: #fff;
     font-family: inherit; font-size: .92rem; font-weight: 600; border-radius: 8px;
@@ -110,10 +113,18 @@
   /* ===== Todo list ===== */
   .list { list-style: none; margin: 0; padding: 0 0 0 12px; }
   li.todo {
-    display: flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 4px;
-    font-size: 1rem; line-height: 36px; border-radius: 6px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 4px 0 7px;
+    font-size: 1rem; line-height: 34px; border-radius: 6px; flex-wrap: wrap;
+    border-left: 3px solid transparent;
   }
+  li.todo.prio-urgent { border-left-color: var(--prio-urgent); }
+  li.todo.prio-important { border-left-color: var(--prio-important); }
   li.todo:hover { background: rgba(0,0,0,.035); }
+  body[data-theme="dark"] li.todo:hover { background: rgba(255,255,255,.05); }
+  /* 조용한 행 — 컨트롤은 마우스를 올렸을 때만 (터치 기기에선 항상 표시) */
+  li.todo .grip, li.todo .send-btn, li.todo .more-btn { opacity: 0; transition: opacity .12s ease; }
+  li.todo:hover .grip, li.todo:hover .send-btn, li.todo:hover .more-btn { opacity: 1; }
+  @media (hover: none) { li.todo .grip, li.todo .send-btn, li.todo .more-btn { opacity: 1; } }
   li.todo.dragging { opacity: .45; }
   li.todo.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
   .grip { cursor: grab; color: var(--text-soft); font-size: 1.05rem; user-select: none; }
@@ -142,10 +153,11 @@
   .chip.due-over { background: #ffd2c8; color: #a32f1a; font-weight: 700; }
   .badge { font-size: .85rem; font-weight: 600; color: var(--accent); flex: none; white-space: nowrap; }
   .send-btn {
-    flex: none; cursor: pointer; border: none; background: transparent; color: var(--accent);
-    font-size: 1.45rem; line-height: 1; padding: 0 4px; border-radius: 6px;
+    flex: none; cursor: pointer; border: none; background: transparent; color: var(--text-soft);
+    line-height: 1; padding: 3px 5px; border-radius: 6px; display: inline-flex; align-items: center;
   }
-  .send-btn:hover { background: var(--highlight); }
+  .send-btn .icon { width: 17px; height: 17px; }
+  .send-btn:hover { background: var(--highlight); color: var(--accent); }
   .more-btn { flex: none; cursor: pointer; border: none; background: transparent; color: var(--text-soft); font-size: 1.2rem; padding: 0 4px; }
   .more-btn:hover { color: var(--accent); }
 
@@ -178,8 +190,6 @@
   .group-tabs .gt-new { margin-left: 4px; margin-bottom: 5px; padding: 3px 11px; border: 1px dashed var(--border); border-radius: 999px; font-size: .82rem; }
   .group-tabs .gt-new:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
   .group-tabs button.drop-into { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); border-radius: 8px; }
-  li.todo.prio-urgent .todo-text { color: var(--prio-urgent); }
-  li.todo.prio-important .todo-text { color: var(--prio-important); }
 
   /* todo detail panel */
   .detail {
@@ -597,6 +607,11 @@
         <div class="group-tabs" id="groupTabs"></div>
         <div class="add-row">
           <input id="newTodo" type="text" data-i18n-ph="new_ph" placeholder="해야 할 일을 적어보세요…" maxlength="200" autocomplete="off" />
+          <select id="newPrio" class="new-prio" data-i18n-title="np_title" title="우선순위">
+            <option value="normal" data-i18n="prio_normal">일반</option>
+            <option value="important" data-i18n="prio_important">중요</option>
+            <option value="urgent" data-i18n="prio_urgent">긴급</option>
+          </select>
           <button id="addBtn" data-i18n="add_btn" data-i18n-title="add_title" title="추가">＋ 추가</button>
         </div>
         <div class="list" id="todoList"></div>
@@ -868,6 +883,7 @@
     new_ph: { ko: "해야 할 일을 적어보세요…", en: "Write something to do…" },
     add_btn: { ko: "＋ 추가", en: "＋ Add" },
     add_title: { ko: "추가", en: "Add" },
+    np_title: { ko: "우선순위", en: "Priority" },
     later_h: { ko: "나중에", en: "Later" },
     done_h: { ko: "끝난 일", en: "Done" },
     prev_day: { ko: "이전 날", en: "Previous day" },
@@ -1172,10 +1188,11 @@
   function migrate(s) {
     const base = { version: 2, todos: [], history: [], trash: [],
       settings: { theme: "light", pomodoroMin: 25, reminder: false, lang: "ko", shareFocusTime: true, shareOneThing: false },
-      doneCollapsed: false, laterCollapsed: true,
+      doneCollapsed: true, laterCollapsed: true,
       prioCollapsed: { urgent: false, important: false, normal: false }, lastReminderDate: null };
     if (!s || typeof s !== "object") return base;
     const out = Object.assign({}, base, s);
+    if (!s.doneCollapsedV2) { out.doneCollapsed = true; out.doneCollapsedV2 = true; }   // 기본 접힘으로 1회 전환
     out.settings = Object.assign({}, base.settings, s.settings || {});
     out.prioCollapsed = Object.assign({}, base.prioCollapsed, s.prioCollapsed || {});
     out.todos = Array.isArray(s.todos) ? s.todos.map((t) => ({
@@ -1237,7 +1254,7 @@
   // ---------- actions ----------
   function addTodo(text, opts) {
     text = (text || "").trim(); if (!text) return;
-    state.todos.push({ id: uid(), text, color: null, priority: "normal", due: (opts && opts.due) || null, subtasks: [], repeat: null,
+    state.todos.push({ id: uid(), text, color: null, priority: (opts && opts.priority) || "normal", due: (opts && opts.due) || null, subtasks: [], repeat: null,
       later: false, status: "todo", activatedAt: null, focusSec: 0, createdAt: Date.now(), completedAt: null,
       reqId: (opts && opts.reqId) || null, group: (opts && opts.group !== undefined) ? opts.group : currentGroup });
     save(); render();
@@ -1499,14 +1516,13 @@
     li.dataset.id = td.id; li.draggable = true;
     const grip = document.createElement("span"); grip.className = "grip"; grip.textContent = "⠿";
     const check = document.createElement("button"); check.className = "check"; check.title = t("ti_done"); check.addEventListener("click", () => completeTodo(td.id));
-    const dot = document.createElement("button"); dot.className = "dot" + (td.color ? " " + td.color : ""); dot.title = t("ti_color"); dot.addEventListener("click", () => cycleColor(td.id));
     const text = document.createElement("span"); text.className = "todo-text"; text.textContent = td.text; text.title = t("ti_edit"); makeEditable(text, "todo", td.id);
-    li.append(grip, check, dot, text);
+    li.append(grip, check, text);
     if (td.due) { const c = document.createElement("span"); const today = todayStr(); c.className = "chip" + (td.due < today ? " due-over" : td.due === today ? " due-soon" : ""); c.textContent = td.due.slice(5); li.append(c); }
     if (td.repeat) { const c = document.createElement("span"); c.className = "chip"; c.textContent = td.repeat === "daily" ? t("rep_daily") : t("rep_weekly"); li.append(c); }
     if (td.subtasks && td.subtasks.length) { const d = td.subtasks.filter((s) => s.done).length; const c = document.createElement("span"); c.className = "chip"; c.textContent = "☑ " + d + "/" + td.subtasks.length; li.append(c); }
     if (td.status === "active") { const b = document.createElement("span"); b.className = "badge"; b.textContent = t("badge_prog"); li.append(b); }
-    else { const s = document.createElement("button"); s.className = "send-btn"; s.innerHTML = "➜"; s.title = cur ? t("send_swap") : t("send_to"); s.addEventListener("click", () => sendToOneThing(td.id)); li.append(s); }
+    else { const s = document.createElement("button"); s.className = "send-btn"; s.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6-5.4-2.9-5.4 2.9 1.1-6L3.2 9.4l6.1-.8L12 3z"/></svg>'; s.title = cur ? t("send_swap") : t("send_to"); s.addEventListener("click", () => sendToOneThing(td.id)); li.append(s); }
     const more = document.createElement("button"); more.className = "more-btn"; more.textContent = "⋯"; more.title = t("ti_more"); more.addEventListener("click", () => { if (expanded.has(td.id)) expanded.delete(td.id); else expanded.add(td.id); render(); }); li.append(more);
     if (expanded.has(td.id)) li.append(buildDetail(td));
     li.addEventListener("dragstart", (e) => { dragId = td.id; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", td.id); } catch (_) {} });
@@ -1652,12 +1668,15 @@
     sa.append(si); wrap.append(sa);
     return wrap;
   }
+  let doneShown = 5;   // 끝난 일: 최근 5개 + 더 보기
   function renderDone() {
     const wrap = $id("doneWrap"), list = $id("doneList"); const dones = doneTodos();
     wrap.classList.toggle("collapsed", !!state.doneCollapsed);
     $id("doneCount").textContent = dones.length ? "(" + dones.length + ")" : "";
     list.innerHTML = "";
-    dones.slice().reverse().forEach((td) => {
+    const all = dones.slice().reverse();
+    const rest = all.length - doneShown;
+    all.slice(0, doneShown).forEach((td) => {
       const li = document.createElement("li"); li.className = "done";
       const mark = document.createElement("span"); mark.className = "check"; mark.style.borderColor = "var(--done)"; mark.style.color = "var(--accent)"; mark.textContent = "✓"; mark.style.cursor = "pointer"; mark.title = t("ti_restore"); mark.addEventListener("click", () => restoreTodo(td.id));
       const text = document.createElement("span"); text.className = "done-text"; text.textContent = td.text;
@@ -1665,6 +1684,13 @@
       const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.title = t("ti_totrash"); x.addEventListener("click", () => deleteTodo(td.id));
       li.append(mark, text, restore, x); list.append(li);
     });
+    if (rest > 0) {
+      const li = document.createElement("li"); li.className = "done"; li.style.justifyContent = "center";
+      const btn = document.createElement("button"); btn.className = "rq-more-btn"; btn.type = "button";
+      btn.textContent = t("rq_more", rest);
+      btn.addEventListener("click", () => { doneShown += 10; renderDone(); });
+      li.append(btn); list.append(li);
+    }
   }
   function renderRight() {
     const today = todayStr(); const isToday = viewDate === today;
@@ -2588,8 +2614,13 @@
   }
 
   // ---------- events ----------
-  $id("addBtn").addEventListener("click", () => { const i = $id("newTodo"); addTodo(i.value); i.value = ""; i.focus(); });
-  $id("newTodo").addEventListener("keydown", (e) => { if (e.key === "Enter") { addTodo(e.target.value); e.target.value = ""; } });
+  function addFromInput() {
+    const i = $id("newTodo");
+    addTodo(i.value, { priority: $id("newPrio").value });
+    i.value = ""; i.focus();
+  }
+  $id("addBtn").addEventListener("click", addFromInput);
+  $id("newTodo").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput(); });
   $id("doneHead").addEventListener("click", () => { state.doneCollapsed = !state.doneCollapsed; save(); renderDone(); });
   $id("laterHead").addEventListener("click", () => { state.laterCollapsed = !state.laterCollapsed; save(); renderLater(); });
   $id("todoList").addEventListener("dragover", (e) => e.preventDefault());
