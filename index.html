@@ -556,6 +556,9 @@
   .rq-kind-tabs .rq-tab { border-radius: 999px; }
   .rq-empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
     color: var(--text-soft); padding: 44px 10px 20px; font-size: .95rem; }
+  .rq-prio-pick { display: inline-flex; gap: 4px; }
+  .rq-prio-pick[hidden] { display: none; }
+  .rq-added { font-size: .82rem; font-weight: 600; color: var(--ok); padding: 5px 4px; }
 
   /* ===== 팀 사이드바 ===== */
   .tb-compose { background: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important; }
@@ -875,6 +878,20 @@
     </div>
   </div>
 
+  <div class="modal" id="replyModal" hidden style="z-index:110">
+    <div class="modal-box" style="width:min(94vw,520px)">
+      <div class="modal-head"><span data-i18n="rp_head">답장</span><button class="modal-close" id="replyClose">✕</button></div>
+      <p class="modal-desc" id="replyToWho"></p>
+      <textarea id="replyText" rows="5" maxlength="500" data-i18n-ph="rp_ph" placeholder="답장 내용을 적어보세요…"
+        style="width:100%;margin-top:4px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.95rem;outline:none;resize:vertical;box-sizing:border-box"></textarea>
+      <div class="mrow" style="margin-top:14px;justify-content:space-between;align-items:center">
+        <span class="add-hint" style="padding:0;margin:0" data-i18n-html="sr_hint"><kbd>Ctrl+Enter</kbd> 보내기</span>
+        <button id="replySend" class="mbtn" data-i18n="sr_send">보내기</button>
+      </div>
+      <div class="login-msg" id="replyMsg"></div>
+    </div>
+  </div>
+
   <div class="modal" id="reqPopup" hidden>
     <div class="modal-box">
       <div class="modal-head"><span data-i18n="rq_modal_head">✉️ 요청</span><button class="modal-close" id="reqPopClose">✕</button></div>
@@ -1131,7 +1148,11 @@
     rq_status_done: { ko: "완료", en: "Done" },
     rq_status_onething: { ko: "⭐ 원씽으로 처리 중", en: "⭐ Doing as One Thing" },
     rq_to_todo: { ko: "내 할 일로 추가", en: "Add to my todos" },
-    rq_done: { ko: "완료/확인", en: "Done" },
+    rq_added: { ko: "내 할 일에 추가됨", en: "Added to my todos" },
+    rq_done: { ko: "완료로 표시", en: "Mark done" },
+    rp_head: { ko: "답장", en: "Reply" },
+    rp_to: { ko: "받는 사람: {0}", en: "To: {0}" },
+    rp_ph: { ko: "답장 내용을 적어보세요…", en: "Write your reply…" },
     rq_delete: { ko: "삭제", en: "Delete" },
     rq_added_todo: { ko: "할 일에 추가했어요", en: "Added to your todos" },
     rq_reply: { ko: "↩ 답장", en: "↩ Reply" },
@@ -2621,7 +2642,22 @@
     });
     const acts = document.createElement("div"); acts.className = "rq-acts";
     if (kind === "inbox") {
-      acts.appendChild(reqBtn(t("rq_to_todo"), () => { markRead(r.id); addTodo(r.text || "", { reqId: r.id, due: r.due || null }); toast(t("rq_added_todo")); }));
+      const already = state.todos.some((td) => td.reqId === r.id);   // 한 번만 추가되게
+      if (already) {
+        const s = document.createElement("span"); s.className = "rq-added"; s.textContent = "✓ " + t("rq_added");
+        acts.appendChild(s);
+      } else {
+        const pick = document.createElement("span"); pick.className = "rq-prio-pick"; pick.hidden = true;
+        [["urgent", "prio_urgent"], ["important", "prio_important"], ["normal", "prio_normal"]].forEach((pair) => {
+          pick.appendChild(reqBtn(t(pair[1]), () => {
+            markRead(r.id);
+            addTodo(r.text || "", { reqId: r.id, due: r.due || null, priority: pair[0], group: null });
+            toast(t("rq_added_todo")); renderRequests();
+          }));
+        });
+        acts.appendChild(reqBtn(t("rq_to_todo") + " ▾", () => { pick.hidden = !pick.hidden; }));
+        acts.appendChild(pick);
+      }
       acts.appendChild(reqBtn(t("rq_done"), () => { markRead(r.id); setReqStatus(r.id, "done"); }));
       acts.appendChild(reqBtn(t("rq_reply"), () => { markRead(r.id); doReply(r.id); }));
       acts.appendChild(reqBtn(t("rq_delete"), () => hideRequest(r.id)));
@@ -2647,13 +2683,25 @@
     if (!hf.includes(currentUser.id)) hf.push(currentUser.id);
     msgDb.ref("requests/" + id + "/hiddenFor").set(hf);
   }
+  let replyTargetId = null;
   function doReply(id) {
-    const r = requestsCache[id]; if (!r || !msgDb || !currentUser) return;
-    const txt = prompt(t("rq_reply_prompt")); if (txt === null) return;
-    const text = txt.trim(); if (!text) return;
+    const r = requestsCache[id]; if (!r || !currentUser) return;
+    replyTargetId = id;
+    const other = r.from === currentUser.id ? r.toName : r.fromName;
+    $id("replyToWho").textContent = t("rp_to", other || "?");
+    $id("replyText").value = ""; $id("replyMsg").textContent = "";
+    $id("replyModal").hidden = false;
+    setTimeout(() => $id("replyText").focus(), 30);
+  }
+  function sendReply() {
+    const r = requestsCache[replyTargetId];
+    if (!r || !msgDb || !currentUser) { $id("replyMsg").textContent = t("rq_offline"); return; }
+    const text = $id("replyText").value.trim();
+    if (!text) { $id("replyMsg").textContent = t("sr_need_text"); return; }
     const reps = Array.isArray(r.replies) ? r.replies.slice() : [];
     reps.push({ from: currentUser.id, fromName: currentUser.name, text: text, ts: Date.now() });
-    msgDb.ref("requests/" + id + "/replies").set(reps);
+    msgDb.ref("requests/" + replyTargetId + "/replies").set(reps);
+    $id("replyModal").hidden = true; replyTargetId = null;
     toast(t("rq_replied"));
   }
   let pendingNotifyIds = new Set();   // 원씽 중(focus)에 조용히 쌓인 새 요청 id
@@ -2880,6 +2928,9 @@
       rd.readAsDataURL(f);
     });
   });
+  $id("replyClose").addEventListener("click", () => { $id("replyModal").hidden = true; });
+  $id("replySend").addEventListener("click", sendReply);
+  $id("replyText").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendReply(); } });
   $id("rqTabInbox").addEventListener("click", () => setReqTab("inbox"));
   $id("rqTabSent").addEventListener("click", () => setReqTab("sent"));
   $id("reqPopClose").addEventListener("click", closeReqPopup);
