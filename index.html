@@ -130,6 +130,7 @@
   li.todo:hover .grip, li.todo:hover .send-btn, li.todo:hover .more-btn, li.todo:hover .ot-cancel { opacity: 1; }
   .req-link { color: var(--accent) !important; }
   .rq-card.flash { box-shadow: 0 0 0 3px var(--accent); transition: box-shadow .3s ease; }
+  .flash { box-shadow: 0 0 0 3px var(--accent) !important; border-radius: 8px; }
   /* 할 일 드래그 중: 오른쪽이 드롭 대상임을 안내 */
   body.dragging-todo .page.right { outline: 2px dashed var(--accent); outline-offset: -8px; border-radius: 12px; position: relative; }
   body.dragging-todo .page.right::after {
@@ -1068,6 +1069,7 @@
       <div class="ritual-kicker" data-i18n="rt_kicker">오늘의 의식</div>
       <div class="ritual-q" data-i18n-html="rt_q">이걸 끝내면, 나머지가 쉬워지는<br><b>단 하나</b>는 무엇인가요?</div>
       <p class="ritual-sub" data-i18n="rt_sub">여러 개를 잘하는 사람보다, 하나를 끝내는 사람이 이깁니다.</p>
+      <div class="st-options" id="ritualCands" style="text-align:left;margin-bottom:16px"></div>
       <button id="ritualGo" class="mbtn" style="width:100%" data-i18n="rt_go">오늘의 단 하나 정하기</button>
     </div>
   </div>
@@ -1079,6 +1081,13 @@
       <input id="progText" type="text" maxlength="120" data-i18n-ph="rq_prog_ph" placeholder="예: 자료 절반 수집 완료, 내일 마무리 예정"
         style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.95rem;outline:none;box-sizing:border-box" />
       <div class="mrow" style="margin-top:14px;justify-content:flex-end"><button id="progSave" class="mbtn" data-i18n="save_btn">저장</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="cmdModal" hidden style="z-index:160">
+    <div class="modal-box" style="width:min(94vw,560px);align-self:flex-start;margin-top:10vh">
+      <input id="cmdInput" class="sp-search" type="text" data-i18n-ph="cmd_ph" placeholder="전체 검색 — 할 일 · 요청 · 프로젝트 (Ctrl+K)" autocomplete="off" style="margin:2px 0 10px" />
+      <div id="cmdResults"></div>
     </div>
   </div>
 
@@ -1557,6 +1566,15 @@
     wk_reqdone: { ko: "받은 요청 처리", en: "Requests done" },
     wk_reqsent: { ko: "보낸 요청", en: "Requests sent" },
     wk_story: { ko: "이번 주 도미노 {0}개를 넘어뜨렸고, {1}을 '단 하나'에 썼습니다.", en: "This week you toppled {0} dominoes and spent {1} on the one thing." },
+    wk_guard: { ko: "집중하는 동안 알림 {0}건이 조용히 기다렸습니다 — 지켜진 집중이에요.", en: "{0} notifications waited quietly while you focused — protected focus." },
+    cmd_ph: { ko: "전체 검색 — 할 일 · 요청 · 프로젝트 (Ctrl+K)", en: "Search everything — todos · requests · projects (Ctrl+K)" },
+    cmd_todos: { ko: "할 일", en: "To-dos" },
+    cmd_reqs: { ko: "요청", en: "Requests" },
+    cmd_prj: { ko: "프로젝트", en: "Projects" },
+    br_h: { ko: "오늘의 단 하나 후보", en: "Candidates for today's one thing" },
+    br_req: { ko: "받은 요청 · 마감", en: "Request · due" },
+    br_todo: { ko: "내 할 일", en: "My to-do" },
+    br_prj: { ko: "프로젝트 · {0}", en: "Project · {0}" },
     domino_note: { ko: "작은 하나가 다음 것을 넘어뜨립니다", en: "each one topples the next" },
     // 할 일 폴더 / 관리자
     grp_add: { ko: "＋ List", en: "＋ List" },
@@ -1627,6 +1645,7 @@
     out.trash = Array.isArray(s.trash) ? s.trash : [];
     out.groups = Array.isArray(s.groups) ? s.groups.map((g) => ({ id: g.id || uid(), name: g.name || "?", collapsed: !!g.collapsed })) : [];
     out.tabOrder = Array.isArray(s.tabOrder) ? s.tabOrder : [];
+    out.guarded = (s.guarded && typeof s.guarded === "object") ? s.guarded : {};
     out.version = 2;
     return out;
   }
@@ -2154,6 +2173,7 @@
     }
     acts.append(reqBtn(t("rq_delete"), () => { if (confirm(t("prj_todo_del"))) { try { msgDb.ref("projectTodos/" + pid + "/" + td.id).remove(); } catch (_) {} } }));
     card.append(acts);
+    card.dataset.tid = td.id;
     card.addEventListener("dragstart", (e) => { e.stopPropagation(); prjDragId = td.id; dragId = null; card.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; });
     card.addEventListener("dragend", () => { prjDragId = null; card.classList.remove("dragging"); document.querySelectorAll(".kb-col.drop-into").forEach((n) => n.classList.remove("drop-into")); });
     return card;
@@ -2603,7 +2623,8 @@
       });
     }
     html += '<div class="section-h">' + t("wk_sum_h") + '</div>'
-      + '<div class="ms-note" style="margin:0 0 8px">' + t("wk_story", weekHist.length, fmtDur(weekFocus)) + '</div>'
+      + '<div class="ms-note" style="margin:0 0 8px">' + t("wk_story", weekHist.length, fmtDur(weekFocus))
+      + (((state.guarded || {})[weekStart] || 0) > 0 ? "<br>" + t("wk_guard", (state.guarded || {})[weekStart]) : "") + '</div>'
       + '<div class="stat-row">'
       + '<div class="stat-card"><div class="num">' + weekHist.length + '</div><div class="lbl">' + t("wk_ot") + '</div></div>'
       + '<div class="stat-card"><div class="num" style="font-size:1.15rem;line-height:1.4">' + fmtDur(weekFocus) + '</div><div class="lbl">' + t("wk_focus") + '</div></div>'
@@ -3007,11 +3028,16 @@
   }
   // 경과 시간·진행 바 갱신 — 패널이 열려 있을 때만 1분마다
   setInterval(() => { const p = $id("sidePanel"); if (p && !p.hidden) renderTeamBoard(); }, 60000);
-  // focus 해제 시 쌓인 알림(새 요청 + 새 답장) 몰아서 표시
+  // focus 해제 시 쌓인 알림(새 요청 + 새 답장) 몰아서 표시 + '지켜진 집중' 기록
+  function weekStartStr() { const dow = (parseDate(todayStr()).getDay() + 6) % 7; return addDaysStr(todayStr(), -dow); }
   function flushPendingNotifies() {
     const n = pendingNotifyIds.size + pendingReplyIds.size;
     if (!n) return;
     pendingNotifyIds = new Set(); pendingReplyIds = new Set();
+    state.guarded = state.guarded || {};
+    const wk = weekStartStr();
+    state.guarded[wk] = (state.guarded[wk] || 0) + n;
+    save();
     toast(t("rq_flush", n));
     renderUnreadBadge();
   }
@@ -4268,7 +4294,78 @@
 
   document.querySelectorAll(".modal").forEach((m) => m.addEventListener("click", (e) => { if (e.target === m) m.hidden = true; }));
 
+  // ----- 전역 검색 (Ctrl+K) -----
+  function flashEl(sel) {
+    setTimeout(() => {
+      const el = document.querySelector(sel);
+      if (el) { el.scrollIntoView({ block: "center" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1600); }
+    }, 120);
+  }
+  function openCmd() {
+    $id("cmdInput").value = ""; $id("cmdResults").innerHTML = "";
+    $id("cmdModal").hidden = false;
+    setTimeout(() => $id("cmdInput").focus(), 30);
+  }
+  function cmdSection(box, label) { const h = document.createElement("div"); h.className = "sp-group-h"; h.textContent = label; box.append(h); }
+  function cmdItem(box, label, sub, run) {
+    const b = document.createElement("button"); b.className = "to-opt"; b.type = "button";
+    const nm = document.createElement("span"); nm.textContent = label; b.append(nm);
+    if (sub) { const s = document.createElement("span"); s.className = "to-opt-st"; s.textContent = sub; b.append(s); }
+    b.addEventListener("click", () => { $id("cmdModal").hidden = true; run(); });
+    box.append(b);
+  }
+  function renderCmd() {
+    const q = $id("cmdInput").value.trim().toLowerCase();
+    const box = $id("cmdResults"); box.innerHTML = "";
+    if (!q) return;
+    const hit = (s) => (s || "").toLowerCase().includes(q);
+    // 내 할 일
+    const todos = state.todos.filter((td) => hit(td.text)).slice(0, 7);
+    if (todos.length) {
+      cmdSection(box, t("cmd_todos"));
+      todos.forEach((td) => {
+        const gname = td.group ? (((state.groups || []).find((g) => g.id === td.group) || {}).name || "Inbox") : "Inbox";
+        cmdItem(box, td.text, gname + (td.status === "done" ? " · " + t("done_h") : ""), () => {
+          currentProject = null; currentGroup = td.group || null;
+          searchQuery = ""; const si = $id("searchInput"); if (si) si.value = "";
+          if (td.status === "done") state.doneCollapsed = false;
+          render();
+          flashEl('li.todo[data-id="' + td.id + '"]');
+        });
+      });
+    }
+    // 요청
+    if (currentUser) {
+      const reqs = Object.keys(requestsCache).filter((id) => {
+        const r = requestsCache[id];
+        return r && (r.to === currentUser.id || r.from === currentUser.id) && !((r.hiddenFor || []).includes(currentUser.id))
+          && (hit(r.text) || hit(r.title) || hit(r.fromName) || hit(r.toName));
+      }).slice(0, 7);
+      if (reqs.length) {
+        cmdSection(box, t("cmd_reqs"));
+        reqs.forEach((id) => {
+          const r = requestsCache[id];
+          cmdItem(box, r.title || r.text || "", (r.from === currentUser.id ? r.toName : r.fromName) || "", () => { rqQuery = ""; const s = $id("rqSearch"); if (s) s.value = ""; openRequestById(id); });
+        });
+      }
+      // 프로젝트 카드
+      let prjHeadDone = false;
+      Object.keys(projectsCache).forEach((pid) => {
+        const p = projectsCache[pid] || {}; if (!projectVisible(p)) return;
+        const ts = projectTodosCache[pid] || {};
+        Object.keys(ts).forEach((tid) => {
+          const c = ts[tid]; if (!c || !hit(c.text)) return;
+          if (!prjHeadDone) { cmdSection(box, t("cmd_prj")); prjHeadDone = true; }
+          cmdItem(box, c.text || "", p.name || "", () => { currentProject = pid; render(); flashEl('.kb-card[data-tid="' + tid + '"]'); });
+        });
+      });
+    }
+    if (!box.children.length) { const e = document.createElement("div"); e.className = "sp-empty"; e.textContent = t("no_results"); box.append(e); }
+  }
+  $id("cmdInput").addEventListener("input", renderCmd);
+
   document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) { e.preventDefault(); openCmd(); return; }
     if (e.key === "Escape") { document.querySelectorAll(".modal").forEach((m) => (m.hidden = true)); return; }
     const tag = (e.target.tagName || "").toLowerCase();
     if (tag === "input" || tag === "textarea" || e.target.isContentEditable) return;
@@ -4292,11 +4389,54 @@
   ensureAuth();                        // 익명 인증 → 성공 시 startCloud()에서 클라우드 연결
   checkReminder();
   // 하루의 의식 — 오늘 원씽을 아직 안 정했으면 하루 1회 질문
+  function buildRitualCands() {
+    const box = $id("ritualCands"); if (!box) return; box.innerHTML = "";
+    const today = todayStr();
+    const cands = [];
+    // ① 오늘/지난 마감의 미처리 요청
+    if (currentUser) Object.keys(requestsCache).forEach((id) => {
+      const r = requestsCache[id];
+      if (!r || r.to !== currentUser.id) return;
+      if ((r.hiddenFor || []).includes(currentUser.id) || isHandledByMe(id, r)) return;
+      if (!(r.due && r.due <= today)) return;
+      cands.push({ label: r.title || r.text || "", sub: t("br_req") + (r.due < today ? " · " + t("rq_overdue") : ""), run: () => {
+        markRead(id);
+        addTodo(r.text || "", { reqId: id, due: r.due || null, priority: "urgent", group: null });
+        try { msgDb.ref("requests/" + id + "/addedTodo").set(Date.now()); } catch (_) {}
+        sendToOneThing(state.todos[state.todos.length - 1].id);
+      } });
+    });
+    // ② 내 할 일: Now 그룹 또는 마감 임박
+    state.todos.filter((td) => td.status === "todo" && !td.later && (td.priority === "urgent" || (td.due && td.due <= today)))
+      .slice(0, 5).forEach((td) => cands.push({ label: td.text, sub: t("br_todo"), run: () => sendToOneThing(td.id) }));
+    // ③ 프로젝트에서 내가 담당인 카드
+    if (currentUser) Object.keys(projectsCache).forEach((pid) => {
+      const p = projectsCache[pid] || {}; if (!projectVisible(p)) return;
+      const ts = projectTodosCache[pid] || {};
+      Object.keys(ts).forEach((tid) => {
+        const c = ts[tid];
+        if (c && kbStatusOf(c) !== "done" && c.assignee === currentUser.id)
+          cands.push({ label: c.text || "", sub: t("br_prj", p.name || ""), run: () => takeAsOneThing(pid, Object.assign({ id: tid }, c)) });
+      });
+    });
+    const seen = new Set();
+    const list = cands.filter((c) => { if (!c.label || seen.has(c.label)) return false; seen.add(c.label); return true; }).slice(0, 6);
+    if (!list.length) return;
+    const h = document.createElement("div"); h.className = "sp-group-h"; h.textContent = t("br_h"); box.append(h);
+    list.forEach((c) => {
+      const b = document.createElement("button"); b.className = "st-opt"; b.type = "button";
+      const nm = document.createElement("span"); nm.textContent = c.label; b.append(nm);
+      const sm = document.createElement("small"); sm.textContent = c.sub; b.append(sm);
+      b.addEventListener("click", () => { closeRitual(); c.run(); });
+      box.append(b);
+    });
+  }
   function maybeShowRitual() {
     try {
       if (localStorage.getItem("onething-ritual") === todayStr()) return;
       if (activeTodo() || state.history.some((h) => h.date === todayStr())) { localStorage.setItem("onething-ritual", todayStr()); return; }
       const g = $id("loginGate"); if (g && !g.hidden) return;   // 로그인 화면이 떠 있으면 생략
+      buildRitualCands();   // 오늘 브리핑: 단 하나 후보를 차려줌
       $id("ritualModal").hidden = false;
     } catch (_) {}
   }
@@ -4307,7 +4447,7 @@
   }
   $id("ritualGo").addEventListener("click", closeRitual);
   $id("ritualModal").addEventListener("click", (e) => { if (e.target.id === "ritualModal") closeRitual(); });
-  setTimeout(maybeShowRitual, 600);
+  setTimeout(maybeShowRitual, 1800);   // 클라우드 데이터(요청·프로젝트)가 로드된 뒤 후보 구성
   $id("newTodo").focus();
 })();
 </script>
