@@ -128,6 +128,8 @@
   /* 조용한 행 — 컨트롤은 마우스를 올렸을 때만 (터치 기기에선 항상 표시) */
   li.todo .grip, li.todo .send-btn, li.todo .more-btn { opacity: 0; transition: opacity .12s ease; }
   li.todo:hover .grip, li.todo:hover .send-btn, li.todo:hover .more-btn { opacity: 1; }
+  .req-link { color: var(--accent) !important; }
+  .rq-card.flash { box-shadow: 0 0 0 3px var(--accent); transition: box-shadow .3s ease; }
   @media (hover: none) { li.todo .grip, li.todo .send-btn, li.todo .more-btn { opacity: 1; } }
   li.todo.dragging { opacity: .45; }
   li.todo.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
@@ -478,6 +480,7 @@
   .rq-text { margin: 6px 0; white-space: pre-wrap; word-break: break-word; }
   .rq-reply { margin: 4px 0 0 8px; padding: 6px 8px; border-left: 3px solid var(--line); color: var(--ink-soft); font-size: .9rem; white-space: pre-wrap; word-break: break-word; }
   .rq-reply-new { border-left-color: #e5484d; color: var(--text); font-weight: 600; background: var(--surface); border-radius: 0 8px 8px 0; }
+  .rq-progress { margin: 6px 0 2px; padding: 6px 10px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-size: .85rem; font-weight: 600; }
   .rq-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .rq-btn { border: none; background: var(--paper-edge); color: var(--ink); border-radius: 8px; padding: 5px 9px; font-size: .82rem; cursor: pointer; font-family: var(--font-body); }
   .rq-btn:hover { background: var(--highlight); }
@@ -968,6 +971,24 @@
     </div>
   </div>
 
+  <div class="modal" id="progressModal" hidden style="z-index:110">
+    <div class="modal-box" style="width:min(94vw,440px)">
+      <div class="modal-head"><span data-i18n="rq_prog_head">진행 상황 남기기</span><button class="modal-close" id="progClose">✕</button></div>
+      <p class="modal-desc" data-i18n="rq_prog_desc">완료 전 중간 상태를 보낸 사람에게 알려요. 비우고 저장하면 지워집니다.</p>
+      <input id="progText" type="text" maxlength="120" data-i18n-ph="rq_prog_ph" placeholder="예: 자료 절반 수집 완료, 내일 마무리 예정"
+        style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.95rem;outline:none;box-sizing:border-box" />
+      <div class="mrow" style="margin-top:14px;justify-content:flex-end"><button id="progSave" class="mbtn" data-i18n="save_btn">저장</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="forwardModal" hidden style="z-index:110">
+    <div class="modal-box" style="width:min(94vw,380px)">
+      <div class="modal-head"><span data-i18n="rq_fwd_head">다른 사람에게 전달</span><button class="modal-close" id="fwdClose">✕</button></div>
+      <p class="modal-desc" data-i18n="rq_fwd_desc">이 요청의 담당을 넘깁니다. 보낸 사람에게 전달 사실이 표시돼요.</p>
+      <div class="st-options" id="fwdList"></div>
+    </div>
+  </div>
+
   <div class="modal" id="reqPopup" hidden>
     <div class="modal-box">
       <div class="modal-head"><span data-i18n="rq_modal_head">✉️ 요청</span><button class="modal-close" id="reqPopClose">✕</button></div>
@@ -975,6 +996,7 @@
         <button class="pop-tab" id="rqTabInbox" type="button"><span data-i18n="rq_tab_inbox">받은 요청</span> <span class="unread-badge" id="popUnread" hidden>0</span></button>
         <button class="pop-tab" id="rqTabSent" type="button"><span data-i18n="rq_tab_sent">보낸 요청</span></button>
       </div>
+      <input id="rqSearch" class="sp-search" type="text" data-i18n-ph="rq_search_ph" placeholder="요청 검색(내용·이름)…" autocomplete="off" style="margin:10px 0 0" />
       <div class="rq-tabs rq-kind-tabs" style="margin-top:10px">
         <button class="rq-tab" id="rqKindMemo" type="button"><span data-i18n="kind_memo">쪽지</span> <span class="rq-num" id="memoUnread"></span></button>
         <button class="rq-tab" id="rqKindTask" type="button"><span data-i18n="kind_task">업무 요청</span> <span class="rq-num" id="taskUnread"></span></button>
@@ -1251,6 +1273,22 @@
     rq_delall: { ko: "전체 삭제", en: "Delete all" },
     rq_del_confirm: { ko: "요청 {0}건을 삭제할까요? 내 요청함에서만 사라지고 상대방에게는 남아 있어요.", en: "Delete {0} request(s)? They disappear only from your box." },
     rq_deleted: { ko: "{0}건을 삭제했어요", en: "Deleted {0}" },
+    ti_openreq: { ko: "원본 요청 보기", en: "Open original request" },
+    rq_gone: { ko: "원본 요청을 찾을 수 없어요(삭제됨)", en: "Original request not found" },
+    rq_added_by: { ko: "할 일로 등록됨", en: "Added as to-do" },
+    rq_prog_btn: { ko: "진행 상황", en: "Progress" },
+    rq_prog_head: { ko: "진행 상황 남기기", en: "Leave progress note" },
+    rq_prog_desc: { ko: "완료 전 중간 상태를 보낸 사람에게 알려요. 비우고 저장하면 지워집니다.", en: "Share an interim status with the sender. Save empty to clear." },
+    rq_prog_ph: { ko: "예: 자료 절반 수집 완료, 내일 마무리 예정", en: "e.g. half done, finishing tomorrow" },
+    rq_prog: { ko: "진행: {0}", en: "Progress: {0}" },
+    rq_prog_saved: { ko: "진행 상황을 남겼어요", en: "Progress saved" },
+    rq_fwd: { ko: "전달", en: "Forward" },
+    rq_fwd_head: { ko: "다른 사람에게 전달", en: "Forward to someone" },
+    rq_fwd_desc: { ko: "이 요청의 담당을 넘깁니다. 보낸 사람에게 전달 사실이 표시돼요.", en: "Hand this request over. The sender will see it was forwarded." },
+    rq_fwd_done: { ko: "{0}님에게 전달했어요", en: "Forwarded to {0}" },
+    rq_fwd_by: { ko: "{0}님이 전달", en: "Forwarded by {0}" },
+    rq_search_ph: { ko: "요청 검색(내용·이름)…", en: "Search requests…" },
+    rq_due_sum: { ko: "오늘 마감 {0}건 · 지난 마감 {1}건이 있어요", en: "{0} due today · {1} overdue" },
     rq_modal_head: { ko: "요청", en: "Requests" },
     rq_tab_inbox: { ko: "받은 요청", en: "Received" },
     rq_tab_sent: { ko: "보낸 요청", en: "Sent" },
@@ -1705,6 +1743,12 @@
     if (td.subtasks && td.subtasks.length) { const d = td.subtasks.filter((s) => s.done).length; const c = document.createElement("span"); c.className = "chip"; c.textContent = "☑ " + d + "/" + td.subtasks.length; li.append(c); }
     if (td.status === "active") { const b = document.createElement("span"); b.className = "badge"; b.textContent = t("badge_prog"); li.append(b); }
     else { const s = document.createElement("button"); s.className = "send-btn"; s.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6-5.4-2.9-5.4 2.9 1.1-6L3.2 9.4l6.1-.8L12 3z"/></svg>'; s.title = cur ? t("send_swap") : t("send_to"); s.addEventListener("click", () => sendToOneThing(td.id)); li.append(s); }
+    if (td.reqId) {   // 요청에서 온 할 일 — 원본 요청 열기
+      const rq = document.createElement("button"); rq.className = "more-btn req-link"; rq.title = t("ti_openreq");
+      rq.innerHTML = '<svg class="icon" style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+      rq.addEventListener("click", () => openRequestById(td.reqId));
+      li.append(rq);
+    }
     const more = document.createElement("button"); more.className = "more-btn"; more.textContent = "⋯"; more.title = t("ti_more"); more.addEventListener("click", () => { if (expanded.has(td.id)) expanded.delete(td.id); else expanded.add(td.id); render(); }); li.append(more);
     if (expanded.has(td.id)) li.append(buildDetail(td));
     li.addEventListener("dragstart", (e) => { dragId = td.id; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", td.id); } catch (_) {} });
@@ -2780,8 +2824,11 @@
       return byTs(a, b);
     };
     const sorter = reqKind === "task" ? byDue : byTs;
-    const inbox = inboxAll.filter((r) => reqKindOf(r) === reqKind).sort(sorter);
-    const sent = sentAll.filter((r) => reqKindOf(r) === reqKind).sort(sorter);
+    // 검색: 내용·제목·이름
+    const rq = rqQuery.trim().toLowerCase();
+    const hits = (r) => !rq || [r.text, r.title, r.fromName, r.toName].some((v) => (v || "").toLowerCase().includes(rq));
+    const inbox = inboxAll.filter((r) => reqKindOf(r) === reqKind && hits(r)).sort(sorter);
+    const sent = sentAll.filter((r) => reqKindOf(r) === reqKind && hits(r)).sort(sorter);
     lastLists = { inbox: inbox, sent: sent };
     renderReqList(inboxUl, inbox, "inbox");
     renderReqList(sentUl, sent, "sent");
@@ -2823,6 +2870,7 @@
     const stKey = (st === "done" && r.instant) ? "done_now" : st;
     const li = document.createElement("li");
     li.className = "rq-card st-" + st + (kind === "inbox" && st === "sent" ? " unread" : "");
+    li.dataset.rid = r.id;
     const head = document.createElement("div"); head.className = "rq-card-head";
     if (reqSelectMode) {   // 선택 삭제 모드: 체크박스
       const cb = document.createElement("button"); cb.type = "button";
@@ -2846,6 +2894,10 @@
     const pill = document.createElement("span"); pill.className = "rq-status-pill pill-" + st;
     pill.textContent = t("rq_status_" + stKey);
     meta.appendChild(pill);
+    if (r.addedTodo && st !== "done" && st !== "onething" && kind === "sent") {
+      const ap = document.createElement("span"); ap.className = "rq-status-pill pill-read"; ap.textContent = t("rq_added_by");
+      meta.appendChild(ap);
+    }
     const chip = document.createElement("span"); chip.className = "rq-kind-chip " + reqKindOf(r); chip.textContent = t("kind_" + reqKindOf(r));
     who.prepend(chip);
     head.append(who, meta);
@@ -2878,6 +2930,16 @@
       const body = document.createElement("div"); body.className = "rq-text"; body.textContent = r.text || "";
       li.append(body);
     }
+    if (r.forwardedBy) {   // 전달된 요청 표시
+      const fw = document.createElement("div"); fw.className = "rq-meta"; fw.style.margin = "2px 0";
+      fw.textContent = t("rq_fwd_by", r.forwardedBy) + (r.forwardedAt ? " · " + fmtReqTime(r.forwardedAt) : "");
+      li.appendChild(fw);
+    }
+    if (r.progress && r.progress.text && st !== "done") {   // 진행 상황 코멘트
+      const pg = document.createElement("div"); pg.className = "rq-progress";
+      pg.textContent = t("rq_prog", r.progress.text) + " · " + fmtAgo(r.progress.ts);
+      li.appendChild(pg);
+    }
     const seenN = (r.replySeen && currentUser && r.replySeen[currentUser.id]) || 0;
     const newReps = unseenReplies(r);
     if (newReps > 0) {
@@ -2907,6 +2969,7 @@
           const pb = reqBtn(t(pair[1]), () => {
             markRead(r.id);
             addTodo(r.text || "", { reqId: r.id, due: r.due || null, priority: pair[0], group: null });
+            try { msgDb.ref("requests/" + r.id + "/addedTodo").set(Date.now()); } catch (_) {}   // 보낸 사람에게 '할 일로 등록됨' 표시
             toast(t("rq_added_todo")); renderRequests();
           });
           pb.classList.add("pk-" + pair[0]);
@@ -2917,6 +2980,10 @@
       }
       acts.appendChild(reqBtn(t("rq_done"), () => { markRead(r.id); setReqStatus(r.id, "done", true); }));
       acts.appendChild(reqBtn(t("rq_reply"), () => { markRead(r.id); doReply(r.id); }));
+      if (st !== "done") {
+        acts.appendChild(reqBtn(t("rq_prog_btn"), () => openProgress(r.id)));
+        acts.appendChild(reqBtn(t("rq_fwd"), () => openForward(r.id)));
+      }
       acts.appendChild(reqBtn(t("rq_delete"), () => hideRequest(r.id)));
     } else {
       acts.appendChild(reqBtn(t("rq_reply"), () => doReply(r.id)));
@@ -2935,9 +3002,57 @@
     if (st === "done") { patch.doneAt = Date.now(); if (instant) patch.instant = true; }
     msgDb.ref("requests/" + id).update(patch);
   }
+  // ----- 진행 상황 코멘트 -----
+  let progTargetId = null;
+  function openProgress(id) {
+    const r = requestsCache[id]; if (!r) return;
+    progTargetId = id;
+    $id("progText").value = (r.progress && r.progress.text) || "";
+    $id("progressModal").hidden = false;
+    setTimeout(() => $id("progText").focus(), 30);
+  }
+  function saveProgress() {
+    const r = requestsCache[progTargetId]; if (!r || !msgDb || !currentUser) return;
+    const text = $id("progText").value.trim();
+    try {
+      msgDb.ref("requests/" + progTargetId + "/progress").set(text ? { text: text, ts: Date.now(), by: currentUser.name } : null);
+    } catch (_) {}
+    $id("progressModal").hidden = true; progTargetId = null;
+    toast(t("rq_prog_saved"));
+  }
+  // ----- 전달(위임) -----
+  let fwdTargetId = null;
+  function openForward(id) {
+    const r = requestsCache[id]; if (!r || !currentUser) return;
+    fwdTargetId = id;
+    const box = $id("fwdList"); box.innerHTML = "";
+    const others = Object.keys(usersCache).filter((uid2) => uid2 !== currentUser.id && uid2 !== r.from);
+    if (!others.length) { const e = document.createElement("div"); e.className = "sp-empty"; e.textContent = t("sr_no_one"); box.append(e); }
+    others.sort((a, b) => (((usersCache[a] || {}).name || "")).localeCompare((usersCache[b] || {}).name || "")).forEach((uid2) => {
+      const b = document.createElement("button"); b.className = "st-opt"; b.type = "button";
+      b.appendChild(statusDot(uid2));
+      const nm = document.createElement("span"); nm.textContent = toLabelOf(uid2); b.appendChild(nm);
+      b.addEventListener("click", () => doForward(uid2));
+      box.append(b);
+    });
+    $id("forwardModal").hidden = false;
+  }
+  function doForward(toId) {
+    const r = requestsCache[fwdTargetId]; if (!r || !msgDb || !currentUser) return;
+    const name = (usersCache[toId] || {}).name || "?";
+    try {
+      msgDb.ref("requests/" + fwdTargetId).update({
+        to: toId, toName: name, status: "sent", readAt: null,
+        forwardedBy: currentUser.name, forwardedAt: Date.now()
+      });
+    } catch (_) {}
+    $id("forwardModal").hidden = true; fwdTargetId = null;
+    toast(t("rq_fwd_done", name));
+  }
   // ----- 선택/전체 삭제 (내 화면에서만 숨김) -----
   let reqSelectMode = false;
   let selectedReqIds = new Set();
+  let rqQuery = "";   // 요청 검색어
   let lastLists = { inbox: [], sent: [] };   // 현재 탭·종류 기준 전체 목록(페이징 무관)
   function updateManageUI() {
     const sel = $id("rqSelBtn"), del = $id("rqSelDelBtn"), cancel = $id("rqSelCancel"), all = $id("rqDelAllBtn");
@@ -3069,6 +3184,25 @@
     const s = {}; ids.forEach((id) => { const r = requestsCache[id]; s[id] = (r && r.status) || "sent"; });
     return s;
   }
+  let knownTos = null;   // 전달 감지용: 요청별 수신자
+  function snapshotTos(ids) {
+    const m = {}; ids.forEach((id) => { const r = requestsCache[id]; m[id] = (r && r.to) || ""; });
+    return m;
+  }
+  // 접속 시 1회: 오늘/지난 마감 요약
+  let dueToastShown = false;
+  function dueSummaryToast() {
+    if (dueToastShown || !currentUser) return; dueToastShown = true;
+    const today = todayStr();
+    let dueToday = 0, overdue = 0;
+    Object.keys(requestsCache).forEach((id) => {
+      const r = requestsCache[id]; if (!r || r.to !== currentUser.id || !r.due) return;
+      if ((r.hiddenFor || []).includes(currentUser.id) || isHandledByMe(id, r)) return;
+      if (r.due === today) dueToday++;
+      else if (r.due < today) overdue++;
+    });
+    if (dueToday || overdue) setTimeout(() => toast(t("rq_due_sum", dueToday, overdue)), 900);
+  }
   function notifyNewRequests() {
     const ids = Object.keys(requestsCache);
     if (knownReqIds === null || !currentUser) {
@@ -3076,6 +3210,8 @@
       knownReqIds = new Set(ids);
       knownRepCounts = snapshotRepCounts(ids);
       knownStatuses = snapshotStatuses(ids);
+      knownTos = snapshotTos(ids);
+      if (currentUser) dueSummaryToast();
       return;
     }
     ids.forEach((id) => {
@@ -3132,8 +3268,33 @@
       });
     }
     knownStatuses = statuses;
+    // ----- 전달로 나에게 온 요청 감지 -----
+    const tos = snapshotTos(ids);
+    if (knownTos && currentUser) {
+      ids.forEach((id) => {
+        const r = requestsCache[id]; if (!r) return;
+        if (tos[id] !== currentUser.id || knownTos[id] === currentUser.id || !knownTos[id]) return;
+        if ((r.hiddenFor || []).includes(currentUser.id)) return;
+        if (myStatus() === "focus") { pendingNotifyIds.add(id); return; }
+        toast(t("rq_new", r.forwardedBy || r.fromName || "?"));
+      });
+    }
+    knownTos = tos;
   }
   function openReqPopup(tab) { if (!currentUser) { showLoginGate(); return; } setReqTab(tab); setReqKind(reqKind); $id("reqPopup").hidden = false; }
+  // 할 일에서 원본 요청 카드 열기
+  function openRequestById(id) {
+    const r = requestsCache[id];
+    if (!r || !currentUser) { toast(t("rq_gone")); return; }
+    reqKind = reqKindOf(r);
+    const tab = r.to === currentUser.id ? "inbox" : "sent";
+    reqShown[tab] = 999;   // 페이징에 가려지지 않게 전부 표시
+    openReqPopup(tab);
+    setTimeout(() => {
+      const el = document.querySelector('.rq-card[data-rid="' + id + '"]');
+      if (el) { el.scrollIntoView({ block: "center" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1600); }
+    }, 80);
+  }
   function closeReqPopup() { $id("reqPopup").hidden = true; setReqTab(null); if (reqSelectMode) exitSelectMode(); }
   function setReqTab(tab) {
     reqTab = tab;
@@ -3345,6 +3506,11 @@
       rd.readAsDataURL(f);
     });
   });
+  $id("rqSearch").addEventListener("input", (e) => { rqQuery = e.target.value; reqShown = { inbox: REQ_PAGE, sent: REQ_PAGE }; renderRequests(); });
+  $id("progClose").addEventListener("click", () => { $id("progressModal").hidden = true; });
+  $id("progSave").addEventListener("click", saveProgress);
+  $id("progText").addEventListener("keydown", (e) => { if (e.key === "Enter") saveProgress(); });
+  $id("fwdClose").addEventListener("click", () => { $id("forwardModal").hidden = true; });
   $id("rqSelBtn").addEventListener("click", () => { reqSelectMode = true; selectedReqIds = new Set(); updateManageUI(); renderRequests(); });
   $id("rqSelCancel").addEventListener("click", exitSelectMode);
   $id("rqSelDelBtn").addEventListener("click", () => {
