@@ -477,6 +477,7 @@
   .rq-meta { color: var(--ink-soft); font-size: .78rem; white-space: nowrap; }
   .rq-text { margin: 6px 0; white-space: pre-wrap; word-break: break-word; }
   .rq-reply { margin: 4px 0 0 8px; padding: 6px 8px; border-left: 3px solid var(--line); color: var(--ink-soft); font-size: .9rem; white-space: pre-wrap; word-break: break-word; }
+  .rq-reply-new { border-left-color: #e5484d; color: var(--text); font-weight: 600; background: var(--surface); border-radius: 0 8px 8px 0; }
   .rq-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .rq-btn { border: none; background: var(--paper-edge); color: var(--ink); border-radius: 8px; padding: 5px 9px; font-size: .82rem; cursor: pointer; font-family: var(--font-body); }
   .rq-btn:hover { background: var(--highlight); }
@@ -1177,6 +1178,8 @@
     rq_reply: { ko: "↩ 답장", en: "↩ Reply" },
     rq_reply_prompt: { ko: "답장을 입력하세요", en: "Enter your reply" },
     rq_replied: { ko: "답장을 보냈어요", en: "Reply sent" },
+    rq_reply_new: { ko: "{0}님이 답장했어요", en: "{0} replied" },
+    rq_newrep: { ko: "새 답장 {0}", en: "{0} new" },
     rq_modal_head: { ko: "요청", en: "Requests" },
     rq_tab_inbox: { ko: "받은 요청", en: "Received" },
     rq_tab_sent: { ko: "보낸 요청", en: "Sent" },
@@ -2185,11 +2188,11 @@
     });
     if (!list.children.length) { const e = document.createElement("div"); e.className = "sp-empty"; e.textContent = t("no_results"); list.appendChild(e); }
   }
-  // focus 해제 시 쌓인 알림 몰아서 표시
+  // focus 해제 시 쌓인 알림(새 요청 + 새 답장) 몰아서 표시
   function flushPendingNotifies() {
-    if (!pendingNotifyIds.size) return;
-    const n = pendingNotifyIds.size;
-    pendingNotifyIds = new Set();
+    const n = pendingNotifyIds.size + pendingReplyIds.size;
+    if (!n) return;
+    pendingNotifyIds = new Set(); pendingReplyIds = new Set();
     toast(t("rq_flush", n));
     renderUnreadBadge();
   }
@@ -2567,7 +2570,7 @@
     const mine = (r) => !((r.hiddenFor || []).includes(currentUser.id));
     const inboxAll = all.filter((r) => r.to === currentUser.id && mine(r));
     const sentAll = all.filter((r) => r.from === currentUser.id && mine(r));
-    const byTs = (a, b) => (b.ts || 0) - (a.ts || 0);
+    const byTs = (a, b) => lastActivity(b) - lastActivity(a);   // 마지막 활동(답장 포함) 순
     // 업무 요청은 마감 임박 순(마감 없는 건 뒤), 쪽지는 최신 순
     const byDue = (a, b) => {
       if (a.due && b.due && a.due !== b.due) return a.due < b.due ? -1 : 1;
@@ -2583,7 +2586,8 @@
     const unreadOf = (k) => inboxAll.filter((r) => reqKindOf(r) === k && !isHandledByMe(r.id, r)).length;
     const mu = $id("memoUnread"); if (mu) mu.textContent = unreadOf("memo") || "";
     const tu = $id("taskUnread"); if (tu) tu.textContent = unreadOf("task") || "";
-    if (reqTab === "inbox") markInboxRead();
+    if (reqTab === "inbox") { markInboxRead(); markRepliesSeen(inbox); }
+    if (reqTab === "sent") markRepliesSeen(sent);
     renderUnreadBadge();
   }
   const EMPTY_RQ_SVG = '<svg width="84" height="66" viewBox="0 0 84 66" fill="none" aria-hidden="true">'
@@ -2659,8 +2663,16 @@
       const body = document.createElement("div"); body.className = "rq-text"; body.textContent = r.text || "";
       li.append(body);
     }
-    (r.replies || []).forEach((rep) => {
-      const re = document.createElement("div"); re.className = "rq-reply";
+    const seenN = (r.replySeen && currentUser && r.replySeen[currentUser.id]) || 0;
+    const newReps = unseenReplies(r);
+    if (newReps > 0) {
+      const np = document.createElement("span"); np.className = "rq-status-pill pill-sent";
+      np.textContent = t("rq_newrep", newReps);
+      meta.appendChild(np);
+    }
+    (r.replies || []).forEach((rep, i) => {
+      const re = document.createElement("div");
+      re.className = "rq-reply" + (currentUser && i >= seenN && rep && rep.from !== currentUser.id ? " rq-reply-new" : "");
       re.textContent = "↩ " + ((rep && rep.fromName) || "?") + ": " + ((rep && rep.text) || "");
       li.appendChild(re);
     });
@@ -2728,10 +2740,33 @@
     const reps = Array.isArray(r.replies) ? r.replies.slice() : [];
     reps.push({ from: currentUser.id, fromName: currentUser.name, text: text, ts: Date.now() });
     msgDb.ref("requests/" + replyTargetId + "/replies").set(reps);
+    msgDb.ref("requests/" + replyTargetId + "/replySeen/" + currentUser.id).set(reps.length);   // 내 답장은 본 것으로
     $id("replyModal").hidden = true; replyTargetId = null;
     toast(t("rq_replied"));
   }
   let pendingNotifyIds = new Set();   // 원씽 중(focus)에 조용히 쌓인 새 요청 id
+  let pendingReplyIds = new Set();    // 원씽 중에 조용히 쌓인 새 답장(요청 id)
+  let knownRepCounts = null;          // 답장 알림용: 요청별 답장 개수 기억
+  function lastActivity(r) {          // 마지막 활동 시각(답장 포함) — 정렬용
+    const reps = Array.isArray(r.replies) ? r.replies : [];
+    return Math.max(r.ts || 0, reps.length ? (reps[reps.length - 1].ts || 0) : 0);
+  }
+  function unseenReplies(r) {         // 내가 아직 안 본 (상대의) 답장 수
+    if (!currentUser) return 0;
+    const reps = Array.isArray(r.replies) ? r.replies : [];
+    const seen = (r.replySeen && r.replySeen[currentUser.id]) || 0;
+    return reps.slice(seen).filter((rep) => rep && rep.from !== currentUser.id).length;
+  }
+  function markRepliesSeen(items) {   // 목록이 화면에 보일 때 '봤음' 기록
+    if (!currentUser || !msgDb) return;
+    items.forEach((r) => {
+      const reps = Array.isArray(r.replies) ? r.replies : [];
+      const seen = (r.replySeen && r.replySeen[currentUser.id]) || 0;
+      if (reps.length !== seen) {
+        try { msgDb.ref("requests/" + r.id + "/replySeen/" + currentUser.id).set(reps.length); } catch (_) {}
+      }
+    });
+  }
   // '처리됨' = 즉시완료(완료 상태) 또는 내 할 일로 옮김. 단순히 읽기만 한 건 처리 아님.
   function isHandledByMe(id, r) {
     return r.status === "done" || state.todos.some((td) => td.reqId === id);
@@ -2739,21 +2774,23 @@
   function renderUnreadBadge() {
     const b = $id("unreadBadge"), sb = $id("sentBadge");
     if (!currentUser) { if (b) b.hidden = true; if (sb) sb.hidden = true; return; }
-    // 받은 요청: 아직 처리 안 한 건 수
-    let n = Object.keys(requestsCache).filter((id) => {
-      const r = requestsCache[id];
-      return r && r.to === currentUser.id && !((r.hiddenFor || []).includes(currentUser.id)) && !isHandledByMe(id, r);
-    }).length;
-    // 원씽 중에는 새로 쌓인 건은 배지에도 반영하지 않음(조용히)
-    if (myStatus() === "focus") n -= Object.keys(requestsCache).filter((id) => pendingNotifyIds.has(id)).length;
-    n = Math.max(0, n);
+    const focus = myStatus() === "focus";
+    let n = 0, sn = 0;
+    Object.keys(requestsCache).forEach((id) => {
+      const r = requestsCache[id]; if (!r) return;
+      if ((r.hiddenFor || []).includes(currentUser.id)) return;
+      if (r.to === currentUser.id) {
+        // 받은 요청: 아직 처리(즉시완료/할 일 이동) 안 한 건 + 새 답장
+        if (!isHandledByMe(id, r) && !(focus && pendingNotifyIds.has(id))) n++;
+        if (!(focus && pendingReplyIds.has(id))) n += unseenReplies(r);
+      } else if (r.from === currentUser.id) {
+        // 보낸 요청: 상대가 아직 확인 안 한 건 + 나에게 온 새 답장
+        if (r.status === "sent") sn++;
+        if (!(focus && pendingReplyIds.has(id))) sn += unseenReplies(r);
+      }
+    });
     if (b) { b.textContent = n; b.hidden = false; b.classList.toggle("zero", n === 0); }
     const pb = $id("popUnread"); if (pb) { pb.textContent = n; pb.hidden = n === 0; }
-    // 보낸 요청: 상대가 아직 확인(읽음)하지 않은 건 수
-    const sn = Object.keys(requestsCache).filter((id) => {
-      const r = requestsCache[id];
-      return r && r.from === currentUser.id && !((r.hiddenFor || []).includes(currentUser.id)) && r.status === "sent";
-    }).length;
     if (sb) { sb.textContent = sn; sb.hidden = false; sb.classList.toggle("zero", sn === 0); }
   }
   function notifyNewRequests() {
@@ -2775,6 +2812,28 @@
       }
     });
     knownReqIds = new Set(ids);
+    // ----- 새 답장 감지 -----
+    const counts = {};
+    ids.forEach((id) => { const r = requestsCache[id]; counts[id] = (r && Array.isArray(r.replies)) ? r.replies.length : 0; });
+    if (knownRepCounts && currentUser) {
+      ids.forEach((id) => {
+        const r = requestsCache[id]; if (!r) return;
+        if (r.to !== currentUser.id && r.from !== currentUser.id) return;
+        if ((r.hiddenFor || []).includes(currentUser.id)) return;
+        if (counts[id] <= (knownRepCounts[id] || 0)) return;
+        const last = r.replies[counts[id] - 1];
+        if (!last || last.from === currentUser.id) return;
+        if (myStatus() === "focus") pendingReplyIds.add(id);   // 조용히 쌓기
+        else {
+          toast(t("rq_reply_new", last.fromName || "?"));
+          try {
+            if (document.hidden && window.Notification && Notification.permission === "granted")
+              new Notification(t("rq_reply_new", last.fromName || "?"), { body: last.text || "", icon: "icon-192.png" });
+          } catch (_) {}
+        }
+      });
+    }
+    knownRepCounts = counts;
   }
   function openReqPopup(tab) { if (!currentUser) { showLoginGate(); return; } setReqTab(tab); setReqKind(reqKind); $id("reqPopup").hidden = false; }
   function closeReqPopup() { $id("reqPopup").hidden = true; setReqTab(null); }
