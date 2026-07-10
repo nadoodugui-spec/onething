@@ -1271,7 +1271,7 @@
     st_away_d: { ko: "자리에 없음 — 알림은 그대로 표시돼요", en: "Not at desk — notifications still show" },
     st_changed: { ko: "상태: {0}", en: "Status: {0}" },
     st_focus_hint: { ko: "지금 초집중 중이에요 — 나중에 확인할 수 있어요", en: "Focusing now — they'll see it later" },
-    st_focus_req: { ko: "원씽을 정하고 집중 타이머를 시작하면 '원씽 중'이 돼요", en: "Pick your One Thing and start the focus timer to go 'Focusing'" },
+    st_focus_req: { ko: "원씽을 먼저 정하면 '원씽 중'이 돼요", en: "Pick your One Thing first to go 'Focusing'" },
     // 쪽지 / 업무 요청
     kind_memo: { ko: "쪽지", en: "Memo" },
     kind_task: { ko: "업무 요청", en: "Work request" },
@@ -1444,7 +1444,7 @@
     }
     state.todos = [td, ...state.todos.filter((x) => x.id !== td.id)];
     leftUnlocked = false; resetTimer(true);
-    save(); render(); republishPresence();
+    save(); render(); syncFocusPresence();
     toast(cur ? t("swap_done") : t("sent_done"));
   }
   function putBack(id) {
@@ -1453,7 +1453,7 @@
     if (td.reqId && msgDb && requestsCache[td.reqId] && requestsCache[td.reqId].status === "onething") {
       try { msgDb.ref("requests/" + td.reqId + "/status").set("read"); } catch (_) {}
     }
-    td.status = "todo"; pauseTimer(); save(); render(); republishPresence(); toast(t("putback_done"));
+    td.status = "todo"; pauseTimer(); save(); render(); syncFocusPresence(); toast(t("putback_done"));
   }
   function completeTodo(id) {
     const t = state.todos.find((x) => x.id === id); if (!t || t.status === "done") return;
@@ -1474,7 +1474,7 @@
       try { msgDb.ref("requests/" + t.reqId).update({ status: "done", doneAt: Date.now() }); } catch (_) {}
     }
     save(); render();
-    if (wasActive) { republishPresence(); celebrate(); toast(pickCheer()); }
+    if (wasActive) { syncFocusPresence(); celebrate(); toast(pickCheer()); }
   }
   function restoreTodo(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.status = "todo"; t.completedAt = null; save(); render(); }
   function deleteTodo(id) {
@@ -1545,9 +1545,8 @@
   function pauseTimer() {
     const wasRunning = timerRunning;
     timerRunning = false; if (timerIv) { clearInterval(timerIv); timerIv = null; } updateTimerUI();
-    // 타이머가 실제로 돌던 중 멈췄고 자동 focus 상태였다면 이전 상태로 복원
-    if (wasRunning && myStatus() === "focus") setMyStatus(beforeFocusStatus || prevManualStatus || "work", { auto: true });
-    if (wasRunning) currentFocusUntil = null;
+    // 타이머 종료: 남은 시간 공유만 해제 — 원씽이 남아 있으면 '원씽 중' 유지 (B안)
+    if (wasRunning) { currentFocusUntil = null; syncFocusPresence(); }
   }
   function toggleTimer() { if (timerRunning) pauseTimer(); else startTimer(); }
   function updateTimerUI() {
@@ -2189,12 +2188,19 @@
     if (!currentUser || !msgDb || !presenceUid) return;
     setMyStatus(myStatus(), { auto: true, until: currentFocusUntil || undefined });
   }
+  // B안: 원씽이 지정되어 있으면 상태 = 원씽 중, 내려놓으면 이전 상태 복원
+  function syncFocusPresence() {
+    if (!currentUser || !msgDb) return;
+    if (activeTodo()) setMyStatus("focus", { auto: true, until: (timerRunning && currentFocusUntil) ? currentFocusUntil : undefined });
+    else if (myStatus() === "focus") setMyStatus(prevManualStatus || "work", { auto: true });
+  }
   function ensureMyPresence() {
     if (!currentUser || !msgDb || presenceUid === currentUser.id) return;
     presenceUid = currentUser.id;
     const ref = msgDb.ref("status/" + currentUser.id);
     try { ref.onDisconnect().set({ state: "away", ts: firebase.database.ServerValue.TIMESTAMP }); } catch (_) {}
     setMyStatus(prevManualStatus || "work", { auto: true });
+    syncFocusPresence();   // 원씽이 이미 지정돼 있으면 로그인 직후에도 '원씽 중'
     requestNotify();   // 요청 도착 OS 알림용 권한 (한 번만 물어봄)
   }
   function releaseMyPresence() {
@@ -2216,8 +2222,8 @@
     const modal = $id("statusModal");
     if (modal) modal.querySelectorAll(".st-opt").forEach((b) => {
       b.classList.toggle("sel", b.dataset.st === st);
-      // '원씽 중'은 실제로 원씽을 정하고 집중 타이머가 돌아야 선택 가능
-      if (b.dataset.st === "focus") b.classList.toggle("disabled", !(activeTodo() && timerRunning));
+      // '원씽 중'은 원씽이 지정되어 있어야 선택 가능 (B안)
+      if (b.dataset.st === "focus") b.classList.toggle("disabled", !activeTodo());
     });
   }
   function statusDot(userId) {
@@ -3236,7 +3242,7 @@
   $id("statusClose").addEventListener("click", () => { $id("statusModal").hidden = true; });
   $id("statusModal").addEventListener("click", (e) => {
     const b = e.target.closest(".st-opt"); if (!b) return;
-    if (b.dataset.st === "focus" && !(activeTodo() && timerRunning)) { toast(t("st_focus_req")); return; }
+    if (b.dataset.st === "focus" && !activeTodo()) { toast(t("st_focus_req")); return; }
     setMyStatus(b.dataset.st);
     $id("statusModal").hidden = true;
     toast(t("st_changed", t("st_" + b.dataset.st)));
