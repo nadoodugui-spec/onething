@@ -610,6 +610,7 @@
   .rq-card.st-done .rq-title, .rq-card.st-done .rq-text { color: var(--text-soft); }
 
   /* ===== 팀 사이드바 ===== */
+  #tbTeamBtn { display: none; }   /* 데스크톱에선 왼쪽 사이드 탭 사용 */
   .tb-compose { background: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important; }
   .tb-compose:hover { filter: brightness(1.08); }
   .side-tab { position: fixed; left: 0; top: 38%; z-index: 70; display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -704,13 +705,15 @@
     .add-hint { display: none; }
     li.todo { line-height: 30px; min-height: 32px; }
     .list, .later-wrap, .done-wrap { padding-left: 4px; }
-    /* 팀 사이드바: 오버레이 + 열기 탭은 왼쪽 하단, 본문은 밀지 않음 */
-    .side-panel { width: 84vw; }
-    .side-tab { top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); }
+    /* 팀 사이드바: 떠 있는 왼쪽 탭 제거 → 상단 툴바의 '팀 현황' 버튼으로 진입 */
+    .side-panel { width: 88vw; }
+    .side-tab { display: none !important; }
+    #tbTeamBtn { display: inline-flex; }
+    #tbTeamBtn > span[data-i18n] { display: none; }   /* 아이콘+배지만 */
     body.sp-open { padding-left: 8px; }
-    /* 칸반 보드: 페이지 안에서만 가로 스와이프 */
-    .kb-board { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
-    .kb-col { min-width: 74vw; flex: none; }
+    /* 칸반 보드: 모바일에선 세로로 쌓기 — 가로 스크롤 금지 */
+    .kb-board { display: flex; flex-direction: column; max-width: 100%; }
+    .kb-col { min-width: 0; width: 100%; min-height: 0; }
     #reqPopup .modal-box { min-height: 70vh; }
     .modal-box { padding: 16px 14px 18px; }
     .sync-chip { bottom: calc(10px + env(safe-area-inset-bottom)); left: 10px; }
@@ -757,6 +760,7 @@
     <div class="tools">
       <button data-act="inbox" type="button" id="tbInboxBtn" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h5l2 3h4l2-3h5M5 6h14l2 7v6H3v-6l2-7z"/></svg><span data-i18n="rq_tab_inbox">받은 요청</span> <span class="unread-badge" id="unreadBadge" hidden>0</span></button>
       <button data-act="sentbox" type="button" id="tbSentBtn" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4 18-7z"/></svg><span data-i18n="rq_tab_sent">보낸 요청</span> <span class="unread-badge sent-badge" id="sentBadge">0</span></button>
+      <button data-act="team" type="button" id="tbTeamBtn" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 19c1.2-2.8 3.6-4.2 6.5-4.2s5.3 1.4 6.5 4.2"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.4c2.7.1 4.9 1.4 6 3.9"/></svg><span data-i18n="sp_title">팀 현황</span> <span class="side-tab-badge" id="teamBtnBadge" hidden>0</span></button>
       <button data-act="compose" type="button" id="tbComposeBtn" class="tb-compose" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="t_sendreq">요청 보내기</span></button>
       <button id="langBtn" data-act="lang" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z"/></svg><span id="langLabel">EN</span></button>
       <button data-act="stats" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 20v-8M10 20V5M16 20v-5M21 20H3"/></svg><span data-i18n="t_stats">통계</span></button>
@@ -821,7 +825,7 @@
           <button id="todayBtn" class="today-btn" data-i18n="today_btn" hidden>오늘</button>
         </div>
       </div>
-      <div class="ot-tagline" data-i18n="ot_tagline">다른 모든 것을 못 하더라도 가장 중요한 단 하나!</div>
+      <div class="ot-tagline" data-i18n="ot_tagline">성과를 결정하는, 가장 중요한 단 하나</div>
       <div class="goal-badge" id="goalBadge" data-i18n="goal_badge" hidden>⭐ 오늘의 원씽 달성!</div>
       <div class="log">
         <ul class="history" id="historyList"></ul>
@@ -1232,7 +1236,7 @@
     rep_none: { ko: "반복 없음", en: "No repeat" },
     badge_prog: { ko: "◉ 원씽", en: "◉ One Thing" },
     ot_cancel_t: { ko: "원씽 취소(목록으로 되돌리기)", en: "Cancel One Thing (back to list)" },
-    ot_tagline: { ko: "다른 모든 것을 못 하더라도 가장 중요한 단 하나!", en: "Even if nothing else gets done — the one thing that matters most!" },
+    ot_tagline: { ko: "성과를 결정하는, 가장 중요한 단 하나", en: "The one thing that decides your results" },
     tt_reset: { ko: "카운트다운을 처음으로 (누적 집중 시간은 유지)", en: "Reset countdown (total focus time is kept)" },
     tt_acc: { ko: "이 원씽에 쌓인 실제 집중 시간 — 리셋되지 않아요", en: "Total real focus on this One Thing — never resets" },
     send_swap: { ko: "이걸로 원씽 교체", en: "Swap the One Thing" },
@@ -2841,6 +2845,7 @@
     const stOf = (id) => ((statusCache[id] || {}).state) || "away";
     const focusN = ids.filter((id) => stOf(id) === "focus").length;
     if (badge) { badge.textContent = focusN; badge.hidden = focusN === 0; }   // 접힘 탭 배지 = 집중 인원
+    const tb = $id("teamBtnBadge"); if (tb) { tb.textContent = focusN; tb.hidden = focusN === 0; }
     if ($id("sidePanel").hidden) return;
     if (!currentUser) return;
     // 요약 한 줄
@@ -3281,7 +3286,7 @@
   // 아래 4개는 Task 2/4에서 본문이 채워진다. Task 1 시점엔 안전한 no-op 스텁.
   function updateLoginGate() {
     const chip = $id("userChip"), gate = $id("loginGate");
-    const msgEls = [$id("tbInboxBtn"), $id("tbSentBtn"), $id("tbComposeBtn"), $id("sideTab")];
+    const msgEls = [$id("tbInboxBtn"), $id("tbSentBtn"), $id("tbComposeBtn"), $id("tbTeamBtn"), $id("sideTab")];
     if (!cloudConfigured()) {                       // 메시징 비활성 — 기존 앱 그대로
       if (chip) chip.hidden = true; msgEls.forEach((el) => { if (el) el.hidden = true; });
       const p = $id("sidePanel"); if (p) p.hidden = true;
@@ -3935,6 +3940,11 @@
     else if (act === "status") { if (currentUser) { renderMyStatus(); $id("statusModal").hidden = false; } else showLoginGate(); }
     else if (act === "inbox") openReqPopup("inbox");
     else if (act === "sentbox") openReqPopup("sent");
+    else if (act === "team") {
+      $id("sidePanel").hidden = false;
+      try { localStorage.setItem("onething-sp-open", "1"); } catch (_) {}
+      updateBodyShift(); renderTeamBoard();
+    }
     else if (act === "compose") openSendReq(composeKind);
   });
 
