@@ -1481,6 +1481,7 @@
     const today = todayStr(); const isToday = viewDate === today;
     $id("todayDate").textContent = fmtNice(viewDate);
     $id("todayBtn").hidden = isToday;
+    $id("nextDay").hidden = viewDate >= today;   // 미래 날짜는 필요 없음 — 오늘이면 ▶ 숨김
     const dayHist = state.history.filter((h) => h.date === viewDate);
     $id("goalBadge").hidden = !(isToday && dayHist.length > 0);
 
