@@ -2256,7 +2256,11 @@
     const p = $id("sidePanel"), tab = $id("sideTab"), pin = $id("spPin");
     if (pin) pin.classList.toggle("on", spPinned);
     if (on) { if (p) p.hidden = false; if (tab) tab.hidden = true; renderTeamBoard(); }
-    else if (tab && currentUser && cloudConfigured()) tab.hidden = false;
+    else if (tab && currentUser && cloudConfigured()) {
+      tab.hidden = false;
+      // 새로고침해도 열림/닫힘 상태 유지
+      if (p && p.hidden && localStorage.getItem("onething-sp-open") === "1") { p.hidden = false; renderTeamBoard(); }
+    }
   }
   function openCompose(kind, toId) {
     if (!spPinned) $id("sidePanel").hidden = true;
@@ -3227,9 +3231,14 @@
     else if (act === "compose") openSendReq(composeKind);
   });
 
-  $id("sideTab").addEventListener("click", () => { $id("sidePanel").hidden = false; renderTeamBoard(); setTimeout(() => $id("spSearch").focus(), 30); });
+  $id("sideTab").addEventListener("click", () => {
+    $id("sidePanel").hidden = false;
+    try { localStorage.setItem("onething-sp-open", "1"); } catch (_) {}
+    renderTeamBoard(); setTimeout(() => $id("spSearch").focus(), 30);
+  });
   $id("spClose").addEventListener("click", () => {
     if (spPinned) { spPinned = false; try { localStorage.setItem("onething-sp-pin", "0"); } catch (_) {} }
+    try { localStorage.setItem("onething-sp-open", "0"); } catch (_) {}
     $id("sidePanel").hidden = true; applySidePin();
   });
   $id("spPin").addEventListener("click", () => {
