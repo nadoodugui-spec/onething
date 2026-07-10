@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#3b5bdb" />
+<title>우리의 이야기 · The One Thing</title>
+<link rel="icon" type="image/png" href="icon-192.png" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+  :root {
+    --bg: #f7f8fa; --surface: #ffffff; --surface-2: #f1f3f6; --border: #e3e6eb;
+    --text: #1f2430; --text-soft: #6b7280; --accent: #3b5bdb; --accent-soft: #e8edfb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d; --surface: #1e2128; --surface-2: #252932; --border: #33383f;
+      --text: #e4e7ee; --text-soft: #9aa1ad; --accent: #7c93f0; --accent-soft: #2a3350;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.75; letter-spacing: -0.01em;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 72px 24px 90px; }
+  .logo { color: var(--accent); font-weight: 800; font-size: 1.05rem; letter-spacing: .02em; }
+  h1 { font-size: 2rem; line-height: 1.4; margin: 26px 0 0; font-weight: 800; }
+  h1 b { color: var(--accent); }
+  .lead { color: var(--text-soft); font-size: 1.05rem; margin-top: 18px; }
+  h2 { font-size: 1.15rem; font-weight: 700; margin: 60px 0 14px; }
+  p { margin: 0 0 16px; font-size: 1rem; }
+  .story { border-left: 3px solid var(--accent); padding: 4px 0 4px 22px; margin: 20px 0; }
+  .story p { color: var(--text); }
+  .quote { font-size: 1.25rem; font-weight: 700; line-height: 1.6; text-align: center; margin: 56px 0; }
+  .quote b { color: var(--accent); }
+  .principles { display: grid; gap: 12px; margin-top: 18px; }
+  .pr { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .pr .t { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .pr .t .dot { color: var(--accent); }
+  .pr .d { color: var(--text-soft); font-size: .95rem; }
+  .cta { text-align: center; margin-top: 70px; }
+  .cta a { display: inline-block; background: var(--accent); color: #fff; text-decoration: none; font-weight: 700;
+    border-radius: 10px; padding: 13px 34px; font-size: 1rem; }
+  .cta .sub { color: var(--text-soft); font-size: .85rem; margin-top: 12px; }
+  .foot { text-align: center; color: var(--text-soft); font-size: .8rem; margin-top: 70px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">◉ The One Thing</div>
+
+  <h1>모든 게 급하다고 말하는 시대,<br>성과는 언제나 <b>'단 하나'</b>에서 나옵니다.</h1>
+  <p class="lead">The One Thing은 팀이 서로의 집중을 지켜주면서, 각자 가장 중요한 하나를 끝내게 하는 업무 도구입니다.</p>
+
+  <h2>이 도구가 태어난 이야기</h2>
+  <div class="story">
+    <p>저는 오랫동안 '여러 가지를 동시에 잘하는 것'이 능력이라고 믿었습니다. 쇼핑몰 여러 개를 돌리고, 등록하고, 검토하고, 답하고 — 하루 종일 바빴고, 스스로 꽤 유능하다고 생각했습니다.</p>
+    <p>그런데 이상했습니다. 그렇게 바쁜데도 <b>성과는 오히려 제자리</b>였습니다. 저녁이 되면 지쳐 있는데, "오늘 뭘 끝냈지?"라는 질문에는 답할 게 없었습니다. 열 가지를 건드린 날보다, 어쩌다 하나에만 매달린 날이 더 많은 것을 남겼습니다.</p>
+    <p>『원씽(The One Thing)』이라는 책을 읽으며 그 이유를 알았습니다. 중요한 건 여러 가지를 잘하는 게 아니라, <b>가장 중요한 하나를 정하고, 흔들리지 않고 끝까지 가는 것</b>이었습니다. 멀티태스킹은 능력이 아니라, 우선순위를 정하지 못했다는 고백이었습니다.</p>
+    <p>그래서 저를 위한 도구를 만들었습니다. 할 일이 아무리 많아도 화면 오른쪽엔 단 하나만 올라가고, 그 하나를 끝내기 전까지 나머지는 잠기는 노트. 혼자 쓰다 보니 알게 됐습니다 — 집중을 깨뜨리는 건 내 산만함만이 아니라, <b>서로를 수시로 부르는 우리의 일하는 방식</b>이라는 것을. 그래서 팀을 위한 도구로 키웠습니다.</p>
+  </div>
+
+  <div class="quote">멀티태스킹을 그만두는 것이 아니라,<br><b>가장 중요한 하나를 먼저 끝내는 것</b>입니다.</div>
+
+  <h2>The One Thing이 일하는 방식</h2>
+  <div class="principles">
+    <div class="pr">
+      <div class="t"><span class="dot">◉</span> 오늘, 단 하나</div>
+      <div class="d">매일 스스로에게 묻습니다 — "이걸 끝내면 나머지가 쉬워지는 일은 무엇인가?" 그 하나만 화면의 주인공이 되고, 나머지 할 일은 끝날 때까지 잠깁니다.</div>
+    </div>
+    <div class="pr">
+      <div class="t"><span class="dot">◉</span> 집중은 팀이 지켜주는 것</div>
+      <div class="d">동료가 '단 하나'에 집중 중이면 상태로 보입니다. 요청은 사라지지 않고 조용히 쌓였다가, 집중이 끝나면 전달됩니다. 급하지 않은 일은 기다려주는 문화가 도구에 들어 있습니다.</div>
+    </div>
+    <div class="pr">
+      <div class="t"><span class="dot">◉</span> 요청이 곧 업무가 되는 흐름</div>
+      <div class="d">쪽지와 업무 요청은 받은 사람의 할 일이 되고, 진행 상황과 완료가 보낸 사람에게 자동으로 전해집니다. "그거 어떻게 됐어요?"라는 질문이 사라집니다.</div>
+    </div>
+    <div class="pr">
+      <div class="t"><span class="dot">◉</span> 도미노처럼 쌓이는 하루</div>
+      <div class="d">매일 하나씩. 작은 도미노가 다음 도미노를 넘어뜨리듯, 끝낸 '단 하나'들이 쌓여 큰 성과가 됩니다.</div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <a href="index.html">지금 나의 단 하나 정하기 →</a>
+    <div class="sub">설치 없이 브라우저에서 바로 시작합니다</div>
+  </div>
+
+  <div class="foot">The One Thing — 게리 켈러·제이 파파산의 책 『원씽』의 철학에서 영감을 받아 만들었습니다.</div>
+</div>
+</body>
+</html>

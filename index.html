@@ -367,6 +367,19 @@
   .pz-order button { width: 64px; height: 64px; border-radius: 14px; border: none; cursor: pointer; font-family: var(--font-hand); font-size: 2rem; font-weight: 700; color: #fff; background: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,.25); }
   .pz-order button.done { opacity: .35; cursor: default; }
 
+  /* 하루의 의식 */
+  .ritual-box { width: min(94vw, 460px); text-align: center; padding: 34px 30px 28px; }
+  .ritual-kicker { font-size: .78rem; font-weight: 700; letter-spacing: .14em; color: var(--accent); margin-bottom: 14px; }
+  .ritual-q { font-size: 1.45rem; font-weight: 700; line-height: 1.45; color: var(--text); }
+  .ritual-q b { color: var(--accent); }
+  .ritual-sub { color: var(--text-soft); font-size: .92rem; margin: 14px 0 22px; }
+
+  /* 도미노 */
+  .domino-row { display: flex; align-items: flex-end; gap: 7px; margin: 2px 0 12px; padding-left: 4px; }
+  .domino { width: 9px; border-radius: 2.5px; background: var(--border); display: inline-block; transform: rotate(6deg); }
+  .domino.on { background: var(--accent); }
+  .domino-note { font-size: .76rem; color: var(--text-soft); margin-left: 8px; align-self: center; }
+
   /* stats */
   .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0 16px; }
   .stat-card { flex: 1; min-width: 90px; background: rgba(0,0,0,.05); border-radius: 12px; padding: 12px; text-align: center; }
@@ -439,6 +452,10 @@
   .login-card { background: var(--surface); color: var(--text); width: min(420px, 94vw); border: 1px solid var(--border);
     border-radius: 12px; padding: 22px 20px; box-shadow: 0 18px 50px rgba(0,0,0,.12); font-family: var(--font-body); }
   .login-logo { color: var(--accent); font-weight: 800; font-size: 1.2rem; text-align: center; letter-spacing: .02em; }
+  .login-hero { text-align: center; font-size: 1.05rem; line-height: 1.65; color: var(--text-soft); margin: 14px 0 18px; }
+  .login-hero b { color: var(--text); font-size: 1.08em; }
+  .login-story { display: block; text-align: center; margin-top: 16px; color: var(--text-soft); font-size: .85rem; text-decoration: none; }
+  .login-story:hover { color: var(--accent); }
   .login-title { text-align: center; font-size: 1.15rem; margin: 6px 0 14px; }
   .login-users { list-style: none; margin: 0 0 6px; padding: 0; max-height: 38vh; overflow: auto; }
   .login-user { padding: 11px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
@@ -643,14 +660,16 @@
   .sp-feed-item b { color: var(--text); font-weight: 600; }
   .sp-empty { color: var(--text-soft); font-size: .85rem; padding: 8px 4px; }
   #spPin.on { color: var(--accent); }
-  @media (min-width: 1100px) { body.sp-pinned { padding-left: 296px; } }
+  /* 사이드바가 열리면 본문을 오른쪽으로 밀어 가리지 않음 (좁은 화면에선 오버레이) */
+  @media (min-width: 900px) { body.sp-open { padding-left: 296px; } }
 </style>
 </head>
 <body data-theme="light" data-lang="ko">
 
   <div class="login-gate" id="loginGate" hidden>
     <div class="login-card">
-      <div class="login-logo">★ The One Thing</div>
+      <div class="login-logo">◉ The One Thing</div>
+      <div class="login-hero" data-i18n-html="lg_hero">모든 게 급하다고 말하는 시대,<br><b>성과는 언제나 '단 하나'에서 나옵니다.</b></div>
       <div class="login-title" data-i18n="lg_title">누구로 시작할까요?</div>
       <ul class="login-users" id="loginUsers"></ul>
       <div class="login-or" data-i18n="lg_or">또는 새로 등록</div>
@@ -660,6 +679,7 @@
         <button id="lgRegisterBtn" class="mbtn" data-i18n="lg_register">등록하고 시작</button>
       </div>
       <div class="login-msg" id="lgMsg"></div>
+      <a class="login-story" href="about.html" target="_blank" rel="noopener" data-i18n="lg_story">우리의 이야기 →</a>
     </div>
   </div>
 
@@ -975,6 +995,15 @@
     </div>
   </div>
 
+  <div class="modal" id="ritualModal" hidden style="z-index:150">
+    <div class="modal-box ritual-box">
+      <div class="ritual-kicker" data-i18n="rt_kicker">오늘의 의식</div>
+      <div class="ritual-q" data-i18n-html="rt_q">이걸 끝내면, 나머지가 쉬워지는<br><b>단 하나</b>는 무엇인가요?</div>
+      <p class="ritual-sub" data-i18n="rt_sub">여러 개를 잘하는 사람보다, 하나를 끝내는 사람이 이깁니다.</p>
+      <button id="ritualGo" class="mbtn" style="width:100%" data-i18n="rt_go">오늘의 단 하나 정하기</button>
+    </div>
+  </div>
+
   <div class="modal" id="progressModal" hidden style="z-index:110">
     <div class="modal-box" style="width:min(94vw,440px)">
       <div class="modal-head"><span data-i18n="rq_prog_head">진행 상황 남기기</span><button class="modal-close" id="progClose">✕</button></div>
@@ -1101,11 +1130,11 @@
     alarm_body: { ko: "{0} — 잠깐 쉬거나 계속하세요. (자동 완료되지 않아요)", en: "{0} — take a break or keep going. (Not auto-completed)" },
     alarm_toast: { ko: "⏰ 집중 시간 종료! 잠깐 쉬거나 계속하세요 (자동 완료 안 함)", en: "⏰ Focus time's up! Take a break or keep going (not auto-completed)" },
     onething_word: { ko: "원씽", en: "the One Thing" },
-    cheer0: { ko: "잘했어요! 하나를 끝냈어요 🎉", en: "Nice! You finished one 🎉" },
-    cheer1: { ko: "원씽 완료! 오늘의 한 걸음 👏", en: "One Thing done! A step for today 👏" },
-    cheer2: { ko: "멋져요 — 가장 중요한 일을 해냈어요 ✨", en: "Great — you did the most important thing ✨" },
-    cheer3: { ko: "끝! 이 작은 성취가 쌓입니다 🌱", en: "Done! These small wins add up 🌱" },
-    cheer4: { ko: "수고했어요, 딱 하나 해냈어요 💪", en: "Well done — just one, accomplished 💪" },
+    cheer0: { ko: "오늘의 도미노가 넘어졌습니다 — 내일은 더 큰 것이 넘어갑니다", en: "Today's domino has fallen — tomorrow a bigger one falls" },
+    cheer1: { ko: "단 하나를 끝냈습니다. 오늘은 이미 성공이에요", en: "The one thing is done. Today is already a win" },
+    cheer2: { ko: "가장 중요한 일이 끝났습니다 — 나머지는 덤입니다", en: "The most important thing is done — the rest is bonus" },
+    cheer3: { ko: "흔들리지 않고 하나를 끝내는 것, 그게 실력입니다", en: "Finishing one thing without wavering — that's mastery" },
+    cheer4: { ko: "작은 도미노가 쌓이고 있어요. 이 흐름을 믿으세요", en: "Small dominoes are stacking up. Trust the momentum" },
     solved_status: { ko: "통과! 🎉 왼쪽을 엽니다", en: "Solved! 🎉 Opening the left" },
     solved_toast: { ko: "퍼즐 통과! 왼쪽을 잠깐 열었어요 — 다 보면 ‘다시 집중’", en: "Puzzle solved! Left page opened — tap 'Refocus' when done" },
     pz_math_t: { ko: "🧮 계산 퍼즐", en: "🧮 Math puzzle" },
@@ -1151,7 +1180,7 @@
     complete: { ko: "완료", en: "Done" },
     pick_again: { ko: "↩ 다시 선택", en: "↩ Pick again" },
     hint_active: { ko: "이 하나만 끝내면 됩니다. 타이머는 끝나도 자동 완료되지 않아요.", en: "Just finish this one. The timer never auto-completes." },
-    empty_ot: { ko: "지금 집중할 단 하나를<br>할 일들에서 <span class='arrow'>★</span> 눌러 보내세요", en: "Send your single focus<br>from your To-Dos with <span class='arrow'>★</span>" },
+    empty_ot: { ko: "<b>이걸 끝내면, 나머지가 쉬워지는<br>단 하나는 무엇인가요?</b><br><span style='font-size:.82em'>할 일에서 <span class='arrow'>◉</span> 눌러 그 하나를 보내세요</span>", en: "<b>What's the one thing that makes<br>everything else easier?</b><br><span style='font-size:.82em'>Send it here with <span class='arrow'>◉</span></span>" },
     hint_count: { ko: "오늘 {0}개의 원씽을 끝냈어요. 다음 하나를 골라보세요.", en: "You finished {0} One Thing(s) today. Pick the next one." },
     hint_key: { ko: "여러 할 일 중 가장 중요한 ‘하나’를 고르는 것이 핵심이에요.", en: "The key is choosing the single most important thing." },
     ro_has: { ko: "이 날의 원씽 기록이에요 ☝", en: "The One Thing log for this day ☝" },
@@ -1162,9 +1191,9 @@
     hero_fire: { ko: "{0}일 연속 실천 중 — 대단한 흐름이에요", en: "{0}-day streak — great momentum" },
     hero_going: { ko: "{0}일째 실천 중 — 이 흐름을 이어가요", en: "Day {0} going — keep the streak" },
     hero_restart: { ko: "다시 시작하기 좋은 날 — 오늘 하나만 해볼까요?", en: "A good day to restart — just one today?" },
-    lbl_cur: { ko: "현재 연속", en: "Current streak" },
+    lbl_cur: { ko: "연속 도미노", en: "Domino streak" },
     lbl_best: { ko: "최고 연속", en: "Best streak" },
-    lbl_total: { ko: "전체 원씽", en: "Total One Things" },
+    lbl_total: { ko: "넘어뜨린 도미노", en: "Dominoes toppled" },
     ms_top: { ko: "최고 등급 달성", en: "Top tier reached" },
     ms_count: { ko: "{0}개", en: "{0}" },
     ms_next: { ko: "다음 목표 {0}개", en: "Next goal: {0}" },
@@ -1225,6 +1254,12 @@
     uc_login: { ko: "로그인", en: "Log in" },
     t_sendreq: { ko: "요청 보내기", en: "Send request" },
     lg_title: { ko: "누구로 시작할까요?", en: "Who are you?" },
+    lg_hero: { ko: "모든 게 급하다고 말하는 시대,<br><b>성과는 언제나 '단 하나'에서 나옵니다.</b>", en: "In a world where everything feels urgent,<br><b>results always come from one thing.</b>" },
+    lg_story: { ko: "우리의 이야기 →", en: "Our story →" },
+    rt_kicker: { ko: "오늘의 의식", en: "TODAY'S RITUAL" },
+    rt_q: { ko: "이걸 끝내면, 나머지가 쉬워지는<br><b>단 하나</b>는 무엇인가요?", en: "What's the <b>one thing</b> that makes<br>everything else easier?" },
+    rt_sub: { ko: "여러 개를 잘하는 사람보다, 하나를 끝내는 사람이 이깁니다.", en: "The one who finishes one thing beats the one who juggles many." },
+    rt_go: { ko: "오늘의 단 하나 정하기", en: "Pick today's one thing" },
     lg_or: { ko: "또는 새로 등록", en: "Or register" },
     lg_name_ph: { ko: "이름", en: "Name" },
     lg_pin_ph: { ko: "숫자 4자리", en: "4-digit PIN" },
@@ -1320,13 +1355,13 @@
     // 상태(프레즌스)
     st_head: { ko: "내 상태", en: "My status" },
     st_focus: { ko: "원씽 중", en: "Focusing" },
-    st_focus_d: { ko: "초집중 — 새 요청 알림이 조용히 쌓여요", en: "Deep focus — new requests pile up quietly" },
+    st_focus_d: { ko: "'단 하나'에 집중 — 알림은 조용히 쌓여요", en: "On the one thing — notifications pile up quietly" },
     st_work: { ko: "업무 중", en: "Working" },
     st_work_d: { ko: "요청이 오면 바로 알림을 받아요", en: "Get notified as requests arrive" },
     st_away: { ko: "자리비움", en: "Away" },
     st_away_d: { ko: "자리에 없음 — 알림은 그대로 표시돼요", en: "Not at desk — notifications still show" },
     st_changed: { ko: "상태: {0}", en: "Status: {0}" },
-    st_focus_hint: { ko: "지금 초집중 중이에요 — 나중에 확인할 수 있어요", en: "Focusing now — they'll see it later" },
+    st_focus_hint: { ko: "지금 '단 하나'에 집중하는 중이에요 — 급하지 않다면 잠시 지켜주세요", en: "Focusing on their one thing — if it can wait, let it wait" },
     st_focus_req: { ko: "원씽을 먼저 정하면 '원씽 중'이 돼요", en: "Pick your One Thing first to go 'Focusing'" },
     // 쪽지 / 업무 요청
     kind_memo: { ko: "쪽지", en: "Memo" },
@@ -1371,6 +1406,8 @@
     wk_focus: { ko: "집중 시간", en: "Focus time" },
     wk_reqdone: { ko: "받은 요청 처리", en: "Requests done" },
     wk_reqsent: { ko: "보낸 요청", en: "Requests sent" },
+    wk_story: { ko: "이번 주 도미노 {0}개를 넘어뜨렸고, {1}을 '단 하나'에 썼습니다.", en: "This week you toppled {0} dominoes and spent {1} on the one thing." },
+    domino_note: { ko: "작은 하나가 다음 것을 넘어뜨립니다", en: "each one topples the next" },
     // 할 일 폴더 / 관리자
     grp_add: { ko: "＋ List", en: "＋ List" },
     grp_add_t: { ko: "새 List(독립된 할 일 목록) 만들기", en: "Create a new list" },
@@ -1760,7 +1797,7 @@
     if (td.repeat) { const c = document.createElement("span"); c.className = "chip"; c.textContent = td.repeat === "daily" ? t("rep_daily") : t("rep_weekly"); li.append(c); }
     if (td.subtasks && td.subtasks.length) { const d = td.subtasks.filter((s) => s.done).length; const c = document.createElement("span"); c.className = "chip"; c.textContent = "☑ " + d + "/" + td.subtasks.length; li.append(c); }
     if (td.status === "active") { const b = document.createElement("span"); b.className = "badge"; b.textContent = t("badge_prog"); li.append(b); }
-    else { const s = document.createElement("button"); s.className = "send-btn"; s.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6-5.4-2.9-5.4 2.9 1.1-6L3.2 9.4l6.1-.8L12 3z"/></svg>'; s.title = cur ? t("send_swap") : t("send_to"); s.addEventListener("click", () => sendToOneThing(td.id)); li.append(s); }
+    else { const s = document.createElement("button"); s.className = "send-btn"; s.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>'; s.title = cur ? t("send_swap") : t("send_to"); s.addEventListener("click", () => sendToOneThing(td.id)); li.append(s); }
     if (td.reqId) {   // 요청에서 온 할 일 — 원본 요청 열기
       const rq = document.createElement("button"); rq.className = "more-btn req-link"; rq.title = t("ti_openreq");
       rq.innerHTML = '<svg class="icon" style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
@@ -2185,6 +2222,11 @@
       + '<div class="stat-card"><div class="num">' + streak + '</div><div class="lbl">' + t("lbl_cur") + '</div></div>'
       + '<div class="stat-card"><div class="num">' + best + '</div><div class="lbl">' + t("lbl_best") + '</div></div>'
       + '<div class="stat-card"><div class="num">' + total + '</div><div class="lbl">' + t("lbl_total") + '</div></div></div>';
+    // 도미노 시각화 — 작은 도미노가 더 큰 도미노를 넘어뜨린다
+    let dom = '<div class="domino-row">';
+    for (let i = 0; i < 8; i++) dom += '<span class="domino' + (i < Math.min(streak, 8) ? ' on' : '') + '" style="height:' + (10 + i * 5) + 'px"></span>';
+    dom += '<span class="domino-note">' + t("domino_note") + '</span></div>';
+    html += dom;
 
     const MS = [1, 3, 7, 15, 30, 60, 100];
     if (total >= 100) {
@@ -2212,7 +2254,9 @@
         if (r.from === currentUser.id && (r.ts || 0) >= wsMs) reqSent++;
       });
     }
-    html += '<div class="section-h">' + t("wk_sum_h") + '</div><div class="stat-row">'
+    html += '<div class="section-h">' + t("wk_sum_h") + '</div>'
+      + '<div class="ms-note" style="margin:0 0 8px">' + t("wk_story", weekHist.length, fmtDur(weekFocus)) + '</div>'
+      + '<div class="stat-row">'
       + '<div class="stat-card"><div class="num">' + weekHist.length + '</div><div class="lbl">' + t("wk_ot") + '</div></div>'
       + '<div class="stat-card"><div class="num" style="font-size:1.15rem;line-height:1.4">' + fmtDur(weekFocus) + '</div><div class="lbl">' + t("wk_focus") + '</div></div>'
       + (currentUser ? '<div class="stat-card"><div class="num">' + reqDone + '</div><div class="lbl">' + t("wk_reqdone") + '</div></div>'
@@ -2458,9 +2502,12 @@
     av.textContent = (((usersCache[id] || {}).name || "?").trim().charAt(0)) || "?";
     return av;
   }
+  function updateBodyShift() {
+    const p = $id("sidePanel");
+    document.body.classList.toggle("sp-open", !!p && !p.hidden);
+  }
   function applySidePin() {
     const on = spPinned && !!currentUser && cloudConfigured();
-    document.body.classList.toggle("sp-pinned", on);
     const p = $id("sidePanel"), tab = $id("sideTab"), pin = $id("spPin");
     if (pin) pin.classList.toggle("on", spPinned);
     if (on) { if (p) p.hidden = false; if (tab) tab.hidden = true; renderTeamBoard(); }
@@ -2469,9 +2516,10 @@
       // 새로고침해도 열림/닫힘 상태 유지
       if (p && p.hidden && localStorage.getItem("onething-sp-open") === "1") { p.hidden = false; renderTeamBoard(); }
     }
+    updateBodyShift();
   }
   function openCompose(kind, toId) {
-    if (!spPinned) $id("sidePanel").hidden = true;
+    if (!spPinned) { $id("sidePanel").hidden = true; updateBodyShift(); }
     openSendReq(kind);
     composeTo = toId; renderToChips(); updateToStatus();
   }
@@ -3575,6 +3623,7 @@
   $id("sideTab").addEventListener("click", () => {
     $id("sidePanel").hidden = false;
     try { localStorage.setItem("onething-sp-open", "1"); } catch (_) {}
+    updateBodyShift();
     renderTeamBoard(); setTimeout(() => $id("spSearch").focus(), 30);
   });
   $id("spClose").addEventListener("click", () => {
@@ -3777,6 +3826,23 @@
   refreshSyncState();
   ensureAuth();                        // 익명 인증 → 성공 시 startCloud()에서 클라우드 연결
   checkReminder();
+  // 하루의 의식 — 오늘 원씽을 아직 안 정했으면 하루 1회 질문
+  function maybeShowRitual() {
+    try {
+      if (localStorage.getItem("onething-ritual") === todayStr()) return;
+      if (activeTodo() || state.history.some((h) => h.date === todayStr())) { localStorage.setItem("onething-ritual", todayStr()); return; }
+      const g = $id("loginGate"); if (g && !g.hidden) return;   // 로그인 화면이 떠 있으면 생략
+      $id("ritualModal").hidden = false;
+    } catch (_) {}
+  }
+  function closeRitual() {
+    try { localStorage.setItem("onething-ritual", todayStr()); } catch (_) {}
+    $id("ritualModal").hidden = true;
+    $id("newTodo").focus();
+  }
+  $id("ritualGo").addEventListener("click", closeRitual);
+  $id("ritualModal").addEventListener("click", (e) => { if (e.target.id === "ritualModal") closeRitual(); });
+  setTimeout(maybeShowRitual, 600);
   $id("newTodo").focus();
 })();
 </script>
