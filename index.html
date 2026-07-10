@@ -563,6 +563,17 @@
   .rq-btn.pk-urgent:hover, .rq-btn.pk-important:hover { filter: brightness(1.08); background: var(--prio-urgent); }
   .rq-btn.pk-important:hover { background: var(--prio-important); }
   .rq-added { font-size: .82rem; font-weight: 600; color: var(--ok); padding: 5px 4px; }
+  .rq-btn.pk-normal { color: #fff; background: #6b7280; font-weight: 700; }
+  .rq-btn.pk-normal:hover { filter: brightness(1.08); background: #6b7280; }
+  /* 상태별 카드 구분: 안읽음(강조) > 읽음(중간) > 완료(회색 처리) */
+  .rq-status-pill { display: inline-block; font-size: .72rem; font-weight: 700; border-radius: 999px; padding: 2px 9px; margin-left: 6px; vertical-align: 1px; }
+  .rq-status-pill.pill-sent { background: #e5484d; color: #fff; }
+  .rq-status-pill.pill-read { background: var(--accent-soft); color: var(--accent); }
+  .rq-status-pill.pill-done { background: var(--surface-2); color: var(--text-soft); border: 1px solid var(--border); }
+  .rq-status-pill.pill-onething { background: #8b5cf6; color: #fff; }
+  .rq-card.st-read { background: var(--surface); }
+  .rq-card.st-done { opacity: .55; }
+  .rq-card.st-done .rq-title, .rq-card.st-done .rq-text { color: var(--text-soft); }
 
   /* ===== 팀 사이드바 ===== */
   .tb-compose { background: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important; }
@@ -2601,17 +2612,21 @@
     }
   }
   function buildReqCard(r, kind) {
+    const st = r.status || "sent";
+    const stKey = (st === "done" && r.instant) ? "done_now" : st;
     const li = document.createElement("li");
-    li.className = "rq-card" + (kind === "inbox" && r.status === "sent" ? " unread" : "");
+    li.className = "rq-card st-" + st + (kind === "inbox" && st === "sent" ? " unread" : "");
     const head = document.createElement("div"); head.className = "rq-card-head";
     const who = document.createElement("span"); who.className = "rq-who";
     who.textContent = kind === "inbox" ? (r.fromName || "?") : (t("rq_to_prefix") + " " + (r.toName || "?"));
     const meta = document.createElement("span"); meta.className = "rq-meta";
-    const stKey = (r.status === "done" && r.instant) ? "done_now" : (r.status || "sent");
-    let metaTxt = fmtReqTime(r.ts) + " · " + t("rq_status_" + stKey);
-    if (r.status === "read" && r.readAt) metaTxt += " " + fmtReqTime(r.readAt);
-    if (r.status === "done" && r.doneAt) metaTxt += " " + fmtReqTime(r.doneAt);
-    meta.textContent = metaTxt;
+    let metaTxt = fmtReqTime(r.ts);
+    if (st === "read" && r.readAt) metaTxt += " · " + t("rq_status_read") + " " + fmtReqTime(r.readAt);
+    if (st === "done" && r.doneAt) metaTxt += " · " + fmtReqTime(r.doneAt);
+    meta.textContent = metaTxt + " ";
+    const pill = document.createElement("span"); pill.className = "rq-status-pill pill-" + st;
+    pill.textContent = t("rq_status_" + stKey);
+    meta.appendChild(pill);
     const chip = document.createElement("span"); chip.className = "rq-kind-chip " + reqKindOf(r); chip.textContent = t("kind_" + reqKindOf(r));
     who.prepend(chip);
     head.append(who, meta);
