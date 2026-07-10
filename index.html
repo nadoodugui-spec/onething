@@ -215,6 +215,24 @@
   .prj-m { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: var(--text); }
   .prj-m .row-x { opacity: .55; }
   .prj-m .row-x:hover { opacity: 1; color: var(--danger); }
+  /* 프로젝트 칸반 보드 */
+  .kb-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 6px; align-items: start; }
+  .kb-col { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px; min-height: 200px; }
+  .kb-col.drop-into { outline: 2px dashed var(--accent); outline-offset: -3px; }
+  .kb-col-h { font-size: .85rem; font-weight: 700; color: var(--text-soft); display: flex; align-items: center; gap: 6px; margin: 2px 4px 10px; }
+  .kb-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; margin-bottom: 8px; font-size: .92rem; cursor: grab; }
+  .kb-card.dragging { opacity: .45; }
+  .kb-text { word-break: break-word; line-height: 1.45; }
+  .kb-meta { display: flex; flex-wrap: wrap; gap: 5px 10px; align-items: center; margin-top: 7px; font-size: .78rem; color: var(--text-soft); }
+  .kb-acts { display: none; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+  .kb-card:hover .kb-acts { display: flex; }
+  .kb-done .kb-card { opacity: .6; }
+  .kb-done .kb-text { text-decoration: line-through; color: var(--text-soft); }
+  .kb-empty { color: var(--text-soft); font-size: .82rem; font-style: italic; padding: 14px 6px; text-align: center; }
+  @media (max-width: 900px) {
+    .kb-board { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .kb-col { min-width: 74vw; }
+  }
 
   /* todo detail panel */
   .detail {
@@ -804,7 +822,7 @@
           <button id="todayBtn" class="today-btn" data-i18n="today_btn" hidden>오늘</button>
         </div>
       </div>
-      <div class="ot-tagline" data-i18n="ot_tagline">다른 모든 것을 못 하더라도 꼭 해야 하는 단 하나!</div>
+      <div class="ot-tagline" data-i18n="ot_tagline">다른 모든 것을 못 하더라도 가장 중요한 단 하나!</div>
       <div class="goal-badge" id="goalBadge" data-i18n="goal_badge" hidden>⭐ 오늘의 원씽 달성!</div>
       <div class="log">
         <ul class="history" id="historyList"></ul>
@@ -1051,6 +1069,23 @@
     </div>
   </div>
 
+  <div class="modal" id="assignModal" hidden style="z-index:120">
+    <div class="modal-box" style="width:min(94vw,340px)">
+      <div class="modal-head"><span data-i18n="kb_assign_head">담당자 지정</span><button class="modal-close" id="asgClose">✕</button></div>
+      <div class="st-options" id="asgList"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="dueModal" hidden style="z-index:120">
+    <div class="modal-box" style="width:min(94vw,320px)">
+      <div class="modal-head"><span data-i18n="kb_due_head">마감일</span><button class="modal-close" id="dueClose">✕</button></div>
+      <div class="mrow" style="margin-top:12px">
+        <input id="kbDueInput" type="date" style="flex:1;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);padding:7px 10px;outline:none" />
+        <button id="kbDueSave" class="mbtn" data-i18n="save_btn">저장</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal" id="inviteModal" hidden style="z-index:110">
     <div class="modal-box" style="width:min(94vw,380px)">
       <div class="modal-head"><span data-i18n="prj_invite_head">프로젝트에 초대</span><button class="modal-close" id="invClose">✕</button></div>
@@ -1198,7 +1233,7 @@
     rep_none: { ko: "반복 없음", en: "No repeat" },
     badge_prog: { ko: "◉ 원씽", en: "◉ One Thing" },
     ot_cancel_t: { ko: "원씽 취소(목록으로 되돌리기)", en: "Cancel One Thing (back to list)" },
-    ot_tagline: { ko: "다른 모든 것을 못 하더라도 꼭 해야 하는 단 하나!", en: "The one thing you must do, even if nothing else gets done!" },
+    ot_tagline: { ko: "다른 모든 것을 못 하더라도 가장 중요한 단 하나!", en: "Even if nothing else gets done — the one thing that matters most!" },
     tt_reset: { ko: "카운트다운을 처음으로 (누적 집중 시간은 유지)", en: "Reset countdown (total focus time is kept)" },
     tt_acc: { ko: "이 원씽에 쌓인 실제 집중 시간 — 리셋되지 않아요", en: "Total real focus on this One Thing — never resets" },
     send_swap: { ko: "이걸로 원씽 교체", en: "Swap the One Thing" },
@@ -1394,6 +1429,19 @@
     prj_inv_none: { ko: "초대할 사람이 없어요 — 모두 이미 멤버예요", en: "No one to invite — everyone's already in" },
     prj_member_del_t: { ko: "내보내기", en: "Remove" },
     prj_member_del_confirm: { ko: "'{0}'님을 이 프로젝트에서 내보낼까요?", en: "Remove '{0}' from this project?" },
+    kb_todo: { ko: "할 일", en: "To do" },
+    kb_doing: { ko: "진행 중", en: "In progress" },
+    kb_done: { ko: "완료", en: "Done" },
+    kb_take: { ko: "◉ 내 원씽으로", en: "◉ Make it my One Thing" },
+    kb_taken: { ko: "내 원씽으로 가져왔어요 — 이제 이것 하나만", en: "Taken as your One Thing — now just this" },
+    kb_assign: { ko: "담당", en: "Assign" },
+    kb_assign_head: { ko: "담당자 지정", en: "Assign to" },
+    kb_unassign: { ko: "담당 없음", en: "Unassigned" },
+    kb_anyone: { ko: "담당 없음 — 누구든 가져갈 수 있어요", en: "Unassigned — anyone can take it" },
+    kb_due: { ko: "마감", en: "Due" },
+    kb_due_head: { ko: "마감일", en: "Due date" },
+    kb_reopen: { ko: "되돌리기", en: "Reopen" },
+    kb_drop: { ko: "카드를 끌어다 놓기", en: "Drag cards here" },
     ds_btn: { ko: "오늘 요약 쪽지 보내기", en: "Send today's summary" },
     ds_head: { ko: "[오늘 업무 요약] {0}", en: "[Daily summary] {0}" },
     ds_ot: { ko: "완료한 원씽 {0}개", en: "{0} One Thing(s) done" },
@@ -1525,7 +1573,7 @@
       priority: (t.priority === "urgent" || t.priority === "important") ? t.priority : "normal",
       subtasks: Array.isArray(t.subtasks) ? t.subtasks : [], repeat: t.repeat || null,
       later: !!t.later, status: (t.status === "active" || t.status === "done") ? t.status : "todo",
-      reqId: t.reqId || null, group: t.group || null,
+      reqId: t.reqId || null, group: t.group || null, prjRef: t.prjRef || null,
       activatedAt: t.activatedAt || null, focusSec: t.focusSec || 0,
       createdAt: t.createdAt || Date.now(), completedAt: t.completedAt || null
     })) : [];
@@ -1582,7 +1630,8 @@
     text = (text || "").trim(); if (!text) return;
     state.todos.push({ id: uid(), text, color: null, priority: (opts && opts.priority) || "normal", due: (opts && opts.due) || null, subtasks: [], repeat: null,
       later: false, status: "todo", activatedAt: null, focusSec: 0, createdAt: Date.now(), completedAt: null,
-      reqId: (opts && opts.reqId) || null, group: (opts && opts.group !== undefined) ? opts.group : currentGroup });
+      reqId: (opts && opts.reqId) || null, group: (opts && opts.group !== undefined) ? opts.group : currentGroup,
+      prjRef: (opts && opts.prjRef) || null });
     save(); render();
   }
   function sendToOneThing(id) {
@@ -1625,6 +1674,10 @@
     // 요청에서 온 할 일이면 보낸 사람에게 '완료됨' 자동 전달
     if (t.reqId && msgDb && requestsCache[t.reqId]) {
       try { msgDb.ref("requests/" + t.reqId).update({ status: "done", doneAt: Date.now() }); } catch (_) {}
+    }
+    // 프로젝트 보드에서 가져온 원씽이면 카드도 '완료' 열로
+    if (t.prjRef && msgDb) {
+      try { msgDb.ref("projectTodos/" + t.prjRef.pid + "/" + t.prjRef.tid).update({ status: "done", done: true, doneBy: currentUser ? currentUser.name : "", doneAt: Date.now() }); } catch (_) {}
     }
     save(); render();
     if (wasActive) { syncFocusPresence(); celebrate(); toast(pickCheer()); }
@@ -1909,10 +1962,11 @@
   let projectsCache = {};        // { pid: {name, owner, ownerName, createdAt} }
   let projectTodosCache = {};    // { pid: { tid: {text, done, ts, by, doneBy, doneAt} } }
   let currentProject = null;     // 보고 있는 프로젝트 id (null=개인 목록)
+  function kbStatusOf(td) { return td.status || (td.done ? "done" : "todo"); }   // 구버전 호환
   function projectStats(pid) {
     const todos = projectTodosCache[pid] || {};
     const keys = Object.keys(todos);
-    return { total: keys.length, done: keys.filter((k) => todos[k] && todos[k].done).length };
+    return { total: keys.length, done: keys.filter((k) => todos[k] && kbStatusOf(todos[k]) === "done").length };
   }
   function addProject() {
     if (!currentUser || !msgDb) { toast(t("rq_offline")); return; }
@@ -1986,32 +2040,80 @@
     if (currentProject === pid) currentProject = null;
     render();
   }
+  // ----- 프로젝트 칸반 보드: 할 일 → 진행 중 → 완료 -----
   let prjDragId = null;
-  let prjDoneCollapsed = true;
-  function buildPrjLi(pid, td) {
-    const li = document.createElement("li");
-    li.className = "todo prio-" + (td.priority || "normal") + (td.done ? " prj-done" : "");
-    li.draggable = !td.done;
-    const grip = document.createElement("span"); grip.className = "grip"; grip.textContent = "⠿"; li.append(grip);
-    const check = document.createElement("button"); check.className = "check"; check.textContent = td.done ? "✓" : "";
-    check.title = t("ti_done");
-    check.addEventListener("click", () => {
-      if (!msgDb || !currentUser) return;
-      try {
-        msgDb.ref("projectTodos/" + pid + "/" + td.id).update(
-          td.done ? { done: false, doneBy: null, doneAt: null } : { done: true, doneBy: currentUser.name, doneAt: Date.now() });
-      } catch (_) {}
+  let assignTarget = null;   // {pid, tid}
+  let dueTarget = null;      // {pid, tid}
+  function kbUpdate(pid, tid, patch) { if (msgDb) { try { msgDb.ref("projectTodos/" + pid + "/" + tid).update(patch); } catch (_) {} } }
+  // 카드를 내 원씽으로 — 담당 = 나, 진행 중으로 이동, 내 화면의 '단 하나'가 됨
+  function takeAsOneThing(pid, td) {
+    if (!currentUser || !msgDb) { toast(t("rq_offline")); return; }
+    kbUpdate(pid, td.id, { status: "doing", done: false, assignee: currentUser.id, assigneeName: currentUser.name });
+    let mine = state.todos.find((x) => x.prjRef && x.prjRef.pid === pid && x.prjRef.tid === td.id && x.status !== "done");
+    if (!mine) {
+      addTodo(td.text || "", { group: null, prjRef: { pid: pid, tid: td.id } });
+      mine = state.todos[state.todos.length - 1];
+    }
+    sendToOneThing(mine.id);
+    toast(t("kb_taken"));
+  }
+  function openAssign(pid, td) {
+    assignTarget = { pid: pid, tid: td.id };
+    const p = projectsCache[pid] || {};
+    const box = $id("asgList"); box.innerHTML = "";
+    const members = p.members ? Object.keys(p.members) : Object.keys(usersCache);
+    members.filter((u) => usersCache[u]).forEach((u) => {
+      const b = document.createElement("button"); b.className = "st-opt" + (td.assignee === u ? " sel" : ""); b.type = "button";
+      b.appendChild(statusDot(u));
+      const nm = document.createElement("span"); nm.textContent = (usersCache[u] || {}).name || "?"; b.appendChild(nm);
+      b.addEventListener("click", () => { kbUpdate(pid, td.id, { assignee: u, assigneeName: (usersCache[u] || {}).name || "?" }); $id("assignModal").hidden = true; });
+      box.append(b);
     });
-    const text = document.createElement("span"); text.className = "todo-text"; text.textContent = td.text || "";
-    li.append(check, text);
-    const byName = td.done ? (td.doneBy || "") : (td.by || "");
-    if (byName) { const c = document.createElement("span"); c.className = "chip"; c.textContent = (td.done ? "✓ " : "") + byName; li.append(c); }
-    const x = document.createElement("button"); x.className = "more-btn"; x.textContent = "✕"; x.title = t("ti_delete");
-    x.addEventListener("click", () => { if (msgDb && confirm(t("prj_todo_del"))) { try { msgDb.ref("projectTodos/" + pid + "/" + td.id).remove(); } catch (_) {} } });
-    li.append(x);
-    li.addEventListener("dragstart", (e) => { prjDragId = td.id; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; });
-    li.addEventListener("dragend", () => { prjDragId = null; li.classList.remove("dragging"); document.querySelectorAll(".drop-into").forEach((n) => n.classList.remove("drop-into")); });
-    return li;
+    const none = document.createElement("button"); none.className = "st-opt"; none.type = "button"; none.textContent = t("kb_unassign");
+    none.addEventListener("click", () => { kbUpdate(pid, td.id, { assignee: null, assigneeName: null }); $id("assignModal").hidden = true; });
+    box.append(none);
+    $id("assignModal").hidden = false;
+  }
+  function openDue(pid, td) {
+    dueTarget = { pid: pid, tid: td.id };
+    $id("kbDueInput").value = td.due || "";
+    $id("dueModal").hidden = false;
+  }
+  function buildKbCard(pid, td) {
+    const st = kbStatusOf(td);
+    const card = document.createElement("div"); card.className = "kb-card";
+    card.draggable = true;
+    const tx = document.createElement("div"); tx.className = "kb-text"; tx.textContent = td.text || ""; card.append(tx);
+    const meta = document.createElement("div"); meta.className = "kb-meta";
+    if (td.assignee && usersCache[td.assignee]) {
+      const a = document.createElement("span"); a.className = "prj-m";
+      a.appendChild(statusDot(td.assignee));
+      a.append(document.createTextNode(td.assigneeName || (usersCache[td.assignee] || {}).name || "?"));
+      meta.append(a);
+    } else if (st !== "done") { const a = document.createElement("span"); a.textContent = t("kb_anyone"); meta.append(a); }
+    if (td.due && st !== "done") {
+      const today = todayStr();
+      const dc = document.createElement("span"); dc.className = "chip" + (td.due < today ? " due-over" : td.due === today ? " due-soon" : "");
+      dc.textContent = t("rq_due", td.due.slice(5)); meta.append(dc);
+    }
+    if (st === "done" && td.doneBy) { const d = document.createElement("span"); d.textContent = "✓ " + td.doneBy + (td.doneAt ? " · " + fmtAgo(td.doneAt) : ""); meta.append(d); }
+    if (meta.children.length) card.append(meta);
+    // hover 액션
+    const acts = document.createElement("div"); acts.className = "kb-acts";
+    if (st !== "done") {
+      const take = document.createElement("button"); take.className = "rq-btn"; take.type = "button"; take.textContent = t("kb_take");
+      take.addEventListener("click", () => takeAsOneThing(pid, td));
+      acts.append(take);
+      acts.append(reqBtn(t("kb_assign"), () => openAssign(pid, td)));
+      acts.append(reqBtn(t("kb_due"), () => openDue(pid, td)));
+    } else {
+      acts.append(reqBtn(t("kb_reopen"), () => kbUpdate(pid, td.id, { status: "todo", done: false, doneBy: null, doneAt: null })));
+    }
+    acts.append(reqBtn(t("rq_delete"), () => { if (confirm(t("prj_todo_del"))) { try { msgDb.ref("projectTodos/" + pid + "/" + td.id).remove(); } catch (_) {} } }));
+    card.append(acts);
+    card.addEventListener("dragstart", (e) => { e.stopPropagation(); prjDragId = td.id; dragId = null; card.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; });
+    card.addEventListener("dragend", () => { prjDragId = null; card.classList.remove("dragging"); document.querySelectorAll(".kb-col.drop-into").forEach((n) => n.classList.remove("drop-into")); });
+    return card;
   }
   function renderProjectTodos(box) {
     const pid = currentProject;
@@ -2021,47 +2123,34 @@
     const all = Object.keys(todos).map((k) => Object.assign({ id: k }, todos[k]))
       .filter((td) => !q || (td.text || "").toLowerCase().includes(q));
     box.append(buildPrjMemberBar(pid, p));   // 멤버 바 + 초대
-    const open = all.filter((td) => !td.done).sort((a, b) => (a.ts || 0) - (b.ts || 0));
-    const doneItems = all.filter((td) => td.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
-    if (!all.length) {
-      const e = document.createElement("li"); e.className = "prio-empty"; e.style.listStyle = "none";
-      e.textContent = q ? t("no_results") : t("prj_empty"); box.append(e); return;
-    }
-    // Now / Next / Routine — Inbox와 동일한 구조, 드래그로 그룹 이동
-    PRIO_GROUPS.forEach((key) => {
-      const items = open.filter((td) => (td.priority || "normal") === key);
-      const group = document.createElement("div"); group.className = "prio-group";
-      const head = document.createElement("div"); head.className = "prio-head " + key;
-      head.innerHTML = '<span class="ph-label">' + t("prio_" + key) + '</span>';
-      const cnt = document.createElement("span"); cnt.className = "prio-count"; cnt.textContent = items.length ? "(" + items.length + ")" : ""; head.append(cnt);
-      group.append(head);
-      const ul = document.createElement("ul"); ul.className = "prio-list";
-      items.forEach((td) => ul.append(buildPrjLi(pid, td)));
-      if (!items.length && !q) { const e = document.createElement("li"); e.className = "prio-empty"; e.textContent = t("prio_drop"); ul.append(e); }
-      group.append(ul);
-      group.addEventListener("dragover", (e) => { if (prjDragId) { e.preventDefault(); group.classList.add("drop-into"); } });
-      group.addEventListener("dragleave", (e) => { if (!group.contains(e.relatedTarget)) group.classList.remove("drop-into"); });
-      group.addEventListener("drop", (e) => {
+    const board = document.createElement("div"); board.className = "kb-board";
+    [["todo", "kb_todo"], ["doing", "kb_doing"], ["done", "kb_done"]].forEach((pair) => {
+      const key = pair[0];
+      const items = all.filter((td) => kbStatusOf(td) === key)
+        .sort((a, b) => key === "done" ? (b.doneAt || 0) - (a.doneAt || 0) : (a.ts || 0) - (b.ts || 0));
+      const col = document.createElement("div"); col.className = "kb-col kb-" + key;
+      const h = document.createElement("div"); h.className = "kb-col-h";
+      h.innerHTML = '<span class="st-dot ' + (key === "todo" ? "st-away" : key === "doing" ? "st-focus" : "st-work") + '"></span>';
+      h.append(document.createTextNode(t(pair[1]) + " (" + items.length + ")"));
+      col.append(h);
+      items.forEach((td) => col.append(buildKbCard(pid, td)));
+      if (!items.length) { const e = document.createElement("div"); e.className = "kb-empty"; e.textContent = t("kb_drop"); col.append(e); }
+      col.addEventListener("dragover", (e) => { if (prjDragId) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; col.classList.add("drop-into"); } });
+      col.addEventListener("dragleave", (e) => { if (!col.contains(e.relatedTarget)) col.classList.remove("drop-into"); });
+      col.addEventListener("drop", (e) => {
         if (!prjDragId) return;
-        e.preventDefault(); group.classList.remove("drop-into");
-        try { msgDb.ref("projectTodos/" + pid + "/" + prjDragId + "/priority").set(key); } catch (_) {}
+        e.preventDefault(); col.classList.remove("drop-into");
+        const td = todos[prjDragId]; if (!td) { prjDragId = null; return; }
+        const patch = { status: key, done: key === "done" };
+        if (key === "done") { patch.doneBy = currentUser ? currentUser.name : ""; patch.doneAt = Date.now(); }
+        else { patch.doneBy = null; patch.doneAt = null; }
+        if (key === "doing" && !td.assignee && currentUser) { patch.assignee = currentUser.id; patch.assigneeName = currentUser.name; }
+        kbUpdate(pid, prjDragId, patch);
         prjDragId = null;
       });
-      box.append(group);
+      board.append(col);
     });
-    // 끝난 일 (접기, 최근 우선)
-    if (doneItems.length) {
-      const wrap = document.createElement("div"); wrap.className = "done-wrap" + (prjDoneCollapsed ? " collapsed" : "");
-      wrap.style.paddingLeft = "4px";
-      const head = document.createElement("div"); head.className = "done-head";
-      head.innerHTML = '<span class="tri">▾</span><span>' + t("done_h") + '</span><span class="done-count">(' + doneItems.length + ')</span><span class="done-line"></span>';
-      head.addEventListener("click", () => { prjDoneCollapsed = !prjDoneCollapsed; renderTodos(); });
-      wrap.append(head);
-      const ul = document.createElement("ul"); ul.className = "done-list";
-      if (!prjDoneCollapsed) doneItems.slice(0, 10).forEach((td) => ul.append(buildPrjLi(pid, td)));
-      wrap.append(ul);
-      box.append(wrap);
-    }
+    box.append(board);
   }
 
   // ----- 폴더 탭 — 각 폴더는 독립된 할 일 목록 -----
@@ -3779,10 +3868,10 @@
   // ---------- events ----------
   function addFromInput(prio) {
     const i = $id("newTodo");
-    if (currentProject) {   // 프로젝트에 추가 (공유) — Enter 조합키로 우선순위 지정 가능
+    if (currentProject) {   // 프로젝트 보드의 '할 일' 열에 카드 추가
       const text = (i.value || "").trim(); if (!text) return;
       if (!msgDb || !currentUser) { toast(t("rq_offline")); return; }
-      try { msgDb.ref("projectTodos/" + currentProject + "/" + uid()).set({ text: text, done: false, ts: Date.now(), by: currentUser.name, priority: prio || "normal" }); } catch (_) {}
+      try { msgDb.ref("projectTodos/" + currentProject + "/" + uid()).set({ text: text, status: "todo", done: false, ts: Date.now(), by: currentUser.name }); } catch (_) {}
       i.value = ""; i.focus(); return;
     }
     addTodo(i.value, { priority: prio || "normal" });
@@ -3971,6 +4060,12 @@
   $id("progText").addEventListener("keydown", (e) => { if (e.key === "Enter") saveProgress(); });
   $id("fwdClose").addEventListener("click", () => { $id("forwardModal").hidden = true; });
   $id("invClose").addEventListener("click", () => { $id("inviteModal").hidden = true; });
+  $id("asgClose").addEventListener("click", () => { $id("assignModal").hidden = true; });
+  $id("dueClose").addEventListener("click", () => { $id("dueModal").hidden = true; });
+  $id("kbDueSave").addEventListener("click", () => {
+    if (dueTarget) kbUpdate(dueTarget.pid, dueTarget.tid, { due: $id("kbDueInput").value || null });
+    $id("dueModal").hidden = true; dueTarget = null;
+  });
   $id("rqSelBtn").addEventListener("click", () => { reqSelectMode = true; selectedReqIds = new Set(); updateManageUI(); renderRequests(); });
   $id("rqSelCancel").addEventListener("click", exitSelectMode);
   $id("rqSelDelBtn").addEventListener("click", () => {
