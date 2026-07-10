@@ -163,19 +163,21 @@
   .prio-group.collapsed .prio-list { display: none; }
   li.prio-empty { color: var(--text-soft); font-size: .98rem; font-style: italic; min-height: 28px; line-height: 28px; padding-left: 10px; }
   .prio-group.drop-into { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
-  /* 폴더 탭 — 독립된 할 일 목록 전환 */
-  .group-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 2px; padding-left: 12px; }
-  .group-tabs button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--surface);
-    color: var(--text-soft); border-radius: 8px 8px 0 0; border-bottom: none; padding: 6px 13px; cursor: pointer;
-    font-family: var(--font-body); font-size: .88rem; font-weight: 600; }
-  .group-tabs button:hover { background: var(--surface-2); }
-  .group-tabs button.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
-  .group-tabs button .gt-count { font-size: .78rem; opacity: .75; font-weight: 600; }
+  /* List 탭 — 독립된 할 일 목록 전환 */
+  .group-tabs { display: flex; gap: 2px; flex-wrap: wrap; align-items: flex-end; margin: 12px 0 0; padding: 0 12px 0 12px; border-bottom: 1px solid var(--border); }
+  .group-tabs button { display: inline-flex; align-items: center; gap: 6px; border: none; background: transparent;
+    color: var(--text-soft); border-radius: 8px 8px 0 0; padding: 8px 14px 9px; cursor: pointer; position: relative;
+    font-family: var(--font-body); font-size: .9rem; font-weight: 500; }
+  .group-tabs button:hover { background: var(--surface-2); color: var(--text); }
+  .group-tabs button.active { color: var(--accent); font-weight: 700; }
+  .group-tabs button.active::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2.5px; background: var(--accent); border-radius: 2px 2px 0 0; }
+  .group-tabs button .gt-count { font-size: .8rem; font-weight: 500; opacity: .75; }
   .group-tabs button .row-x { opacity: 0; font-size: .85rem; padding: 0; }
-  .group-tabs button.active .row-x { opacity: .7; }
+  .group-tabs button.active .row-x { opacity: .6; }
   .group-tabs button .row-x:hover { opacity: 1; color: var(--danger); }
-  .group-tabs .gt-new { border-style: dashed; border-bottom-style: dashed; border-radius: 8px; font-weight: 500; }
-  .group-tabs button.drop-into { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); }
+  .group-tabs .gt-new { margin-left: 4px; margin-bottom: 5px; padding: 3px 11px; border: 1px dashed var(--border); border-radius: 999px; font-size: .82rem; }
+  .group-tabs .gt-new:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .group-tabs button.drop-into { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); border-radius: 8px; }
   li.todo.prio-urgent .todo-text { color: var(--prio-urgent); }
   li.todo.prio-important .todo-text { color: var(--prio-important); }
 
@@ -1125,13 +1127,13 @@
     wk_reqdone: { ko: "받은 요청 처리", en: "Requests done" },
     wk_reqsent: { ko: "보낸 요청", en: "Requests sent" },
     // 할 일 폴더 / 관리자
-    grp_add: { ko: "＋ 폴더", en: "＋ Folder" },
-    grp_add_t: { ko: "새 폴더(독립된 할 일 목록) 만들기", en: "Create a folder (separate to-do list)" },
-    grp_main: { ko: "메인", en: "Main" },
-    grp_name_prompt: { ko: "폴더 이름을 입력하세요", en: "Folder name" },
+    grp_add: { ko: "＋ List", en: "＋ List" },
+    grp_add_t: { ko: "새 List(독립된 할 일 목록) 만들기", en: "Create a new list" },
+    grp_main: { ko: "Inbox", en: "Inbox" },
+    grp_name_prompt: { ko: "List 이름을 입력하세요", en: "List name" },
     grp_rename_t: { ko: "더블클릭하면 이름 변경", en: "Double-click to rename" },
-    grp_del_t: { ko: "폴더 삭제(할 일은 메인으로 이동)", en: "Delete folder (to-dos move to Main)" },
-    grp_del_confirm: { ko: "'{0}' 폴더를 삭제할까요? 안의 할 일은 메인 목록으로 이동합니다.", en: "Delete folder '{0}'? Its to-dos move to the Main list." },
+    grp_del_t: { ko: "List 삭제(할 일은 Inbox로 이동)", en: "Delete list (to-dos move to Inbox)" },
+    grp_del_confirm: { ko: "'{0}' List를 삭제할까요? 안의 할 일은 Inbox로 이동합니다.", en: "Delete list '{0}'? Its to-dos move to Inbox." },
     um_members: { ko: "구성원 관리 (관리자)", en: "Members (admin)" },
     um_del: { ko: "삭제", en: "Delete" },
     um_del_confirm: { ko: "'{0}' 사용자를 삭제할까요? 로그인 계정과 상태 정보가 삭제됩니다. (되돌릴 수 없음)", en: "Delete user '{0}'? Their account and status will be removed. (Cannot be undone)" },
@@ -1556,7 +1558,7 @@
       b.className = gid === currentGroup ? "active" : "";
       const lab = document.createElement("span"); lab.textContent = name; b.append(lab);
       const n = openTodosOf(gid);
-      if (n) { const c = document.createElement("span"); c.className = "gt-count"; c.textContent = n; b.append(c); }
+      if (n) { const c = document.createElement("span"); c.className = "gt-count"; c.textContent = "(" + n + ")"; b.append(c); }
       b.addEventListener("click", () => { if (currentGroup !== gid) { currentGroup = gid; render(); } });
       // 드래그한 할 일을 탭에 떨어뜨리면 그 폴더로 이동
       b.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId) b.classList.add("drop-into"); });
