@@ -399,7 +399,7 @@
   .pz-order button.done { opacity: .35; cursor: default; }
 
   /* 하루의 의식 */
-  .ritual-box { width: min(94vw, 460px); text-align: center; padding: 34px 30px 28px; }
+  .ritual-box { width: min(94vw, 460px); text-align: center; padding: 34px 30px 24px; position: relative; }
   .ritual-kicker { font-size: .78rem; font-weight: 700; letter-spacing: .14em; color: var(--accent); margin-bottom: 14px; }
   .ritual-q { font-size: 1.45rem; font-weight: 700; line-height: 1.45; color: var(--text); }
   .ritual-q b { color: var(--accent); }
@@ -1070,11 +1070,13 @@
 
   <div class="modal" id="ritualModal" hidden style="z-index:150">
     <div class="modal-box ritual-box">
+      <button class="modal-close" id="ritualClose" type="button" style="position:absolute;top:12px;right:14px">✕</button>
       <div class="ritual-kicker" data-i18n="rt_kicker">오늘의 시작</div>
       <div class="ritual-q" data-i18n-html="rt_q">이걸 끝내면, 나머지가 쉬워지는<br><b>단 하나</b>는 무엇인가요?</div>
       <p class="ritual-sub" data-i18n="rt_sub">여러 개를 잘하는 사람보다, 하나를 끝내는 사람이 이깁니다.</p>
       <div class="st-options" id="ritualCands" style="text-align:left;margin-bottom:16px"></div>
       <button id="ritualGo" class="mbtn" style="width:100%" data-i18n="rt_go">오늘의 단 하나 정하기</button>
+      <button id="ritualSkip" class="login-skip" type="button" data-i18n="rt_skip">오늘은 그냥 둘러볼게요 →</button>
     </div>
   </div>
 
@@ -1383,6 +1385,7 @@
     rt_q: { ko: "이걸 끝내면, 나머지가 쉬워지는<br><b>단 하나</b>는 무엇인가요?", en: "What's the <b>one thing</b> that makes<br>everything else easier?" },
     rt_sub: { ko: "여러 개를 잘하는 사람보다, 하나를 끝내는 사람이 이깁니다.", en: "The one who finishes one thing beats the one who juggles many." },
     rt_go: { ko: "오늘의 단 하나 정하기", en: "Pick today's one thing" },
+    rt_skip: { ko: "오늘은 그냥 둘러볼게요 →", en: "Just browsing today →" },
     lg_or: { ko: "또는 새로 등록", en: "Or register" },
     lg_name_ph: { ko: "이름", en: "Name" },
     lg_pin_ph: { ko: "숫자 4자리", en: "4-digit PIN" },
@@ -4450,6 +4453,8 @@
     $id("newTodo").focus();
   }
   $id("ritualGo").addEventListener("click", closeRitual);
+  $id("ritualClose").addEventListener("click", closeRitual);
+  $id("ritualSkip").addEventListener("click", closeRitual);
   $id("ritualModal").addEventListener("click", (e) => { if (e.target.id === "ritualModal") closeRitual(); });
   setTimeout(maybeShowRitual, 1800);   // 클라우드 데이터(요청·프로젝트)가 로드된 뒤 후보 구성
   $id("newTodo").focus();
