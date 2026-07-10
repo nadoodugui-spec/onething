@@ -524,6 +524,10 @@
   .st-opt:hover { background: var(--surface-2); }
   .st-opt.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
   .st-opt.disabled { opacity: .45; cursor: not-allowed; }
+  /* 브리핑 후보: 상태 옵션의 그리드(14px 점 칸) 레이아웃을 쓰지 않음 — 글자 세로 깨짐 방지 */
+  .st-opt.rt-cand { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .st-opt.rt-cand span { word-break: break-word; }
+  .st-opt.rt-cand small { margin: 0; }
   .to-select { position: relative; }
   .to-sel-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
     border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text);
@@ -4424,7 +4428,7 @@
     if (!list.length) return;
     const h = document.createElement("div"); h.className = "sp-group-h"; h.textContent = t("br_h"); box.append(h);
     list.forEach((c) => {
-      const b = document.createElement("button"); b.className = "st-opt"; b.type = "button";
+      const b = document.createElement("button"); b.className = "st-opt rt-cand"; b.type = "button";
       const nm = document.createElement("span"); nm.textContent = c.label; b.append(nm);
       const sm = document.createElement("small"); sm.textContent = c.sub; b.append(sm);
       b.addEventListener("click", () => { closeRitual(); c.run(); });
