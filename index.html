@@ -1091,7 +1091,7 @@
     goal_badge: { ko: "◉ 오늘의 단 하나, 완료!", en: "◉ Today's one thing — done!" },
     lock_title: { ko: "조각을 맞추면 잠깐 열려요", en: "Solve the puzzle to peek" },
     lock_msg: { ko: "지금은 오른쪽 <b>단 하나</b>에 집중 중", en: "Focusing on the <b>one thing</b> on the right" },
-    lock_sub: { ko: "눌러서 퍼즐을 풀면 잠깐 열려요", en: "Tap and solve a puzzle to peek" },
+    lock_sub: { ko: "목록 보기 및 원씽 교체 — 퍼즐을 풀면 잠깐 열려요", en: "View list & swap your One Thing — solve a puzzle to open" },
     // sync modal
     sync_head: { ko: "기기 간 동기화", en: "Sync across devices" },
     sync_label: { ko: "동기화 코드 — 두 기기에 <b>똑같이</b> 입력하세요", en: "Sync code — enter the <b>same</b> code on both devices" },
@@ -1335,6 +1335,8 @@
     prj_del_confirm: { ko: "'{0}' Project를 삭제할까요? 팀 전체에서 사라지며 되돌릴 수 없어요.", en: "Delete project '{0}'? It disappears for everyone." },
     prj_empty: { ko: "팀과 함께 쓰는 목록이에요 — 첫 할 일을 적어보세요", en: "A shared list — add the first item" },
     prj_todo_del: { ko: "이 항목을 삭제할까요? (팀 전체에서 삭제)", en: "Delete this item for everyone?" },
+    grp_ctx_t: { ko: "우클릭: 이름 변경 · 드래그: 순서 이동", en: "Right-click: rename · Drag: reorder" },
+    prj_owner_only: { ko: "프로젝트를 만든 사람(또는 관리자)만 바꿀 수 있어요", en: "Only the owner (or admin) can change this" },
     ds_btn: { ko: "오늘 요약 쪽지 보내기", en: "Send today's summary" },
     ds_head: { ko: "[오늘 업무 요약] {0}", en: "[Daily summary] {0}" },
     ds_ot: { ko: "완료한 원씽 {0}개", en: "{0} One Thing(s) done" },
@@ -1476,6 +1478,7 @@
     })) : [];
     out.trash = Array.isArray(s.trash) ? s.trash : [];
     out.groups = Array.isArray(s.groups) ? s.groups.map((g) => ({ id: g.id || uid(), name: g.name || "?", collapsed: !!g.collapsed })) : [];
+    out.tabOrder = Array.isArray(s.tabOrder) ? s.tabOrder : [];
     out.version = 2;
     return out;
   }
@@ -1908,9 +1911,42 @@
       return g === gid && t.status !== "done" && !t.later;
     }).length;
   }
+  let tabDragKey = null;   // 탭 순서 이동용
+  function saveTabOrder(orderedKeys) { state.tabOrder = orderedKeys; save(); render(); }
   function renderGroupTabs() {
     const box = $id("groupTabs"); if (!box) return;
     box.innerHTML = "";
+    // List(개인)·Project(공유) 항목을 사용자 지정 순서로 합침
+    const entries = [];
+    (state.groups || []).forEach((g) => entries.push({ key: "g:" + g.id, type: "g", g: g }));
+    if (currentUser && cloudConfigured()) {
+      Object.keys(projectsCache).sort((a, b) => ((projectsCache[a] || {}).createdAt || 0) - ((projectsCache[b] || {}).createdAt || 0))
+        .forEach((pid) => entries.push({ key: "p:" + pid, type: "p", pid: pid }));
+    }
+    const orderIdx = {};
+    (state.tabOrder || []).forEach((k, i) => { orderIdx[k] = i; });
+    entries.sort((a, b) => ((a.key in orderIdx) ? orderIdx[a.key] : 999) - ((b.key in orderIdx) ? orderIdx[b.key] : 999));
+    const attachReorder = (b, key) => {   // 탭 자체 드래그로 순서 이동
+      b.draggable = true;
+      b.addEventListener("dragstart", (e) => { tabDragKey = key; e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", "tab:" + key); } catch (_) {} });
+      b.addEventListener("dragend", () => { tabDragKey = null; document.querySelectorAll(".group-tabs .drop-into").forEach((n) => n.classList.remove("drop-into")); });
+      b.addEventListener("drop", (e) => {
+        if (!tabDragKey || tabDragKey === key) return;
+        e.preventDefault(); e.stopPropagation(); b.classList.remove("drop-into");
+        const keys = entries.map((en) => en.key).filter((k) => k !== tabDragKey);
+        keys.splice(keys.indexOf(key), 0, tabDragKey);
+        tabDragKey = null; saveTabOrder(keys);
+      });
+    };
+    const renameGroup = (g) => {
+      const name = (prompt(t("grp_name_prompt"), g.name) || "").trim();
+      if (name) { g.name = name; save(); render(); }
+    };
+    const renameProject = (pid, p) => {
+      if (!(isAdmin() || p.owner === (currentUser || {}).id)) { toast(t("prj_owner_only")); return; }
+      const name = (prompt(t("prj_name_prompt"), p.name) || "").trim();
+      if (name && msgDb) { try { msgDb.ref("projects/" + pid + "/name").set(name); } catch (_) {} }
+    };
     const mkTab = (gid, name) => {
       const b = document.createElement("button"); b.type = "button";
       b.className = (gid === currentGroup && !currentProject) ? "active" : "";
@@ -1918,10 +1954,11 @@
       const n = openTodosOf(gid);
       if (n) { const c = document.createElement("span"); c.className = "gt-count"; c.textContent = "(" + n + ")"; b.append(c); }
       b.addEventListener("click", () => { if (currentGroup !== gid || currentProject) { currentGroup = gid; currentProject = null; render(); } });
-      // 드래그한 할 일을 탭에 떨어뜨리면 그 폴더로 이동
-      b.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId) b.classList.add("drop-into"); });
+      // 드래그한 할 일을 탭에 떨어뜨리면 그 폴더로 이동 (탭 드래그와 구분)
+      b.addEventListener("dragover", (e) => { e.preventDefault(); if (dragId || tabDragKey) b.classList.add("drop-into"); });
       b.addEventListener("dragleave", () => b.classList.remove("drop-into"));
       b.addEventListener("drop", (e) => {
+        if (tabDragKey) return;   // 탭 순서 이동은 attachReorder가 처리
         e.preventDefault(); b.classList.remove("drop-into");
         if (!dragId) return;
         const td = state.todos.find((x) => x.id === dragId); if (!td) return;
@@ -1930,46 +1967,41 @@
       return b;
     };
     box.append(mkTab(null, t("grp_main")));
-    (state.groups || []).forEach((g) => {
-      const b = mkTab(g.id, g.name);
-      if (g.id === currentGroup) {
-        b.querySelector("span").title = t("grp_rename_t");
-        b.addEventListener("dblclick", () => {
-          const name = (prompt(t("grp_name_prompt"), g.name) || "").trim();
-          if (name) { g.name = name; save(); render(); }
-        });
-        const del = document.createElement("button"); del.className = "row-x"; del.textContent = "✕"; del.title = t("grp_del_t");
-        del.addEventListener("click", (e) => { e.stopPropagation(); deleteGroup(g.id); });
-        b.append(del);
-      }
-      box.append(b);
-    });
-    // 공유 Project 탭 (팀 공동 목록 — 진행률 표시)
-    if (currentUser && cloudConfigured()) {
-      Object.keys(projectsCache).sort((a, b) => ((projectsCache[a] || {}).createdAt || 0) - ((projectsCache[b] || {}).createdAt || 0)).forEach((pid) => {
-        const p = projectsCache[pid] || {};
+    entries.forEach((en) => {
+      if (en.type === "g") {
+        const g = en.g;
+        const b = mkTab(g.id, g.name);
+        b.title = t("grp_ctx_t");
+        b.addEventListener("contextmenu", (e) => { e.preventDefault(); renameGroup(g); });   // 우클릭 = 이름 변경
+        if (g.id === currentGroup && !currentProject) {
+          b.addEventListener("dblclick", () => renameGroup(g));
+          const del = document.createElement("button"); del.className = "row-x"; del.textContent = "✕"; del.title = t("grp_del_t");
+          del.addEventListener("click", (e) => { e.stopPropagation(); deleteGroup(g.id); });
+          b.append(del);
+        }
+        attachReorder(b, en.key);
+        box.append(b);
+      } else {
+        const pid = en.pid, p = projectsCache[pid] || {};
         const b = document.createElement("button"); b.type = "button";
         b.className = (currentProject === pid ? "active " : "") + "gt-prj";
+        b.title = t("grp_ctx_t");
         b.innerHTML = '<svg class="icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c1-2.7 3-4 5.5-4s4.5 1.3 5.5 4"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.6c2.3.2 4 1.4 4.8 3.4"/></svg>';
         const lab = document.createElement("span"); lab.textContent = p.name || "?"; b.append(lab);
         const s = projectStats(pid);
         const c = document.createElement("span"); c.className = "gt-count"; c.textContent = "(" + s.done + "/" + s.total + ")"; b.append(c);
         b.addEventListener("click", () => { if (currentProject !== pid) { currentProject = pid; render(); } });
-        if (currentProject === pid) {
-          if (isAdmin() || p.owner === (currentUser || {}).id) {
-            lab.title = t("grp_rename_t");
-            b.addEventListener("dblclick", () => {
-              const name = (prompt(t("prj_name_prompt"), p.name) || "").trim();
-              if (name && msgDb) { try { msgDb.ref("projects/" + pid + "/name").set(name); } catch (_) {} }
-            });
-            const del = document.createElement("button"); del.className = "row-x"; del.textContent = "✕"; del.title = t("prj_del_t");
-            del.addEventListener("click", (e) => { e.stopPropagation(); deleteProject(pid); });
-            b.append(del);
-          }
+        b.addEventListener("contextmenu", (e) => { e.preventDefault(); renameProject(pid, p); });   // 우클릭 = 이름 변경
+        if (currentProject === pid && (isAdmin() || p.owner === (currentUser || {}).id)) {
+          b.addEventListener("dblclick", () => renameProject(pid, p));
+          const del = document.createElement("button"); del.className = "row-x"; del.textContent = "✕"; del.title = t("prj_del_t");
+          del.addEventListener("click", (e) => { e.stopPropagation(); deleteProject(pid); });
+          b.append(del);
         }
+        attachReorder(b, en.key);
         box.append(b);
-      });
-    }
+      }
+    });
     const add = document.createElement("button"); add.type = "button"; add.className = "gt-new";
     add.textContent = t("grp_add"); add.title = t("grp_add_t");
     add.addEventListener("click", addGroup);
@@ -2102,8 +2134,7 @@
       presetEl.innerHTML = ph;
       const foot = document.createElement("div"); foot.className = "ot-foot";
       const done = document.createElement("button"); done.className = "complete-btn"; done.innerHTML = '<span class="box"></span> ' + t("complete"); done.addEventListener("click", () => completeTodo(cur.id));
-      const back = document.createElement("button"); back.className = "putback"; back.textContent = t("pick_again"); back.addEventListener("click", () => putBack(cur.id));
-      foot.append(done, back); card.append(text, buildOtSubs(cur), timer, presetEl, foot); slot.append(card);
+      foot.append(done); card.append(text, buildOtSubs(cur), timer, presetEl, foot); slot.append(card);
       $id("rightHint").textContent = t("hint_active");
       setTimeout(() => { const tb = $id("timerToggle"), tr = $id("timerReset"); if (tb) tb.onclick = toggleTimer; if (tr) tr.onclick = () => resetTimer(); }, 0);
     } else if (isToday) {
