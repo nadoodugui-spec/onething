@@ -653,6 +653,9 @@
       <div class="mrow"><span class="mlabel" data-i18n="set_reminder">매일 ‘오늘의 원씽 정하기’ 알림</span>
         <button id="reminderToggle" class="seg-toggle mbtn ghost"></button>
       </div>
+      <div class="mrow"><span class="mlabel" data-i18n="set_sharefocus">원씽 중일 때 남은 시간 공개</span>
+        <button id="shareFocusToggle" class="seg-toggle mbtn ghost"></button>
+      </div>
     </div>
   </div>
 
@@ -1038,7 +1041,9 @@
     sr_att_limit: { ko: "파일당 1MB · 합계 2MB", en: "1MB per file · 2MB total" },
     sr_att_too_big: { ko: "'{0}' 파일이 너무 커요 (1MB 이하만)", en: "'{0}' is too big (max 1MB)" },
     sr_att_total: { ko: "첨부 합계가 2MB를 넘어요", en: "Attachments exceed 2MB total" },
-    rq_flush: { ko: "집중하는 동안 요청 {0}건이 도착했어요", en: "{0} request(s) arrived while you were focusing" }
+    rq_flush: { ko: "집중하는 동안 요청 {0}건이 도착했어요", en: "{0} request(s) arrived while you were focusing" },
+    st_until: { ko: "약 {0}분 후 종료 예정", en: "ends in ~{0} min" },
+    set_sharefocus: { ko: "원씽 중일 때 남은 시간 공개", en: "Share remaining focus time" }
   };
   function t(key) {
     const e = I18N[key]; let s = e ? (e[LANG] || e.ko) : key;
@@ -1071,7 +1076,7 @@
   // ---------- state & migration ----------
   function migrate(s) {
     const base = { version: 2, todos: [], history: [], trash: [],
-      settings: { theme: "paper", font: "gowun", pomodoroMin: 25, reminder: false, lang: "ko" },
+      settings: { theme: "light", pomodoroMin: 25, reminder: false, lang: "ko", shareFocusTime: true },
       doneCollapsed: false, laterCollapsed: true,
       prioCollapsed: { urgent: false, important: false, normal: false }, lastReminderDate: null };
     if (!s || typeof s !== "object") return base;
@@ -1218,7 +1223,8 @@
     if (timerRemaining <= 0) timerRemaining = pomoSec();
     timerRunning = true; requestNotify();
     if (myStatus() !== "focus") beforeFocusStatus = myStatus();
-    setMyStatus("focus", { auto: true });
+    currentFocusUntil = Date.now() + timerRemaining * 1000;
+    setMyStatus("focus", { auto: true, until: currentFocusUntil });
     if (timerIv) clearInterval(timerIv);
     timerIv = setInterval(() => {
       if (!timerRunning) return; const act = activeTodo(); if (!act) { pauseTimer(); return; }
@@ -1234,6 +1240,7 @@
     timerRunning = false; if (timerIv) { clearInterval(timerIv); timerIv = null; } updateTimerUI();
     // 타이머가 실제로 돌던 중 멈췄고 자동 focus 상태였다면 이전 상태로 복원
     if (wasRunning && myStatus() === "focus") setMyStatus(beforeFocusStatus || prevManualStatus || "work", { auto: true });
+    if (wasRunning) currentFocusUntil = null;
   }
   function toggleTimer() { if (timerRunning) pauseTimer(); else startTimer(); }
   function updateTimerUI() {
@@ -1673,6 +1680,7 @@
     $id("themeSeg").querySelectorAll("button").forEach((b) => b.classList.toggle("sel", b.dataset.theme === (state.settings.theme === "dark" ? "dark" : "light")));
     $id("pomoInput").value = state.settings.pomodoroMin || 25;
     $id("reminderToggle").textContent = state.settings.reminder ? t("rem_on") : t("rem_off");
+    $id("shareFocusToggle").textContent = state.settings.shareFocusTime !== false ? t("rem_on") : t("rem_off");
     $id("settingsModal").hidden = false;
   }
 
@@ -1746,11 +1754,16 @@
     if (!currentUser || !msgDb) return;
     const leavingFocus = myStatus() === "focus" && state !== "focus";
     if (!opts || !opts.auto) { prevManualStatus = state; try { localStorage.setItem(STATUS_KEY, state); } catch (_) {} }
-    statusCache[currentUser.id] = { state, ts: Date.now() };   // 낙관적 반영
-    try { msgDb.ref("status/" + currentUser.id).set({ state: state, ts: Date.now() }); } catch (_) {}
+    const rec = { state: state, ts: Date.now() };
+    // 타이머 종료 예정 시각 — 설정에서 공개를 켠 경우에만 공유
+    if (state === "focus" && opts && opts.until && sharesFocusTime()) rec.until = opts.until;
+    statusCache[currentUser.id] = rec;   // 낙관적 반영
+    try { msgDb.ref("status/" + currentUser.id).set(rec); } catch (_) {}
     renderMyStatus();
     if (leavingFocus) flushPendingNotifies();
   }
+  function sharesFocusTime() { return !state || !state.settings || state.settings.shareFocusTime !== false; }
+  let currentFocusUntil = null;   // 재공개(설정 토글)용으로 기억
   function ensureMyPresence() {
     if (!currentUser || !msgDb || presenceUid === currentUser.id) return;
     presenceUid = currentUser.id;
@@ -1947,10 +1960,16 @@
   function updateToStatus() {
     const box = $id("srToStatus"); if (!box) return; box.innerHTML = "";
     const to = $id("sendReqTo").value; if (!to || !statusCache[to]) return;
-    const st = (statusCache[to] || {}).state || "away";
+    const s = statusCache[to] || {};
+    const st = s.state || "away";
     box.appendChild(statusDot(to));
     const lbl = document.createElement("span");
-    lbl.textContent = t("st_" + st) + (st === "focus" ? " · " + t("st_focus_hint") : "");
+    let txt = t("st_" + st);
+    if (st === "focus") {
+      const leftMin = s.until && s.until > Date.now() ? Math.max(1, Math.round((s.until - Date.now()) / 60000)) : null;
+      txt += " · " + (leftMin ? t("st_until", leftMin) : t("st_focus_hint"));
+    }
+    lbl.textContent = txt;
     box.appendChild(lbl);
   }
   function openSendReq(kind) {
@@ -2336,6 +2355,13 @@
   $id("themeSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.settings.theme = b.dataset.theme; save(); openSettings(); applyTheme(); });
   $id("pomoInput").addEventListener("change", (e) => { const v = Math.max(1, Math.min(180, parseInt(e.target.value, 10) || 25)); state.settings.pomodoroMin = v; if (!timerRunning) resetTimer(); save(); });
   $id("reminderToggle").addEventListener("click", () => { state.settings.reminder = !state.settings.reminder; if (state.settings.reminder) requestNotify(); $id("reminderToggle").textContent = state.settings.reminder ? t("rem_on") : t("rem_off"); save(); });
+  $id("shareFocusToggle").addEventListener("click", () => {
+    state.settings.shareFocusTime = state.settings.shareFocusTime === false;   // 토글
+    $id("shareFocusToggle").textContent = state.settings.shareFocusTime ? t("rem_on") : t("rem_off");
+    save();
+    // 지금 타이머로 원씽 중이면 즉시 반영(공개↔비공개)
+    if (timerRunning && myStatus() === "focus") setMyStatus("focus", { auto: true, until: currentFocusUntil });
+  });
 
   $id("statsClose").addEventListener("click", () => { $id("statsModal").hidden = true; });
   $id("trashClose").addEventListener("click", () => { $id("trashModal").hidden = true; });
