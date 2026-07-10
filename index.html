@@ -1300,6 +1300,13 @@
     prj_del_confirm: { ko: "'{0}' Project를 삭제할까요? 팀 전체에서 사라지며 되돌릴 수 없어요.", en: "Delete project '{0}'? It disappears for everyone." },
     prj_empty: { ko: "팀과 함께 쓰는 목록이에요 — 첫 할 일을 적어보세요", en: "A shared list — add the first item" },
     prj_todo_del: { ko: "이 항목을 삭제할까요? (팀 전체에서 삭제)", en: "Delete this item for everyone?" },
+    ds_btn: { ko: "오늘 요약 쪽지 보내기", en: "Send today's summary" },
+    ds_head: { ko: "[오늘 업무 요약] {0}", en: "[Daily summary] {0}" },
+    ds_ot: { ko: "완료한 원씽 {0}개", en: "{0} One Thing(s) done" },
+    ds_focus: { ko: "집중 시간 {0}", en: "Focus time {0}" },
+    ds_req: { ko: "받은 요청 처리 {0}건 · 보낸 요청 {1}건", en: "{0} requests done · {1} sent" },
+    adm_h: { ko: "팀 현황 (관리자)", en: "Team (admin)" },
+    adm_row: { ko: "이번 주 처리 {0} · 보냄 {1}", en: "done {0} · sent {1} this week" },
     rq_modal_head: { ko: "요청", en: "Requests" },
     rq_tab_inbox: { ko: "받은 요청", en: "Received" },
     rq_tab_sent: { ko: "보낸 요청", en: "Sent" },
@@ -2127,6 +2134,26 @@
   }
 
   // ---------- modals: stats / trash / later / backup / settings ----------
+  function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  // 오늘 업무 요약 텍스트 (일일 보고 쪽지용)
+  function buildDailySummary() {
+    const today = todayStr();
+    const doneOT = state.history.filter((h) => h.date === today);
+    const focus = doneOT.reduce((s, h) => s + (h.focusSec || 0), 0);
+    const dayStart = parseDate(today).getTime();
+    let reqDone = 0, reqSent = 0;
+    if (currentUser) Object.keys(requestsCache).forEach((id) => {
+      const r = requestsCache[id]; if (!r) return;
+      if (r.to === currentUser.id && r.status === "done" && (r.doneAt || 0) >= dayStart) reqDone++;
+      if (r.from === currentUser.id && (r.ts || 0) >= dayStart) reqSent++;
+    });
+    let txt = t("ds_head", fmtNice(today));
+    txt += "\n" + t("ds_ot", doneOT.length);
+    if (doneOT.length) txt += "\n" + doneOT.map((h) => "· " + h.text).join("\n");
+    txt += "\n" + t("ds_focus", fmtDur(focus));
+    txt += "\n" + t("ds_req", reqDone, reqSent);
+    return txt.slice(0, 500);
+  }
   function bestStreak(set) {
     if (!set.size) return 0;
     const dates = [...set].sort(); let best = 1, run = 1;
@@ -2205,7 +2232,35 @@
     html += '<div class="section-h">' + t("badges_h") + '</div><div class="badge-row">'
       + badges.map((b) => '<span class="badge-chip' + (b.on ? "" : " locked") + '">' + (b.on ? CHECK_SVG : LOCK_SVG) + " " + b.name + '</span>').join("") + '</div>';
 
+    // 관리자용 팀 현황
+    if (isAdmin()) {
+      html += '<div class="section-h">' + t("adm_h") + '</div>';
+      Object.keys(usersCache).forEach((uid2) => {
+        const name = (usersCache[uid2] || {}).name || "?";
+        const st = ((statusCache[uid2] || {}).state) || "away";
+        let dn = 0, sn2 = 0;
+        Object.keys(requestsCache).forEach((rid) => {
+          const r = requestsCache[rid]; if (!r) return;
+          if (r.to === uid2 && r.status === "done" && (r.doneAt || 0) >= wsMs) dn++;
+          if (r.from === uid2 && (r.ts || 0) >= wsMs) sn2++;
+        });
+        html += '<div class="sp-feed-item"><span><span class="st-dot st-' + st + '"></span> <b>' + esc(name) + '</b> · ' + t("st_" + st) + '</span>'
+          + '<span>' + t("adm_row", dn, sn2) + '</span></div>';
+      });
+    }
+
+    // 일일 요약 쪽지 보내기
+    if (currentUser && cloudConfigured()) {
+      html += '<div class="mrow" style="margin-top:16px;justify-content:flex-end"><button id="dailySumBtn" class="mbtn ghost">' + t("ds_btn") + '</button></div>';
+    }
+
     $id("statsBody").innerHTML = html;
+    const dsb = $id("dailySumBtn");
+    if (dsb) dsb.addEventListener("click", () => {
+      $id("statsModal").hidden = true;
+      openSendReq("memo");
+      $id("sendReqText").value = buildDailySummary();
+    });
     $id("statsModal").hidden = false;
   }
   function openTrash() {
