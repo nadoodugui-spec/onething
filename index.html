@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#3b5bdb" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <title>The One Thing · 나만의 원씽 노트</title>
@@ -1072,6 +1075,11 @@
     sr_tpl_name: { ko: "템플릿 이름을 입력하세요", en: "Template name" },
     sr_tpl_saved: { ko: "템플릿을 저장했어요", en: "Template saved" },
     sr_tpl_need: { ko: "저장할 제목/내용을 먼저 적어주세요", en: "Write a title/body first" },
+    wk_sum_h: { ko: "이번 주 업무 요약", en: "This week's summary" },
+    wk_ot: { ko: "원씽 완료", en: "One Things done" },
+    wk_focus: { ko: "집중 시간", en: "Focus time" },
+    wk_reqdone: { ko: "받은 요청 처리", en: "Requests done" },
+    wk_reqsent: { ko: "보낸 요청", en: "Requests sent" },
     set_sharefocus: { ko: "원씽 중일 때 남은 시간 공개", en: "Share remaining focus time" }
   };
   function t(key) {
@@ -1663,6 +1671,25 @@
 
     html += '<div class="section-h">' + t("week_h", weekCount) + '</div><div class="week-strip">' + pills.join("") + '</div>';
 
+    // 이번 주 업무 요약 (원씽·집중시간·요청 처리)
+    const weekHist = state.history.filter((h) => h.date >= weekStart && h.date <= todayStr());
+    const weekFocus = weekHist.reduce((s, h) => s + (h.focusSec || 0), 0);
+    const wsMs = parseDate(weekStart).getTime();
+    let reqDone = 0, reqSent = 0;
+    if (currentUser) {
+      Object.keys(requestsCache).forEach((id) => {
+        const r = requestsCache[id]; if (!r) return;
+        if (r.to === currentUser.id && r.status === "done" && (r.doneAt || 0) >= wsMs) reqDone++;
+        if (r.from === currentUser.id && (r.ts || 0) >= wsMs) reqSent++;
+      });
+    }
+    html += '<div class="section-h">' + t("wk_sum_h") + '</div><div class="stat-row">'
+      + '<div class="stat-card"><div class="num">' + weekHist.length + '</div><div class="lbl">' + t("wk_ot") + '</div></div>'
+      + '<div class="stat-card"><div class="num" style="font-size:1.15rem;line-height:1.4">' + fmtDur(weekFocus) + '</div><div class="lbl">' + t("wk_focus") + '</div></div>'
+      + (currentUser ? '<div class="stat-card"><div class="num">' + reqDone + '</div><div class="lbl">' + t("wk_reqdone") + '</div></div>'
+      + '<div class="stat-card"><div class="num">' + reqSent + '</div><div class="lbl">' + t("wk_reqsent") + '</div></div>' : '')
+      + '</div>';
+
     const badges = [
       { ic: "🌱", name: t("bdg0"), on: total >= 1 },
       { ic: "🔥", name: t("bdg1"), on: best >= 3 },
@@ -1814,6 +1841,7 @@
     const ref = msgDb.ref("status/" + currentUser.id);
     try { ref.onDisconnect().set({ state: "away", ts: firebase.database.ServerValue.TIMESTAMP }); } catch (_) {}
     setMyStatus(prevManualStatus || "work", { auto: true });
+    requestNotify();   // 요청 도착 OS 알림용 권한 (한 번만 물어봄)
   }
   function releaseMyPresence() {
     if (!presenceUid || !msgDb) { presenceUid = null; return; }
@@ -2291,7 +2319,14 @@
       const r = requestsCache[id];
       if (r && r.to === currentUser.id && r.from !== currentUser.id && !((r.hiddenFor || []).includes(currentUser.id))) {
         if (myStatus() === "focus") pendingNotifyIds.add(id);   // 조용히 쌓기
-        else toast(t("rq_new", r.fromName || "?"));
+        else {
+          toast(t("rq_new", r.fromName || "?"));
+          // 탭이 백그라운드면 OS 알림으로도 (권한이 있을 때만)
+          try {
+            if (document.hidden && window.Notification && Notification.permission === "granted")
+              new Notification(t("rq_new", r.fromName || "?"), { body: r.title || r.text || "", icon: "icon-192.png" });
+          } catch (_) {}
+        }
       }
     });
     knownReqIds = new Set(ids);
@@ -2332,10 +2367,8 @@
   // ---------- PWA ----------
   function setupPWA() {
     try {
-      if (location.protocol === "http:" || location.protocol === "https:") {
-        const manifest = { name: "The One Thing", short_name: "OneThing", display: "standalone", background_color: "#f7f8fa", theme_color: "#3b5bdb", start_url: "." };
-        const blob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
-        const l = document.createElement("link"); l.rel = "manifest"; l.href = URL.createObjectURL(blob); document.head.appendChild(l);
+      if ((location.protocol === "http:" || location.protocol === "https:") && "serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
       }
     } catch (e) {}
   }
