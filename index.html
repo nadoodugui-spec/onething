@@ -447,6 +447,20 @@
   .rq-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .rq-btn { border: none; background: var(--paper-edge); color: var(--ink); border-radius: 8px; padding: 5px 9px; font-size: .82rem; cursor: pointer; font-family: var(--font-body); }
   .rq-btn:hover { background: var(--highlight); }
+
+  /* ===== 상태(프레즌스) ===== */
+  .st-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+  .st-dot.st-focus { background: #8b5cf6; }
+  .st-dot.st-work { background: var(--ok); }
+  .st-dot.st-away { background: #9aa1ad; }
+  .st-options { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .st-opt { display: grid; grid-template-columns: 14px 1fr; align-items: center; column-gap: 9px; text-align: left;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 10px;
+    padding: 10px 12px; cursor: pointer; font-family: var(--font-body); font-size: .95rem; font-weight: 600; }
+  .st-opt small { grid-column: 2; font-weight: 400; color: var(--text-soft); font-size: .82rem; margin-top: 2px; }
+  .st-opt:hover { background: var(--surface-2); }
+  .st-opt.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .sr-to-status { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--text-soft); }
 </style>
 </head>
 <body data-theme="light" data-lang="ko">
@@ -491,6 +505,7 @@
       <button data-act="backup" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M4 19h16"/></svg><span data-i18n="t_backup">백업</span></button>
       <button data-act="settings" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.5-2.4 1a7 7 0 00-2-1.2L14 3h-4l-.5 2.6a7 7 0 00-2 1.2l-2.4-1-2 3.5 2 1.5A7 7 0 005 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.5 2.4-1a7 7 0 002 1.2L10 21h4l.5-2.6a7 7 0 002-1.2l2.4 1 2-3.5-2-1.5c.1-.4.1-.8.1-1.2z"/></svg><span data-i18n="t_settings">설정</span></button>
       <button data-act="help" type="button" title="도움말"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 114 2c-.8.6-1.5 1.1-1.5 2.2M12 17h.01"/></svg></button>
+      <button data-act="status" type="button" id="statusBtn" hidden><span class="st-dot st-work" id="stDot"></span><span id="stLabel"></span> ▾</button>
       <button data-act="user" type="button" id="userChip" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg><span id="userChipName"></span> ▾</button>
     </div>
   </div>
@@ -642,6 +657,17 @@
     <div class="modal-box">
       <div class="modal-head"><span data-i18n="help_head">❓ 도움말 · 단축키</span><button class="modal-close" id="helpClose">✕</button></div>
       <div class="modal-desc" style="line-height:1.7" data-i18n-html="help_body"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="statusModal" hidden>
+    <div class="modal-box" style="width:min(94vw,320px)">
+      <div class="modal-head"><span data-i18n="st_head">내 상태</span><button class="modal-close" id="statusClose">✕</button></div>
+      <div class="st-options">
+        <button class="st-opt" data-st="focus" type="button"><span class="st-dot st-focus"></span><span data-i18n="st_focus">원씽 중</span><small data-i18n="st_focus_d">초집중 — 새 요청 알림이 조용히 쌓여요</small></button>
+        <button class="st-opt" data-st="work" type="button"><span class="st-dot st-work"></span><span data-i18n="st_work">업무 중</span><small data-i18n="st_work_d">요청이 오면 바로 알림을 받아요</small></button>
+        <button class="st-opt" data-st="away" type="button"><span class="st-dot st-away"></span><span data-i18n="st_away">자리비움</span><small data-i18n="st_away_d">자리에 없음 — 알림은 그대로 표시돼요</small></button>
+      </div>
     </div>
   </div>
 
@@ -930,7 +956,17 @@
     rq_tray_title: { ko: "요청함", en: "Requests" },
     s_on_acct: { ko: "계정 기준으로 자동 동기화 중 — {0}", en: "Auto-syncing by account — {0}" },
     sync_acct_help: { ko: "로그인한 계정 기준으로 자동 동기화됩니다. 같은 계정으로 다른 기기에서 로그인하면 같은 할 일이 보여요.", en: "Auto-syncs by your account. Log in with the same account on another device to see the same todos." },
-    acct_migrated: { ko: "기존 할 일을 이 계정으로 가져왔어요", en: "Imported your existing todos into this account" }
+    acct_migrated: { ko: "기존 할 일을 이 계정으로 가져왔어요", en: "Imported your existing todos into this account" },
+    // 상태(프레즌스)
+    st_head: { ko: "내 상태", en: "My status" },
+    st_focus: { ko: "원씽 중", en: "Focusing" },
+    st_focus_d: { ko: "초집중 — 새 요청 알림이 조용히 쌓여요", en: "Deep focus — new requests pile up quietly" },
+    st_work: { ko: "업무 중", en: "Working" },
+    st_work_d: { ko: "요청이 오면 바로 알림을 받아요", en: "Get notified as requests arrive" },
+    st_away: { ko: "자리비움", en: "Away" },
+    st_away_d: { ko: "자리에 없음 — 알림은 그대로 표시돼요", en: "Not at desk — notifications still show" },
+    st_changed: { ko: "상태: {0}", en: "Status: {0}" },
+    st_focus_hint: { ko: "지금 초집중 중이에요 — 나중에 확인할 수 있어요", en: "Focusing now — they'll see it later" }
   };
   function t(key) {
     const e = I18N[key]; let s = e ? (e[LANG] || e.ko) : key;
@@ -1109,6 +1145,8 @@
     const a = activeTodo(); if (!a) return;
     if (timerRemaining <= 0) timerRemaining = pomoSec();
     timerRunning = true; requestNotify();
+    if (myStatus() !== "focus") beforeFocusStatus = myStatus();
+    setMyStatus("focus", { auto: true });
     if (timerIv) clearInterval(timerIv);
     timerIv = setInterval(() => {
       if (!timerRunning) return; const act = activeTodo(); if (!act) { pauseTimer(); return; }
@@ -1119,7 +1157,12 @@
     }, 1000);
     updateTimerUI();
   }
-  function pauseTimer() { timerRunning = false; if (timerIv) { clearInterval(timerIv); timerIv = null; } updateTimerUI(); }
+  function pauseTimer() {
+    const wasRunning = timerRunning;
+    timerRunning = false; if (timerIv) { clearInterval(timerIv); timerIv = null; } updateTimerUI();
+    // 타이머가 실제로 돌던 중 멈췄고 자동 focus 상태였다면 이전 상태로 복원
+    if (wasRunning && myStatus() === "focus") setMyStatus(beforeFocusStatus || prevManualStatus || "work", { auto: true });
+  }
   function toggleTimer() { if (timerRunning) pauseTimer(); else startTimer(); }
   function updateTimerUI() {
     const disp = $id("timeDisp"); if (disp) disp.textContent = fmtMMSS(timerRemaining > 0 ? timerRemaining : pomoSec());
@@ -1616,6 +1659,62 @@
   const REQ_PAGE = 10;                 // 한 번에 보여줄 요청 수
   let reqShown = { inbox: REQ_PAGE, sent: REQ_PAGE };  // 받은/보낸 현재 표시 개수
 
+  // ===== 상태(프레즌스) =====
+  const STATUS_KEY = "onething-status";        // 이 기기에 기억되는 마지막 수동 상태
+  let statusCache = {};                        // { userId: {state, ts} }
+  let prevManualStatus = localStorage.getItem(STATUS_KEY) || "work";
+  let beforeFocusStatus = null;                // 타이머 자동 전환 전 상태(복원용)
+  let presenceUid = null;                      // onDisconnect가 등록된 사용자 id
+  function myStatus() {
+    const s = currentUser && statusCache[currentUser.id];
+    return (s && s.state) || "work";
+  }
+  function setMyStatus(state, opts) {
+    if (!currentUser || !msgDb) return;
+    const leavingFocus = myStatus() === "focus" && state !== "focus";
+    if (!opts || !opts.auto) { prevManualStatus = state; try { localStorage.setItem(STATUS_KEY, state); } catch (_) {} }
+    statusCache[currentUser.id] = { state, ts: Date.now() };   // 낙관적 반영
+    try { msgDb.ref("status/" + currentUser.id).set({ state: state, ts: Date.now() }); } catch (_) {}
+    renderMyStatus();
+    if (leavingFocus) flushPendingNotifies();
+  }
+  function ensureMyPresence() {
+    if (!currentUser || !msgDb || presenceUid === currentUser.id) return;
+    presenceUid = currentUser.id;
+    const ref = msgDb.ref("status/" + currentUser.id);
+    try {
+      ref.set({ state: prevManualStatus || "work", ts: Date.now() });
+      ref.onDisconnect().set({ state: "away", ts: firebase.database.ServerValue.TIMESTAMP });
+    } catch (_) {}
+  }
+  function releaseMyPresence() {
+    if (!presenceUid || !msgDb) { presenceUid = null; return; }
+    try {
+      const ref = msgDb.ref("status/" + presenceUid);
+      ref.onDisconnect().cancel();
+      ref.set({ state: "away", ts: Date.now() });
+    } catch (_) {}
+    presenceUid = null;
+  }
+  function renderMyStatus() {
+    const btn = $id("statusBtn"); if (!btn) return;
+    const show = !!currentUser && !!msgDb;
+    btn.hidden = !show; if (!show) return;
+    const st = myStatus();
+    const dot = $id("stDot"); if (dot) dot.className = "st-dot st-" + st;
+    const lbl = $id("stLabel"); if (lbl) lbl.textContent = t("st_" + st);
+    const modal = $id("statusModal");
+    if (modal) modal.querySelectorAll(".st-opt").forEach((b) => b.classList.toggle("sel", b.dataset.st === st));
+  }
+  function statusDot(userId) {
+    const s = statusCache[userId];
+    const span = document.createElement("span");
+    span.className = "st-dot st-" + ((s && s.state) || "away");
+    return span;
+  }
+  // Task 3에서 구현 — focus 해제 시 쌓인 알림 몰아서 표시
+  function flushPendingNotifies() {}
+
   function ensureFirebase() {
     if (!cloudConfigured()) return null;
     try { if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return firebase.database(); }
@@ -1632,6 +1731,10 @@
       requestsCache = snap.val() || {};
       notifyNewRequests();
       renderRequests(); renderUnreadBadge();
+    });
+    msgDb.ref("status").on("value", (snap) => {
+      statusCache = snap.val() || {};
+      renderMyStatus();
     });
   }
   // 익명 인증 성공 후 한 번만 클라우드(메신저+노트) 연결
@@ -1687,6 +1790,7 @@
     return { ok: true };
   }
   function logoutUser() {
+    releaseMyPresence();
     localStorage.removeItem(USER_KEY); currentUser = null;
     if (syncRef) { syncRef.off(); syncRef = null; } cloudReady = false;
     state = migrate(null); render(); updateLoginGate(); refreshSyncState();
@@ -1743,7 +1847,8 @@
     if (tray) tray.hidden = !loggedIn;
     if (loggedIn && gate) gate.hidden = true;
     renderUnreadBadge();
-    if (loggedIn) renderRequests();
+    if (loggedIn) { renderRequests(); ensureMyPresence(); }
+    renderMyStatus();
   }
   function renderLoginUsers() {
     const ul = $id("loginUsers"); if (!ul) return; ul.innerHTML = "";
@@ -1949,6 +2054,15 @@
     else if (act === "stats") openStats(); else if (act === "trash") openTrash();
     else if (act === "backup") $id("backupModal").hidden = false; else if (act === "settings") openSettings(); else if (act === "help") $id("helpModal").hidden = false;
     else if (act === "user") { if (currentUser) { $id("userWho").textContent = t("um_who", currentUser.name); $id("userModal").hidden = false; } else showLoginGate(); }
+    else if (act === "status") { if (currentUser) { renderMyStatus(); $id("statusModal").hidden = false; } else showLoginGate(); }
+  });
+
+  $id("statusClose").addEventListener("click", () => { $id("statusModal").hidden = true; });
+  $id("statusModal").addEventListener("click", (e) => {
+    const b = e.target.closest(".st-opt"); if (!b) return;
+    setMyStatus(b.dataset.st);
+    $id("statusModal").hidden = true;
+    toast(t("st_changed", t("st_" + b.dataset.st)));
   });
 
   $id("lgRegisterBtn").addEventListener("click", () => {
