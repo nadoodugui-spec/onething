@@ -103,6 +103,10 @@
   .new-prio { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-soft);
     font-family: var(--font-body); font-size: .88rem; padding: 6px 6px; outline: none; cursor: pointer; }
   .new-prio:focus { border-color: var(--accent); }
+  .add-hint { font-size: .76rem; color: var(--text-soft); padding-left: 14px; margin: 4px 0 0; }
+  .add-hint[hidden] { display: none; }
+  .add-hint kbd { font-family: inherit; font-size: .72rem; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px; color: var(--text); }
   .add-row button, .ghost-btn {
     border: none; cursor: pointer; background: var(--accent); color: #fff;
     font-family: inherit; font-size: .92rem; font-weight: 600; border-radius: 8px;
@@ -615,6 +619,7 @@
           </select>
           <button id="addBtn" data-i18n="add_btn" data-i18n-title="add_title" title="추가">＋ 추가</button>
         </div>
+        <div class="add-hint" id="addHint" hidden data-i18n-html="add_hint"><kbd>Enter</kbd> Routine · <kbd>Shift+Enter</kbd> Next · <kbd>Ctrl+Enter</kbd> Now</div>
         <div class="list" id="todoList"></div>
         <div class="later-wrap collapsed" id="laterWrap">
           <div class="later-head" id="laterHead">
@@ -885,6 +890,7 @@
     add_btn: { ko: "＋ 추가", en: "＋ Add" },
     add_title: { ko: "추가", en: "Add" },
     np_title: { ko: "우선순위", en: "Priority" },
+    add_hint: { ko: "<kbd>Enter</kbd> Routine · <kbd>Shift+Enter</kbd> Next · <kbd>Ctrl+Enter</kbd> Now", en: "<kbd>Enter</kbd> Routine · <kbd>Shift+Enter</kbd> Next · <kbd>Ctrl+Enter</kbd> Now" },
     later_h: { ko: "나중에", en: "Later" },
     done_h: { ko: "끝난 일", en: "Done" },
     prev_day: { ko: "이전 날", en: "Previous day" },
@@ -2627,13 +2633,20 @@
   }
 
   // ---------- events ----------
-  function addFromInput() {
+  function addFromInput(prio) {
     const i = $id("newTodo");
-    addTodo(i.value, { priority: $id("newPrio").value });
+    addTodo(i.value, { priority: prio || $id("newPrio").value });
     i.value = ""; i.focus();
   }
-  $id("addBtn").addEventListener("click", addFromInput);
-  $id("newTodo").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput(); });
+  $id("addBtn").addEventListener("click", () => addFromInput());
+  // Enter = 기본(드롭다운 값) · Shift+Enter = Next · Ctrl+Enter = Now
+  $id("newTodo").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    addFromInput(e.ctrlKey || e.metaKey ? "urgent" : e.shiftKey ? "important" : null);
+  });
+  $id("newTodo").addEventListener("focus", () => { const h = $id("addHint"); if (h) h.hidden = false; });
+  $id("newTodo").addEventListener("blur", () => { const h = $id("addHint"); if (h) h.hidden = true; });
   $id("doneHead").addEventListener("click", () => { state.doneCollapsed = !state.doneCollapsed; save(); renderDone(); });
   $id("laterHead").addEventListener("click", () => { state.laterCollapsed = !state.laterCollapsed; save(); renderLater(); });
   $id("todoList").addEventListener("dragover", (e) => e.preventDefault());
