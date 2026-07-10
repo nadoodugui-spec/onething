@@ -2808,9 +2808,23 @@
     const pb = $id("popUnread"); if (pb) { pb.textContent = n; pb.hidden = n === 0; }
     if (sb) { sb.textContent = sn; sb.hidden = false; sb.classList.toggle("zero", sn === 0); }
   }
+  function snapshotRepCounts(ids) {
+    const c = {}; ids.forEach((id) => { const r = requestsCache[id]; c[id] = (r && Array.isArray(r.replies)) ? r.replies.length : 0; });
+    return c;
+  }
+  function snapshotStatuses(ids) {
+    const s = {}; ids.forEach((id) => { const r = requestsCache[id]; s[id] = (r && r.status) || "sent"; });
+    return s;
+  }
   function notifyNewRequests() {
     const ids = Object.keys(requestsCache);
-    if (knownReqIds === null || !currentUser) { knownReqIds = new Set(ids); return; }
+    if (knownReqIds === null || !currentUser) {
+      // 첫 로드(또는 로그인 전): 알림 없이 기준점만 기록 — 이후 변화부터 감지
+      knownReqIds = new Set(ids);
+      knownRepCounts = snapshotRepCounts(ids);
+      knownStatuses = snapshotStatuses(ids);
+      return;
+    }
     ids.forEach((id) => {
       if (knownReqIds.has(id)) return;
       const r = requestsCache[id];
@@ -2828,8 +2842,7 @@
     });
     knownReqIds = new Set(ids);
     // ----- 새 답장 감지 -----
-    const counts = {};
-    ids.forEach((id) => { const r = requestsCache[id]; counts[id] = (r && Array.isArray(r.replies)) ? r.replies.length : 0; });
+    const counts = snapshotRepCounts(ids);
     if (knownRepCounts && currentUser) {
       ids.forEach((id) => {
         const r = requestsCache[id]; if (!r) return;
@@ -2850,8 +2863,7 @@
     }
     knownRepCounts = counts;
     // ----- 내가 보낸 요청의 완료 감지 -----
-    const statuses = {};
-    ids.forEach((id) => { const r = requestsCache[id]; statuses[id] = (r && r.status) || "sent"; });
+    const statuses = snapshotStatuses(ids);
     if (knownStatuses && currentUser) {
       ids.forEach((id) => {
         const r = requestsCache[id]; if (!r || r.from !== currentUser.id) return;
