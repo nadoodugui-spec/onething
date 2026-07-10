@@ -605,11 +605,38 @@
     color: var(--text); font-family: var(--font-body); font-size: .9rem; padding: 7px 10px; outline: none; margin-bottom: 10px; }
   .sp-search:focus { border-color: var(--accent); }
   .sp-group-h { font-size: .8rem; font-weight: 700; color: var(--text-soft); margin: 12px 0 4px; display: flex; align-items: center; gap: 6px; }
-  .sp-member { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px; cursor: pointer; }
+  .sp-summary { font-size: .8rem; color: var(--text-soft); margin: -4px 0 10px; }
+  .sp-me { border: 1px solid var(--border); border-radius: 10px; padding: 10px 11px; margin-bottom: 12px; background: var(--surface-2); }
+  .sp-me-top { display: flex; align-items: center; gap: 9px; }
+  .sp-me-name { font-weight: 700; font-size: .92rem; flex: 1; }
+  .sp-me-st { font-size: .8rem; color: var(--text-soft); }
+  .sp-me-seg { display: flex; gap: 5px; margin-top: 9px; }
+  .sp-me-seg button { flex: 1; border: 1px solid var(--border); background: var(--surface); color: var(--text-soft); border-radius: 7px;
+    padding: 5px 0; font-family: var(--font-body); font-size: .8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+  .sp-me-seg button:hover { background: var(--surface-2); }
+  .sp-me-seg button.sel { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .sp-av { width: 27px; height: 27px; border-radius: 50%; flex: none; background: var(--surface); border: 2px solid var(--border);
+    display: inline-flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 700; color: var(--text); }
+  .sp-av.st-focus { border-color: #8b5cf6; }
+  .sp-av.st-work { border-color: var(--ok); }
+  .sp-av.st-away { border-color: #9aa1ad; color: var(--text-soft); }
+  .sp-member { display: flex; align-items: flex-start; gap: 9px; padding: 7px 8px; border-radius: 8px; position: relative; }
   .sp-member:hover { background: var(--surface-2); }
-  .sp-m-name { font-weight: 600; font-size: .9rem; color: var(--text); flex: none; }
-  .sp-m-info { font-size: .8rem; color: var(--text-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sp-m-body { flex: 1; min-width: 0; }
+  .sp-m-name { font-weight: 600; font-size: .9rem; color: var(--text); }
+  .sp-m-info { font-size: .78rem; color: var(--text-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+  .sp-bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 5px; overflow: hidden; }
+  .sp-bar-fill { height: 100%; background: #8b5cf6; border-radius: 2px; }
+  .sp-acts { position: absolute; right: 6px; top: 7px; display: none; gap: 4px; }
+  .sp-member:hover .sp-acts { display: inline-flex; }
+  .sp-acts button { border: 1px solid var(--border); background: var(--surface); color: var(--text-soft); border-radius: 6px;
+    padding: 2px 8px; font-family: var(--font-body); font-size: .74rem; font-weight: 600; cursor: pointer; }
+  .sp-acts button:hover { color: var(--accent); border-color: var(--accent); }
+  .sp-feed-item { font-size: .8rem; color: var(--text-soft); padding: 4px 2px; display: flex; justify-content: space-between; gap: 8px; }
+  .sp-feed-item b { color: var(--text); font-weight: 600; }
   .sp-empty { color: var(--text-soft); font-size: .85rem; padding: 8px 4px; }
+  #spPin.on { color: var(--accent); }
+  @media (min-width: 1100px) { body.sp-pinned { padding-left: 296px; } }
 </style>
 </head>
 <body data-theme="light" data-lang="ko">
@@ -731,10 +758,16 @@
   <aside class="side-panel" id="sidePanel" hidden>
     <div class="sp-head">
       <span class="sp-title" data-i18n="sp_title">팀 현황</span>
-      <button class="modal-close" id="spClose" type="button">✕</button>
+      <span style="display:inline-flex;gap:2px">
+        <button class="modal-close" id="spPin" type="button" data-i18n-title="sp_pin_t" title="사이드바 고정"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 4h6l1 7 3 3H5l3-3 1-7zM12 14v6"/></svg></button>
+        <button class="modal-close" id="spClose" type="button">✕</button>
+      </span>
     </div>
+    <div class="sp-summary" id="spSummary"></div>
+    <div id="spMe"></div>
     <input id="spSearch" class="sp-search" type="text" data-i18n-ph="sp_search_ph" placeholder="이름 검색…" autocomplete="off" />
     <div id="spList"></div>
+    <div id="spFeed"></div>
   </aside>
 
   <div class="toast" id="toast"></div>
@@ -785,6 +818,9 @@
       </div>
       <div class="mrow"><span class="mlabel" data-i18n="set_shareot">오늘의 원씽을 팀에 공개</span>
         <button id="shareOtToggle" class="seg-toggle mbtn ghost"></button>
+      </div>
+      <div class="mrow"><span class="mlabel" data-i18n="set_teamfeed">팀 최근 활동 표시(사이드바)</span>
+        <button id="teamFeedToggle" class="seg-toggle mbtn ghost"></button>
       </div>
     </div>
   </div>
@@ -1254,6 +1290,17 @@
     tb_me: { ko: "나", en: "me" },
     sp_title: { ko: "팀 현황", en: "Team" },
     sp_search_ph: { ko: "이름 검색…", en: "Search names…" },
+    sp_sum: { ko: "{0}명", en: "{0} members" },
+    sp_pin_t: { ko: "사이드바 고정(넓은 화면)", en: "Pin sidebar (wide screens)" },
+    sp_feed_h: { ko: "최근 활동", en: "Recent activity" },
+    set_teamfeed: { ko: "팀 최근 활동 표시(사이드바)", en: "Show team activity (sidebar)" },
+    ago_now: { ko: "방금", en: "just now" },
+    ago_min: { ko: "{0}분 전", en: "{0}m ago" },
+    ago_hr: { ko: "{0}시간 전", en: "{0}h ago" },
+    ago_day: { ko: "{0}일 전", en: "{0}d ago" },
+    fd_sent: { ko: "{0} → {1} 요청", en: "{0} → {1} request" },
+    fd_done: { ko: "{0}님이 요청 완료", en: "{0} completed a request" },
+    fd_reply: { ko: "{0}님이 답장", en: "{0} replied" },
     sr_tpl: { ko: "템플릿", en: "Template" },
     sr_tpl_none: { ko: "템플릿 선택…", en: "Choose template…" },
     sr_tpl_save: { ko: "현재 내용 저장", en: "Save current" },
@@ -2049,6 +2096,7 @@
     $id("reminderToggle").textContent = state.settings.reminder ? t("rem_on") : t("rem_off");
     $id("shareFocusToggle").textContent = state.settings.shareFocusTime !== false ? t("rem_on") : t("rem_off");
     $id("shareOtToggle").textContent = state.settings.shareOneThing ? t("rem_on") : t("rem_off");
+    $id("teamFeedToggle").textContent = state.settings.teamFeed ? t("rem_on") : t("rem_off");
     $id("settingsModal").hidden = false;
   }
 
@@ -2178,23 +2226,93 @@
     span.className = "st-dot st-" + ((s && s.state) || "away");
     return span;
   }
-  // 팀 사이드바 — 상태별 그룹(원씽 중/업무 중/자리비움) + 이름 검색 + 클릭 시 요청 보내기
+  // 팀 사이드바 — 내 카드 + 상태별 그룹 + 검색 + 최근 활동
   let spQuery = "";
+  let spPinned = localStorage.getItem("onething-sp-pin") === "1";
+  function fmtAgo(ts) {
+    if (!ts) return "";
+    const m = Math.floor((Date.now() - ts) / 60000);
+    if (m < 1) return t("ago_now");
+    if (m < 60) return t("ago_min", m);
+    const h = Math.floor(m / 60);
+    if (h < 24) return t("ago_hr", h);
+    return t("ago_day", Math.floor(h / 24));
+  }
+  function spAvatar(id) {
+    const st = ((statusCache[id] || {}).state) || "away";
+    const av = document.createElement("span"); av.className = "sp-av st-" + st;
+    av.textContent = (((usersCache[id] || {}).name || "?").trim().charAt(0)) || "?";
+    return av;
+  }
+  function applySidePin() {
+    const on = spPinned && !!currentUser && cloudConfigured();
+    document.body.classList.toggle("sp-pinned", on);
+    const p = $id("sidePanel"), tab = $id("sideTab"), pin = $id("spPin");
+    if (pin) pin.classList.toggle("on", spPinned);
+    if (on) { if (p) p.hidden = false; if (tab) tab.hidden = true; renderTeamBoard(); }
+    else if (tab && currentUser && cloudConfigured()) tab.hidden = false;
+  }
+  function openCompose(kind, toId) {
+    if (!spPinned) $id("sidePanel").hidden = true;
+    openSendReq(kind);
+    composeTo = toId; renderToChips(); updateToStatus();
+  }
+  function focusInfoOf(s) {   // 원씽 중 부가 정보: 남은 분 + 진행률
+    if (!(s.until && s.until > Date.now())) return null;
+    const left = Math.max(1, Math.round((s.until - Date.now()) / 60000));
+    let pct = null;
+    if (s.ts && s.until > s.ts) pct = Math.min(100, Math.max(2, Math.round(((Date.now() - s.ts) / (s.until - s.ts)) * 100)));
+    return { left: left, pct: pct };
+  }
   function renderTeamBoard() {
     const list = $id("spList"), badge = $id("sideTabBadge");
     if (!list) return;
     const ids = Object.keys(usersCache);
-    // 접힘 탭 배지: 지금 원씽 중인 사람 수
-    const focusN = ids.filter((id) => (statusCache[id] || {}).state === "focus").length;
-    if (badge) { badge.textContent = focusN; badge.hidden = focusN === 0; }
-    if ($id("sidePanel").hidden) return;   // 펼쳐져 있을 때만 목록 렌더
-    list.innerHTML = "";
+    const stOf = (id) => ((statusCache[id] || {}).state) || "away";
+    const focusN = ids.filter((id) => stOf(id) === "focus").length;
+    if (badge) { badge.textContent = focusN; badge.hidden = focusN === 0; }   // 접힘 탭 배지 = 집중 인원
+    if ($id("sidePanel").hidden) return;
     if (!currentUser) return;
+    // 요약 한 줄
+    const sum = $id("spSummary");
+    if (sum) {
+      const cnt = (st) => ids.filter((id) => stOf(id) === st).length;
+      sum.textContent = t("sp_sum", ids.length) + " · " + t("st_focus") + " " + cnt("focus")
+        + " · " + t("st_work") + " " + cnt("work") + " · " + t("st_away") + " " + cnt("away");
+    }
+    // 내 카드 (상태 전환 포함)
+    const meBox = $id("spMe");
+    if (meBox) {
+      meBox.innerHTML = "";
+      const card = document.createElement("div"); card.className = "sp-me";
+      const top = document.createElement("div"); top.className = "sp-me-top";
+      top.appendChild(spAvatar(currentUser.id));
+      const nm = document.createElement("span"); nm.className = "sp-me-name"; nm.textContent = currentUser.name; top.appendChild(nm);
+      const stl = document.createElement("span"); stl.className = "sp-me-st";
+      const myS = statusCache[currentUser.id] || {};
+      let stTxt = t("st_" + myStatus());
+      if (myStatus() === "focus") { const fi = focusInfoOf(myS); if (fi) stTxt += " · ~" + fi.left + t("min_unit"); }
+      stl.textContent = stTxt; top.appendChild(stl);
+      card.appendChild(top);
+      const seg = document.createElement("div"); seg.className = "sp-me-seg";
+      [["work", "st_work"], ["away", "st_away"]].forEach((pair) => {
+        const b = document.createElement("button"); b.type = "button";
+        b.className = myStatus() === pair[0] ? "sel" : "";
+        const d = document.createElement("span"); d.className = "st-dot st-" + pair[0]; b.appendChild(d);
+        b.appendChild(document.createTextNode(t(pair[1])));
+        b.addEventListener("click", () => { setMyStatus(pair[0]); renderTeamBoard(); });
+        seg.appendChild(b);
+      });
+      card.appendChild(seg);
+      meBox.appendChild(card);
+    }
+    // 구성원 목록 (나 제외, 상태별 그룹)
+    list.innerHTML = "";
     const q = spQuery.trim().toLowerCase();
     const match = (id) => !q || (((usersCache[id] || {}).name || "").toLowerCase().includes(q));
     ["focus", "work", "away"].forEach((st) => {
-      const members = ids.filter((id) => ((statusCache[id] || {}).state || "away") === st && match(id))
-        .sort((a, b) => (a === currentUser.id ? -1 : b === currentUser.id ? 1 : (((usersCache[a] || {}).name || "")).localeCompare((usersCache[b] || {}).name || "")));
+      const members = ids.filter((id) => id !== currentUser.id && stOf(id) === st && match(id))
+        .sort((a, b) => (((usersCache[a] || {}).name || "")).localeCompare((usersCache[b] || {}).name || ""));
       if (!members.length) return;
       const h = document.createElement("div"); h.className = "sp-group-h";
       const hd = document.createElement("span"); hd.className = "st-dot st-" + st; h.appendChild(hd);
@@ -2203,27 +2321,65 @@
       members.forEach((id) => {
         const s = statusCache[id] || {};
         const row = document.createElement("div"); row.className = "sp-member";
-        row.appendChild(statusDot(id));
-        const nm = document.createElement("span"); nm.className = "sp-m-name";
-        nm.textContent = ((usersCache[id] || {}).name || "?") + (id === currentUser.id ? " (" + t("tb_me") + ")" : "");
-        row.appendChild(nm);
+        row.appendChild(spAvatar(id));
+        const body = document.createElement("div"); body.className = "sp-m-body";
+        const nm = document.createElement("div"); nm.className = "sp-m-name"; nm.textContent = (usersCache[id] || {}).name || "?";
+        body.appendChild(nm);
         let info = "";
-        if (st === "focus" && s.until && s.until > Date.now()) info += "~" + Math.max(1, Math.round((s.until - Date.now()) / 60000)) + t("min_unit");
-        if (s.ot) info += (info ? " · " : "") + s.ot;
-        if (info) { const inf = document.createElement("span"); inf.className = "sp-m-info"; inf.textContent = info; row.appendChild(inf); }
-        if (id !== currentUser.id) {
-          row.title = t("t_sendreq");
-          row.addEventListener("click", () => {
-            $id("sidePanel").hidden = true;
-            openSendReq(composeKind);
-            composeTo = id; renderToChips(); updateToStatus();
-          });
-        }
+        if (st === "focus") {
+          const fi = focusInfoOf(s);
+          if (fi) info += "~" + fi.left + t("min_unit");
+          if (s.ot) info += (info ? " · " : "") + s.ot;
+          if (fi && fi.pct != null) {
+            const bar = document.createElement("div"); bar.className = "sp-bar";
+            const fill = document.createElement("div"); fill.className = "sp-bar-fill"; fill.style.width = fi.pct + "%";
+            bar.appendChild(fill); body.appendChild(bar);
+          }
+        } else if (st === "away" && s.ts) info = fmtAgo(s.ts) + " " + t("st_away");
+        else if (s.ot) info = s.ot;
+        if (info) { const inf = document.createElement("div"); inf.className = "sp-m-info"; inf.textContent = info; body.appendChild(inf); }
+        row.appendChild(body);
+        // hover 액션: 쪽지 / 업무 요청 바로 보내기
+        const acts = document.createElement("span"); acts.className = "sp-acts";
+        [["memo", "kind_memo"], ["task", "kind_task"]].forEach((pair) => {
+          const b = document.createElement("button"); b.type = "button"; b.textContent = t(pair[1]);
+          b.addEventListener("click", (e) => { e.stopPropagation(); openCompose(pair[0], id); });
+          acts.appendChild(b);
+        });
+        row.appendChild(acts);
+        row.addEventListener("click", () => openCompose(composeKind, id));
         list.appendChild(row);
       });
     });
     if (!list.children.length) { const e = document.createElement("div"); e.className = "sp-empty"; e.textContent = t("no_results"); list.appendChild(e); }
+    // 최근 활동 (설정에서 켠 경우만 — 기본 꺼짐)
+    const feed = $id("spFeed");
+    if (feed) {
+      feed.innerHTML = "";
+      if (state.settings && state.settings.teamFeed) {
+        const evts = [];
+        Object.keys(requestsCache).forEach((id) => {
+          const r = requestsCache[id]; if (!r) return;
+          if (r.ts) evts.push({ ts: r.ts, txt: t("fd_sent", r.fromName || "?", r.toName || "?") });
+          if (r.status === "done" && r.doneAt) evts.push({ ts: r.doneAt, txt: t("fd_done", r.toName || "?") });
+          (Array.isArray(r.replies) ? r.replies : []).forEach((rep) => { if (rep && rep.ts) evts.push({ ts: rep.ts, txt: t("fd_reply", rep.fromName || "?") }); });
+        });
+        evts.sort((a, b) => b.ts - a.ts);
+        if (evts.length) {
+          const h = document.createElement("div"); h.className = "sp-group-h"; h.textContent = t("sp_feed_h");
+          feed.appendChild(h);
+          evts.slice(0, 5).forEach((ev) => {
+            const it = document.createElement("div"); it.className = "sp-feed-item";
+            const tx = document.createElement("span"); tx.textContent = ev.txt;
+            const tm = document.createElement("span"); tm.textContent = fmtAgo(ev.ts);
+            it.append(tx, tm); feed.appendChild(it);
+          });
+        }
+      }
+    }
   }
+  // 경과 시간·진행 바 갱신 — 패널이 열려 있을 때만 1분마다
+  setInterval(() => { const p = $id("sidePanel"); if (p && !p.hidden) renderTeamBoard(); }, 60000);
   // focus 해제 시 쌓인 알림(새 요청 + 새 답장) 몰아서 표시
   function flushPendingNotifies() {
     const n = pendingNotifyIds.size + pendingReplyIds.size;
@@ -2557,7 +2713,7 @@
     if (loggedIn && gate) gate.hidden = true;
     renderUnreadBadge();
     if (loggedIn) { renderRequests(); ensureMyPresence(); }
-    renderMyStatus(); renderTeamBoard();
+    renderMyStatus(); applySidePin(); renderTeamBoard();
   }
   function renderLoginUsers() {
     const ul = $id("loginUsers"); if (!ul) return; ul.innerHTML = "";
@@ -3066,7 +3222,15 @@
   });
 
   $id("sideTab").addEventListener("click", () => { $id("sidePanel").hidden = false; renderTeamBoard(); setTimeout(() => $id("spSearch").focus(), 30); });
-  $id("spClose").addEventListener("click", () => { $id("sidePanel").hidden = true; });
+  $id("spClose").addEventListener("click", () => {
+    if (spPinned) { spPinned = false; try { localStorage.setItem("onething-sp-pin", "0"); } catch (_) {} }
+    $id("sidePanel").hidden = true; applySidePin();
+  });
+  $id("spPin").addEventListener("click", () => {
+    spPinned = !spPinned;
+    try { localStorage.setItem("onething-sp-pin", spPinned ? "1" : "0"); } catch (_) {}
+    applySidePin();
+  });
   $id("spSearch").addEventListener("input", (e) => { spQuery = e.target.value; renderTeamBoard(); });
 
   $id("statusClose").addEventListener("click", () => { $id("statusModal").hidden = true; });
@@ -3211,6 +3375,11 @@
     state.settings.shareOneThing = !state.settings.shareOneThing;
     $id("shareOtToggle").textContent = state.settings.shareOneThing ? t("rem_on") : t("rem_off");
     save(); republishPresence();
+  });
+  $id("teamFeedToggle").addEventListener("click", () => {
+    state.settings.teamFeed = !state.settings.teamFeed;
+    $id("teamFeedToggle").textContent = state.settings.teamFeed ? t("rem_on") : t("rem_off");
+    save(); renderTeamBoard();
   });
 
   $id("statsClose").addEventListener("click", () => { $id("statsModal").hidden = true; });
