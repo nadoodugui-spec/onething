@@ -2098,6 +2098,7 @@
   const STATUS_KEY = "onething-status";        // 이 기기에 기억되는 마지막 수동 상태
   let statusCache = {};                        // { userId: {state, ts} }
   let prevManualStatus = localStorage.getItem(STATUS_KEY) || "work";
+  if (prevManualStatus === "focus") prevManualStatus = "work";   // focus는 수동 상태가 아님 — 과거 잔류값 정리
   let beforeFocusStatus = null;                // 타이머 자동 전환 전 상태(복원용)
   let presenceUid = null;                      // onDisconnect가 등록된 사용자 id
   function myStatus() {
@@ -2107,7 +2108,7 @@
   function setMyStatus(state, opts) {
     if (!currentUser || !msgDb) return;
     const leavingFocus = myStatus() === "focus" && state !== "focus";
-    if (!opts || !opts.auto) { prevManualStatus = state; try { localStorage.setItem(STATUS_KEY, state); } catch (_) {} }
+    if ((!opts || !opts.auto) && state !== "focus") { prevManualStatus = state; try { localStorage.setItem(STATUS_KEY, state); } catch (_) {} }
     const rec = { state: state, ts: Date.now() };
     // 타이머 종료 예정 시각 — 설정에서 공개를 켠 경우에만 공유
     if (state === "focus" && opts && opts.until && sharesFocusTime()) rec.until = opts.until;
