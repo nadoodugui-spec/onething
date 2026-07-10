@@ -1036,6 +1036,7 @@
     rq_status_sent: { ko: "안 읽음", en: "Unread" },
     rq_status_read: { ko: "읽음", en: "Read" },
     rq_status_done: { ko: "완료", en: "Done" },
+    rq_status_onething: { ko: "⭐ 원씽으로 처리 중", en: "⭐ Doing as One Thing" },
     rq_to_todo: { ko: "내 할 일로 추가", en: "Add to my todos" },
     rq_done: { ko: "완료/확인", en: "Done" },
     rq_delete: { ko: "삭제", en: "Delete" },
@@ -1206,6 +1207,10 @@
     const cur = activeTodo(); if (cur && cur.id === id) return;
     if (cur) cur.status = "todo";
     td.status = "active"; td.activatedAt = Date.now();
+    // 요청에서 온 할 일이면 보낸 사람에게 '원씽으로 처리 중' 표시
+    if (td.reqId && msgDb && requestsCache[td.reqId] && requestsCache[td.reqId].status !== "done") {
+      try { msgDb.ref("requests/" + td.reqId + "/status").set("onething"); } catch (_) {}
+    }
     state.todos = [td, ...state.todos.filter((x) => x.id !== td.id)];
     leftUnlocked = false; resetTimer(true);
     save(); render(); republishPresence();
@@ -1213,6 +1218,10 @@
   }
   function putBack(id) {
     const td = state.todos.find((x) => x.id === id); if (!td) return;
+    // 원씽에서 내려놓으면 '원씽으로 처리 중' 표시 해제
+    if (td.reqId && msgDb && requestsCache[td.reqId] && requestsCache[td.reqId].status === "onething") {
+      try { msgDb.ref("requests/" + td.reqId + "/status").set("read"); } catch (_) {}
+    }
     td.status = "todo"; pauseTimer(); save(); render(); republishPresence(); toast(t("putback_done"));
   }
   function completeTodo(id) {
@@ -2142,6 +2151,13 @@
     $id("srKindTask").classList.toggle("active", k === "task");
     $id("sendReqText").style.display = k === "memo" ? "" : "none";
     $id("srTaskForm").hidden = k !== "task";
+    // 업무 요청은 넓게(900×700), 쪽지는 기존 크기
+    const box = $id("sendReqModal").querySelector(".modal-box");
+    if (box) {
+      box.style.width = k === "task" ? "min(94vw, 900px)" : "min(94vw, 580px)";
+      box.style.height = k === "task" ? "min(88vh, 700px)" : "";
+    }
+    const ed = $id("srEditor"); if (ed) { ed.style.minHeight = k === "task" ? "300px" : ""; ed.style.maxHeight = "none"; }
   }
   function renderAttList() {
     const ul = $id("srAttachList"); ul.innerHTML = "";
