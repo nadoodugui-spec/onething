@@ -126,8 +126,8 @@
   li.todo:hover { background: rgba(0,0,0,.035); }
   body[data-theme="dark"] li.todo:hover { background: rgba(255,255,255,.05); }
   /* 조용한 행 — 컨트롤은 마우스를 올렸을 때만 (터치 기기에선 항상 표시) */
-  li.todo .grip, li.todo .send-btn, li.todo .more-btn { opacity: 0; transition: opacity .12s ease; }
-  li.todo:hover .grip, li.todo:hover .send-btn, li.todo:hover .more-btn { opacity: 1; }
+  li.todo .grip, li.todo .send-btn, li.todo .more-btn, li.todo .ot-cancel { opacity: 0; transition: opacity .12s ease; }
+  li.todo:hover .grip, li.todo:hover .send-btn, li.todo:hover .more-btn, li.todo:hover .ot-cancel { opacity: 1; }
   .req-link { color: var(--accent) !important; }
   .rq-card.flash { box-shadow: 0 0 0 3px var(--accent); transition: box-shadow .3s ease; }
   /* 할 일 드래그 중: 오른쪽이 드롭 대상임을 안내 */
@@ -210,6 +210,11 @@
   .group-tabs .gt-prj.active .icon { color: var(--accent); }
   li.todo.prj-done .todo-text { text-decoration: line-through; color: var(--done); }
   li.todo.prj-done .check { color: var(--accent); border-color: var(--done); }
+  .prj-members { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin: 8px 0 10px; padding: 8px 12px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; font-size: .85rem; list-style: none; }
+  .prj-m { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: var(--text); }
+  .prj-m .row-x { opacity: .55; }
+  .prj-m .row-x:hover { opacity: 1; color: var(--danger); }
 
   /* todo detail panel */
   .detail {
@@ -270,6 +275,7 @@
   .date-nav button:hover { background: rgba(0,0,0,.06); color: var(--accent); }
   .today-btn { font-family: var(--font-body); font-size: .8rem !important; background: var(--accent) !important; color: #fff !important; border-radius: 12px !important; padding: 2px 10px !important; }
   .goal-badge { font-size: .95rem; font-weight: 600; color: var(--ok); margin: 2px 0 0 4px; }
+  .ot-tagline { font-size: .82rem; color: var(--text-soft); margin: -2px 0 2px 2px; }
 
   .log { margin-top: 12px; padding-left: 4px; flex: 1; display: flex; flex-direction: column; min-height: 0; }
   ul.history { list-style: none; margin: 0 0 8px; padding: 0; }
@@ -427,7 +433,7 @@
   #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 130; display: none; }
 
   /* ===== 모바일 최적화 ===== */
-  @media (max-width: 720px) {
+  @media (max-width: 900px) {
     body { padding: 8px 8px calc(52px + env(safe-area-inset-bottom)); height: auto; font-size: 14.5px; }
     /* 상단 바: 검색 한 줄 + 아이콘 도구 한 줄(라벨 숨김, 가로 스크롤) */
     .toolbar { margin-bottom: 8px; gap: 6px; }
@@ -798,6 +804,7 @@
           <button id="todayBtn" class="today-btn" data-i18n="today_btn" hidden>오늘</button>
         </div>
       </div>
+      <div class="ot-tagline" data-i18n="ot_tagline">다른 모든 것을 못 하더라도 꼭 해야 하는 단 하나!</div>
       <div class="goal-badge" id="goalBadge" data-i18n="goal_badge" hidden>⭐ 오늘의 원씽 달성!</div>
       <div class="log">
         <ul class="history" id="historyList"></ul>
@@ -1044,6 +1051,14 @@
     </div>
   </div>
 
+  <div class="modal" id="inviteModal" hidden style="z-index:110">
+    <div class="modal-box" style="width:min(94vw,380px)">
+      <div class="modal-head"><span data-i18n="prj_invite_head">프로젝트에 초대</span><button class="modal-close" id="invClose">✕</button></div>
+      <p class="modal-desc" data-i18n="prj_invite_desc">초대한 사람에게만 이 프로젝트 탭이 보여요.</p>
+      <div class="st-options" id="invList"></div>
+    </div>
+  </div>
+
   <div class="modal" id="forwardModal" hidden style="z-index:110">
     <div class="modal-box" style="width:min(94vw,380px)">
       <div class="modal-head"><span data-i18n="rq_fwd_head">다른 사람에게 전달</span><button class="modal-close" id="fwdClose">✕</button></div>
@@ -1165,8 +1180,8 @@
     cheer2: { ko: "가장 중요한 일이 끝났습니다 — 나머지는 덤입니다", en: "The most important thing is done — the rest is bonus" },
     cheer3: { ko: "흔들리지 않고 하나를 끝내는 것, 그게 실력입니다", en: "Finishing one thing without wavering — that's mastery" },
     cheer4: { ko: "작은 도미노가 쌓이고 있어요. 이 흐름을 믿으세요", en: "Small dominoes are stacking up. Trust the momentum" },
-    solved_status: { ko: "통과! 🎉 왼쪽을 엽니다", en: "Solved! 🎉 Opening the left" },
-    solved_toast: { ko: "퍼즐 통과! 왼쪽을 잠깐 열었어요 — 다 보면 ‘다시 집중’", en: "Puzzle solved! Left page opened — tap 'Refocus' when done" },
+    solved_status: { ko: "통과! 할 일 목록이 열립니다", en: "Solved! Opening your to-do list" },
+    solved_toast: { ko: "퍼즐 통과! 할 일 목록이 열렸어요 — 다 보면 ‘다시 집중’", en: "Puzzle solved! List opened — tap 'Refocus' when done" },
     pz_math_t: { ko: "🧮 계산 퍼즐", en: "🧮 Math puzzle" },
     pz_math_d: { ko: "답을 입력하면 왼쪽이 잠깐 열려요.", en: "Type the answer to open the left for a bit." },
     pz_order_t: { ko: "🔢 순서 맞추기", en: "🔢 Tap in order" },
@@ -1181,7 +1196,11 @@
     rep_daily: { ko: "매일 반복", en: "Daily" },
     rep_weekly: { ko: "매주 반복", en: "Weekly" },
     rep_none: { ko: "반복 없음", en: "No repeat" },
-    badge_prog: { ko: "진행 중 ▶", en: "In progress ▶" },
+    badge_prog: { ko: "◉ 원씽", en: "◉ One Thing" },
+    ot_cancel_t: { ko: "원씽 취소(목록으로 되돌리기)", en: "Cancel One Thing (back to list)" },
+    ot_tagline: { ko: "다른 모든 것을 못 하더라도 꼭 해야 하는 단 하나!", en: "The one thing you must do, even if nothing else gets done!" },
+    tt_reset: { ko: "카운트다운을 처음으로 (누적 집중 시간은 유지)", en: "Reset countdown (total focus time is kept)" },
+    tt_acc: { ko: "이 원씽에 쌓인 실제 집중 시간 — 리셋되지 않아요", en: "Total real focus on this One Thing — never resets" },
     send_swap: { ko: "이걸로 원씽 교체", en: "Swap the One Thing" },
     send_to: { ko: "오른쪽 원씽으로 보내기", en: "Send to the One Thing" },
     ti_more: { ko: "더보기", en: "More" },
@@ -1367,6 +1386,14 @@
     prj_todo_del: { ko: "이 항목을 삭제할까요? (팀 전체에서 삭제)", en: "Delete this item for everyone?" },
     grp_ctx_t: { ko: "우클릭: 이름 변경 · 드래그: 순서 이동", en: "Right-click: rename · Drag: reorder" },
     prj_owner_only: { ko: "프로젝트를 만든 사람(또는 관리자)만 바꿀 수 있어요", en: "Only the owner (or admin) can change this" },
+    prj_members: { ko: "멤버", en: "Members" },
+    prj_invite: { ko: "＋ 초대", en: "＋ Invite" },
+    prj_invite_head: { ko: "프로젝트에 초대", en: "Invite to project" },
+    prj_invite_desc: { ko: "초대한 사람에게만 이 프로젝트 탭이 보여요.", en: "Only invited members can see this project." },
+    prj_invited: { ko: "{0}님을 초대했어요", en: "Invited {0}" },
+    prj_inv_none: { ko: "초대할 사람이 없어요 — 모두 이미 멤버예요", en: "No one to invite — everyone's already in" },
+    prj_member_del_t: { ko: "내보내기", en: "Remove" },
+    prj_member_del_confirm: { ko: "'{0}'님을 이 프로젝트에서 내보낼까요?", en: "Remove '{0}' from this project?" },
     ds_btn: { ko: "오늘 요약 쪽지 보내기", en: "Send today's summary" },
     ds_head: { ko: "[오늘 업무 요약] {0}", en: "[Daily summary] {0}" },
     ds_ot: { ko: "완료한 원씽 {0}개", en: "{0} One Thing(s) done" },
@@ -1829,7 +1856,12 @@
     if (td.due) { const c = document.createElement("span"); const today = todayStr(); c.className = "chip" + (td.due < today ? " due-over" : td.due === today ? " due-soon" : ""); c.textContent = td.due.slice(5); li.append(c); }
     if (td.repeat) { const c = document.createElement("span"); c.className = "chip"; c.textContent = td.repeat === "daily" ? t("rep_daily") : t("rep_weekly"); li.append(c); }
     if (td.subtasks && td.subtasks.length) { const d = td.subtasks.filter((s) => s.done).length; const c = document.createElement("span"); c.className = "chip"; c.textContent = "☑ " + d + "/" + td.subtasks.length; li.append(c); }
-    if (td.status === "active") { const b = document.createElement("span"); b.className = "badge"; b.textContent = t("badge_prog"); li.append(b); }
+    if (td.status === "active") {
+      const b = document.createElement("span"); b.className = "badge"; b.textContent = t("badge_prog"); li.append(b);
+      const cx = document.createElement("button"); cx.className = "row-x ot-cancel"; cx.textContent = "✕"; cx.title = t("ot_cancel_t");
+      cx.addEventListener("click", () => putBack(td.id));
+      li.append(cx);
+    }
     else { const s = document.createElement("button"); s.className = "send-btn"; s.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>'; s.title = cur ? t("send_swap") : t("send_to"); s.addEventListener("click", () => sendToOneThing(td.id)); li.append(s); }
     if (td.reqId) {   // 요청에서 온 할 일 — 원본 요청 열기
       const rq = document.createElement("button"); rq.className = "more-btn req-link"; rq.title = t("ti_openreq");
@@ -1886,10 +1918,64 @@
     if (!currentUser || !msgDb) { toast(t("rq_offline")); return; }
     const name = (prompt(t("prj_name_prompt"), "") || "").trim(); if (!name) return;
     const pid = uid();
-    try { msgDb.ref("projects/" + pid).set({ name: name, owner: currentUser.id, ownerName: currentUser.name, createdAt: Date.now() }); } catch (_) {}
-    projectsCache[pid] = { name: name, owner: currentUser.id };   // 낙관적 반영
+    const members = {}; members[currentUser.id] = true;   // 초대제 — 만든 사람만으로 시작
+    try { msgDb.ref("projects/" + pid).set({ name: name, owner: currentUser.id, ownerName: currentUser.name, createdAt: Date.now(), members: members }); } catch (_) {}
+    projectsCache[pid] = { name: name, owner: currentUser.id, members: members };   // 낙관적 반영
     currentProject = pid; currentGroup = null;
     render();
+  }
+  // 초대받은 사람에게만 보임 (members 없는 구버전 프로젝트는 전체 공개로 유지)
+  function projectVisible(p) { return !p.members || (currentUser && p.members[currentUser.id]); }
+  let inviteTargetPid = null;
+  function openInvite(pid) {
+    const p = projectsCache[pid] || {}; if (!currentUser || !msgDb) return;
+    inviteTargetPid = pid;
+    const box = $id("invList"); box.innerHTML = "";
+    const memberSet = p.members ? new Set(Object.keys(p.members)) : new Set(Object.keys(usersCache));
+    const cands = Object.keys(usersCache).filter((u) => !memberSet.has(u))
+      .sort((a, b) => (((usersCache[a] || {}).name || "")).localeCompare((usersCache[b] || {}).name || ""));
+    if (!cands.length) { const e = document.createElement("div"); e.className = "sp-empty"; e.textContent = t("prj_inv_none"); box.append(e); }
+    cands.forEach((u) => {
+      const b = document.createElement("button"); b.className = "st-opt"; b.type = "button";
+      b.appendChild(statusDot(u));
+      const nm = document.createElement("span"); nm.textContent = toLabelOf(u); b.appendChild(nm);
+      b.addEventListener("click", () => {
+        try {
+          if (!p.members) {   // 구버전(전체 공개) → 현재 전원을 멤버로 확정한 뒤 추가
+            const m = {}; Object.keys(usersCache).forEach((x) => { m[x] = true; }); m[u] = true;
+            msgDb.ref("projects/" + pid + "/members").set(m);
+          } else msgDb.ref("projects/" + pid + "/members/" + u).set(true);
+        } catch (_) {}
+        $id("inviteModal").hidden = true;
+        toast(t("prj_invited", (usersCache[u] || {}).name || "?"));
+      });
+      box.append(b);
+    });
+    $id("inviteModal").hidden = false;
+  }
+  function buildPrjMemberBar(pid, p) {
+    const bar = document.createElement("div"); bar.className = "prj-members";
+    const lab = document.createElement("span"); lab.className = "mlabel"; lab.textContent = t("prj_members"); bar.append(lab);
+    const members = p.members ? Object.keys(p.members) : Object.keys(usersCache);
+    members.sort((a, b) => (a === p.owner ? -1 : b === p.owner ? 1 : 0)).forEach((u) => {
+      if (!usersCache[u]) return;
+      const chip = document.createElement("span"); chip.className = "prj-m";
+      chip.appendChild(statusDot(u));
+      chip.append(document.createTextNode(((usersCache[u] || {}).name || "?") + (u === p.owner ? " ★" : "")));
+      if (p.members && u !== p.owner && currentUser && (isAdmin() || p.owner === currentUser.id)) {
+        const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.title = t("prj_member_del_t");
+        x.addEventListener("click", () => {
+          if (!confirm(t("prj_member_del_confirm", (usersCache[u] || {}).name || "?"))) return;
+          try { msgDb.ref("projects/" + pid + "/members/" + u).remove(); } catch (_) {}
+        });
+        chip.append(x);
+      }
+      bar.append(chip);
+    });
+    const inv = document.createElement("button"); inv.className = "rq-btn"; inv.type = "button"; inv.textContent = t("prj_invite");
+    inv.addEventListener("click", () => openInvite(pid));
+    bar.append(inv);
+    return bar;
   }
   function deleteProject(pid) {
     const p = projectsCache[pid]; if (!p || !msgDb) return;
@@ -1900,37 +1986,82 @@
     if (currentProject === pid) currentProject = null;
     render();
   }
+  let prjDragId = null;
+  let prjDoneCollapsed = true;
+  function buildPrjLi(pid, td) {
+    const li = document.createElement("li");
+    li.className = "todo prio-" + (td.priority || "normal") + (td.done ? " prj-done" : "");
+    li.draggable = !td.done;
+    const grip = document.createElement("span"); grip.className = "grip"; grip.textContent = "⠿"; li.append(grip);
+    const check = document.createElement("button"); check.className = "check"; check.textContent = td.done ? "✓" : "";
+    check.title = t("ti_done");
+    check.addEventListener("click", () => {
+      if (!msgDb || !currentUser) return;
+      try {
+        msgDb.ref("projectTodos/" + pid + "/" + td.id).update(
+          td.done ? { done: false, doneBy: null, doneAt: null } : { done: true, doneBy: currentUser.name, doneAt: Date.now() });
+      } catch (_) {}
+    });
+    const text = document.createElement("span"); text.className = "todo-text"; text.textContent = td.text || "";
+    li.append(check, text);
+    const byName = td.done ? (td.doneBy || "") : (td.by || "");
+    if (byName) { const c = document.createElement("span"); c.className = "chip"; c.textContent = (td.done ? "✓ " : "") + byName; li.append(c); }
+    const x = document.createElement("button"); x.className = "more-btn"; x.textContent = "✕"; x.title = t("ti_delete");
+    x.addEventListener("click", () => { if (msgDb && confirm(t("prj_todo_del"))) { try { msgDb.ref("projectTodos/" + pid + "/" + td.id).remove(); } catch (_) {} } });
+    li.append(x);
+    li.addEventListener("dragstart", (e) => { prjDragId = td.id; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; });
+    li.addEventListener("dragend", () => { prjDragId = null; li.classList.remove("dragging"); document.querySelectorAll(".drop-into").forEach((n) => n.classList.remove("drop-into")); });
+    return li;
+  }
   function renderProjectTodos(box) {
     const pid = currentProject;
+    const p = projectsCache[pid] || {};
     const todos = projectTodosCache[pid] || {};
     const q = searchQuery.trim().toLowerCase();
-    const items = Object.keys(todos).map((k) => Object.assign({ id: k }, todos[k]))
-      .filter((td) => !q || (td.text || "").toLowerCase().includes(q))
-      .sort((a, b) => (!!a.done === !!b.done ? (a.ts || 0) - (b.ts || 0) : (a.done ? 1 : -1)));
-    if (!items.length) {
+    const all = Object.keys(todos).map((k) => Object.assign({ id: k }, todos[k]))
+      .filter((td) => !q || (td.text || "").toLowerCase().includes(q));
+    box.append(buildPrjMemberBar(pid, p));   // 멤버 바 + 초대
+    const open = all.filter((td) => !td.done).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    const doneItems = all.filter((td) => td.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+    if (!all.length) {
       const e = document.createElement("li"); e.className = "prio-empty"; e.style.listStyle = "none";
       e.textContent = q ? t("no_results") : t("prj_empty"); box.append(e); return;
     }
-    items.forEach((td) => {
-      const li = document.createElement("li"); li.className = "todo" + (td.done ? " prj-done" : "");
-      const check = document.createElement("button"); check.className = "check"; check.textContent = td.done ? "✓" : "";
-      check.title = t("ti_done");
-      check.addEventListener("click", () => {
-        if (!msgDb || !currentUser) return;
-        try {
-          msgDb.ref("projectTodos/" + pid + "/" + td.id).update(
-            td.done ? { done: false, doneBy: null, doneAt: null } : { done: true, doneBy: currentUser.name, doneAt: Date.now() });
-        } catch (_) {}
+    // Now / Next / Routine — Inbox와 동일한 구조, 드래그로 그룹 이동
+    PRIO_GROUPS.forEach((key) => {
+      const items = open.filter((td) => (td.priority || "normal") === key);
+      const group = document.createElement("div"); group.className = "prio-group";
+      const head = document.createElement("div"); head.className = "prio-head " + key;
+      head.innerHTML = '<span class="ph-label">' + t("prio_" + key) + '</span>';
+      const cnt = document.createElement("span"); cnt.className = "prio-count"; cnt.textContent = items.length ? "(" + items.length + ")" : ""; head.append(cnt);
+      group.append(head);
+      const ul = document.createElement("ul"); ul.className = "prio-list";
+      items.forEach((td) => ul.append(buildPrjLi(pid, td)));
+      if (!items.length && !q) { const e = document.createElement("li"); e.className = "prio-empty"; e.textContent = t("prio_drop"); ul.append(e); }
+      group.append(ul);
+      group.addEventListener("dragover", (e) => { if (prjDragId) { e.preventDefault(); group.classList.add("drop-into"); } });
+      group.addEventListener("dragleave", (e) => { if (!group.contains(e.relatedTarget)) group.classList.remove("drop-into"); });
+      group.addEventListener("drop", (e) => {
+        if (!prjDragId) return;
+        e.preventDefault(); group.classList.remove("drop-into");
+        try { msgDb.ref("projectTodos/" + pid + "/" + prjDragId + "/priority").set(key); } catch (_) {}
+        prjDragId = null;
       });
-      const text = document.createElement("span"); text.className = "todo-text"; text.textContent = td.text || "";
-      li.append(check, text);
-      const byName = td.done ? (td.doneBy || "") : (td.by || "");
-      if (byName) { const c = document.createElement("span"); c.className = "chip"; c.textContent = (td.done ? "✓ " : "") + byName; li.append(c); }
-      const x = document.createElement("button"); x.className = "more-btn"; x.textContent = "✕"; x.title = t("ti_delete");
-      x.addEventListener("click", () => { if (msgDb && confirm(t("prj_todo_del"))) { try { msgDb.ref("projectTodos/" + pid + "/" + td.id).remove(); } catch (_) {} } });
-      li.append(x);
-      box.append(li);
+      box.append(group);
     });
+    // 끝난 일 (접기, 최근 우선)
+    if (doneItems.length) {
+      const wrap = document.createElement("div"); wrap.className = "done-wrap" + (prjDoneCollapsed ? " collapsed" : "");
+      wrap.style.paddingLeft = "4px";
+      const head = document.createElement("div"); head.className = "done-head";
+      head.innerHTML = '<span class="tri">▾</span><span>' + t("done_h") + '</span><span class="done-count">(' + doneItems.length + ')</span><span class="done-line"></span>';
+      head.addEventListener("click", () => { prjDoneCollapsed = !prjDoneCollapsed; renderTodos(); });
+      wrap.append(head);
+      const ul = document.createElement("ul"); ul.className = "done-list";
+      if (!prjDoneCollapsed) doneItems.slice(0, 10).forEach((td) => ul.append(buildPrjLi(pid, td)));
+      wrap.append(ul);
+      box.append(wrap);
+    }
   }
 
   // ----- 폴더 탭 — 각 폴더는 독립된 할 일 목록 -----
@@ -1950,7 +2081,8 @@
     const entries = [];
     (state.groups || []).forEach((g) => entries.push({ key: "g:" + g.id, type: "g", g: g }));
     if (currentUser && cloudConfigured()) {
-      Object.keys(projectsCache).sort((a, b) => ((projectsCache[a] || {}).createdAt || 0) - ((projectsCache[b] || {}).createdAt || 0))
+      Object.keys(projectsCache).filter((pid) => projectVisible(projectsCache[pid] || {}))
+        .sort((a, b) => ((projectsCache[a] || {}).createdAt || 0) - ((projectsCache[b] || {}).createdAt || 0))
         .forEach((pid) => entries.push({ key: "p:" + pid, type: "p", pid: pid }));
     }
     const orderIdx = {};
@@ -2178,7 +2310,7 @@
       const timer = document.createElement("div"); timer.className = "timer";
       timer.innerHTML = '<span class="time" id="timeDisp">' + fmtMMSS(timerRemaining > 0 ? timerRemaining : pomoSec()) + '</span>'
         + '<button id="timerToggle">' + (timerRunning ? t("timer_pause") : t("timer_start")) + '</button>'
-        + '<button id="timerReset">↺</button><span class="focus-acc" id="focusAcc">' + t("focus_acc", fmtDur(cur.focusSec || 0)) + '</span>';
+        + '<button id="timerReset" title="' + t("tt_reset") + '">↺</button><span class="focus-acc" id="focusAcc" title="' + t("tt_acc") + '">' + t("focus_acc", fmtDur(cur.focusSec || 0)) + '</span>';
       const presetEl = document.createElement("div"); presetEl.className = "timer-presets";
       const pm = state.settings.pomodoroMin || 25; const presets = [15, 25, 30, 45, 60];
       let ph = '<span class="tp-label">' + t("tp_label") + '</span>';
@@ -2763,7 +2895,9 @@
     });
     msgDb.ref("projects").on("value", (snap) => {
       projectsCache = snap.val() || {};
-      if (currentProject && !projectsCache[currentProject]) { currentProject = null; render(); }
+      const cp = currentProject && projectsCache[currentProject];
+      if (currentProject && (!cp || !projectVisible(cp))) { currentProject = null; render(); }
+      else if (currentProject) render();   // 멤버 바 등 갱신
       else renderGroupTabs();
     });
     msgDb.ref("projectTodos").on("value", (snap) => {
@@ -3645,10 +3779,10 @@
   // ---------- events ----------
   function addFromInput(prio) {
     const i = $id("newTodo");
-    if (currentProject) {   // 프로젝트에 추가 (공유)
+    if (currentProject) {   // 프로젝트에 추가 (공유) — Enter 조합키로 우선순위 지정 가능
       const text = (i.value || "").trim(); if (!text) return;
       if (!msgDb || !currentUser) { toast(t("rq_offline")); return; }
-      try { msgDb.ref("projectTodos/" + currentProject + "/" + uid()).set({ text: text, done: false, ts: Date.now(), by: currentUser.name }); } catch (_) {}
+      try { msgDb.ref("projectTodos/" + currentProject + "/" + uid()).set({ text: text, done: false, ts: Date.now(), by: currentUser.name, priority: prio || "normal" }); } catch (_) {}
       i.value = ""; i.focus(); return;
     }
     addTodo(i.value, { priority: prio || "normal" });
@@ -3836,6 +3970,7 @@
   $id("progSave").addEventListener("click", saveProgress);
   $id("progText").addEventListener("keydown", (e) => { if (e.key === "Enter") saveProgress(); });
   $id("fwdClose").addEventListener("click", () => { $id("forwardModal").hidden = true; });
+  $id("invClose").addEventListener("click", () => { $id("inviteModal").hidden = true; });
   $id("rqSelBtn").addEventListener("click", () => { reqSelectMode = true; selectedReqIds = new Set(); updateManageUI(); renderRequests(); });
   $id("rqSelCancel").addEventListener("click", exitSelectMode);
   $id("rqSelDelBtn").addEventListener("click", () => {
