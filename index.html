@@ -993,6 +993,13 @@
           style="width:100%;margin-top:10px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:1rem;font-weight:600;outline:none;box-sizing:border-box" />
         <div class="mrow" style="margin-top:8px"><span class="mlabel" data-i18n="sr_due">마감일</span>
           <input id="srDue" type="date" style="border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);padding:5px 8px;outline:none" />
+          <span class="mlabel" style="margin-left:10px" data-i18n="sr_repeat">반복</span>
+          <select id="srRepeat" style="border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);padding:5px 6px;outline:none">
+            <option value="" data-i18n="rep_none2">없음</option>
+            <option value="daily" data-i18n="rep_d">매일</option>
+            <option value="weekly" data-i18n="rep_w">매주</option>
+            <option value="monthly" data-i18n="rep_m">매월</option>
+          </select>
           <span class="mlabel" style="margin-left:10px" data-i18n="sr_tpl">템플릿</span>
           <select id="srTplSel" style="border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);padding:5px 8px;outline:none;max-width:150px"></select>
           <button id="srTplSave" class="rq-btn" type="button" data-i18n="sr_tpl_save">현재 내용 저장</button>
@@ -1415,6 +1422,16 @@
     rq_fwd_by: { ko: "{0}님이 전달", en: "Forwarded by {0}" },
     rq_search_ph: { ko: "요청 검색(내용·이름)…", en: "Search requests…" },
     rq_due_sum: { ko: "오늘 마감 {0}건 · 지난 마감 {1}건이 있어요", en: "{0} due today · {1} overdue" },
+    rq_remind: { ko: "리마인드", en: "Remind" },
+    rq_reminded: { ko: "리마인드를 보냈어요", en: "Reminder sent" },
+    rq_nudged: { ko: "{0}님이 요청을 리마인드했어요", en: "{0} sent a reminder" },
+    rq_overdue: { ko: "지연", en: "Overdue" },
+    sr_repeat: { ko: "반복", en: "Repeat" },
+    rep_none2: { ko: "없음", en: "None" },
+    rep_d: { ko: "매일", en: "Daily" },
+    rep_w: { ko: "매주", en: "Weekly" },
+    rep_m: { ko: "매월", en: "Monthly" },
+    rq_repeat_pill: { ko: "반복 {0}", en: "Repeats {0}" },
     prj_add: { ko: "＋ Project", en: "＋ Project" },
     prj_add_t: { ko: "팀과 공유하는 프로젝트 목록 만들기", en: "Create a shared project list" },
     prj_name_prompt: { ko: "Project 이름을 입력하세요", en: "Project name" },
@@ -3246,7 +3263,7 @@
     const search = $id("srToSearch"); if (search) search.value = "";
     const menu = $id("srToMenu"); if (menu) menu.hidden = true;
     renderToChips();
-    $id("sendReqText").value = ""; $id("srTitle").value = ""; $id("srEditor").innerHTML = ""; $id("srDue").value = "";
+    $id("sendReqText").value = ""; $id("srTitle").value = ""; $id("srEditor").innerHTML = ""; $id("srDue").value = ""; $id("srRepeat").value = "";
     pendingAtts = []; renderAttList();
     $id("sendReqMsg").textContent = "";
     setComposeKind(kind === "task" ? "task" : "memo");
@@ -3277,6 +3294,7 @@
       if (total > ATT_TOTAL_MAX) { $id("sendReqMsg").textContent = t("sr_att_total"); return; }
       rec.title = title; rec.html = html; rec.text = title;
       const due = $id("srDue").value; if (due) rec.due = due;
+      const rpt = $id("srRepeat").value; if (rpt) rec.repeat = rpt;
       if (pendingAtts.length) rec.attachments = pendingAtts;
     }
     msgDb.ref("requests/" + uid()).set(rec);
@@ -3427,6 +3445,10 @@
     const pill = document.createElement("span"); pill.className = "rq-status-pill pill-" + st;
     pill.textContent = t("rq_status_" + stKey);
     meta.appendChild(pill);
+    if (r.due && st !== "done" && r.due < todayStr()) {   // 마감 지연 표시 (양쪽)
+      const od = document.createElement("span"); od.className = "rq-status-pill pill-sent"; od.textContent = t("rq_overdue");
+      meta.appendChild(od);
+    }
     if (r.addedTodo && st !== "done" && st !== "onething" && kind === "sent") {
       const ap = document.createElement("span"); ap.className = "rq-status-pill pill-read"; ap.textContent = t("rq_added_by");
       meta.appendChild(ap);
@@ -3520,6 +3542,12 @@
       acts.appendChild(reqBtn(t("rq_delete"), () => hideRequest(r.id)));
     } else {
       acts.appendChild(reqBtn(t("rq_reply"), () => doReply(r.id)));
+      if (st !== "done") {
+        acts.appendChild(reqBtn(t("rq_remind"), () => {   // 재촉 — 상대에게 알림 한 번 더
+          try { msgDb.ref("requests/" + r.id + "/nudge").set({ ts: Date.now(), by: currentUser.name }); } catch (_) {}
+          toast(t("rq_reminded"));
+        }));
+      }
       acts.appendChild(reqBtn(t("rq_delete"), () => hideRequest(r.id)));
     }
     li.appendChild(acts);
@@ -3718,6 +3746,31 @@
     return s;
   }
   let knownTos = null;   // 전달 감지용: 요청별 수신자
+  let knownNudges = null;   // 리마인드 감지용
+  function snapshotNudges(ids) {
+    const m = {}; ids.forEach((id) => { const r = requestsCache[id]; m[id] = (r && r.nudge && r.nudge.ts) || 0; });
+    return m;
+  }
+  // 반복 요청: 보낸 사람 접속 시 주기가 지난 반복 요청을 자동 재발송
+  function checkRepeats() {
+    if (!currentUser || !msgDb) return;
+    const now = Date.now();
+    Object.keys(requestsCache).forEach((id) => {
+      const r = requestsCache[id];
+      if (!r || r.from !== currentUser.id || !r.repeat) return;
+      const iv = r.repeat === "daily" ? 864e5 : r.repeat === "weekly" ? 7 * 864e5 : 30 * 864e5;
+      if (now - (r.ts || 0) < iv) return;
+      const nid = uid();
+      const copy = { from: r.from, fromName: r.fromName, to: r.to, toName: r.toName, kind: r.kind || "memo",
+        ts: now, status: "sent", replies: [], hiddenFor: [], repeat: r.repeat };
+      if (r.title) copy.title = r.title;
+      if (r.html) copy.html = r.html;
+      if (r.text) copy.text = r.text;
+      if (r.attachments) copy.attachments = r.attachments;
+      if (r.due) copy.due = todayStr();
+      try { msgDb.ref("requests/" + nid).set(copy); msgDb.ref("requests/" + id + "/repeat").set(null); } catch (_) {}
+    });
+  }
   function snapshotTos(ids) {
     const m = {}; ids.forEach((id) => { const r = requestsCache[id]; m[id] = (r && r.to) || ""; });
     return m;
@@ -3744,7 +3797,8 @@
       knownRepCounts = snapshotRepCounts(ids);
       knownStatuses = snapshotStatuses(ids);
       knownTos = snapshotTos(ids);
-      if (currentUser) dueSummaryToast();
+      knownNudges = snapshotNudges(ids);
+      if (currentUser) { dueSummaryToast(); setTimeout(checkRepeats, 1500); }
       return;
     }
     ids.forEach((id) => {
@@ -3813,6 +3867,22 @@
       });
     }
     knownTos = tos;
+    // ----- 리마인드(재촉) 감지 -----
+    const nudges = snapshotNudges(ids);
+    if (knownNudges && currentUser) {
+      ids.forEach((id) => {
+        const r = requestsCache[id]; if (!r || r.to !== currentUser.id) return;
+        if ((r.hiddenFor || []).includes(currentUser.id)) return;
+        if (!(nudges[id] > (knownNudges[id] || 0))) return;
+        if (myStatus() === "focus") { pendingNotifyIds.add(id); return; }
+        toast(t("rq_nudged", (r.nudge && r.nudge.by) || r.fromName || "?"));
+        try {
+          if (document.hidden && window.Notification && Notification.permission === "granted")
+            new Notification(t("rq_nudged", (r.nudge && r.nudge.by) || "?"), { body: r.title || r.text || "", icon: "icon-192.png" });
+        } catch (_) {}
+      });
+    }
+    knownNudges = nudges;
   }
   function openReqPopup(tab) { if (!currentUser) { showLoginGate(); return; } setReqTab(tab); setReqKind(reqKind); $id("reqPopup").hidden = false; }
   // 할 일에서 원본 요청 카드 열기
