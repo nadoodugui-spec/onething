@@ -151,15 +151,6 @@
     justify-content: center; font-size: .95rem; color: var(--accent); line-height: 1;
   }
   .check:hover { border-color: var(--accent); }
-  .dot {
-    width: 15px; height: 15px; border-radius: 50%; flex: none; cursor: pointer;
-    border: 2px solid var(--border); background: transparent;
-  }
-  .dot.red { background: #e06b5a; border-color: #e06b5a; }
-  .dot.yellow { background: #e9c14e; border-color: #e9c14e; }
-  .dot.green { background: #6db36b; border-color: #6db36b; }
-  .dot.blue { background: #5b91d8; border-color: #5b91d8; }
-  .dot.purple { background: #a87ad0; border-color: #a87ad0; }
   .todo-text { flex: 1; min-width: 80px; cursor: text; word-break: break-word; }
   li.todo.active .todo-text { font-weight: 700; }
   .chip {
@@ -250,6 +241,9 @@
   }
   .detail-actions input[type="date"] { border: none; background: rgba(0,0,0,.07); border-radius: 12px; padding: 3px 8px; font-family: var(--font-body); color: var(--ink); }
   .detail-actions .del:hover { background: #f0c9c0; color: #a3402e; }
+  .det-prio.sel-urgent { background: var(--prio-urgent) !important; color: #fff !important; }
+  .det-prio.sel-important { background: var(--prio-important) !important; color: #fff !important; }
+  .det-prio.sel-normal { background: var(--text-soft) !important; color: #fff !important; }
 
   /* ===== Later section (왼쪽, 끝난 일 위) ===== */
   .later-wrap { margin-top: 20px; padding-left: 12px; }
@@ -772,7 +766,6 @@
       <button id="langBtn" data-act="lang" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z"/></svg><span id="langLabel">EN</span></button>
       <button data-act="stats" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 20v-8M10 20V5M16 20v-5M21 20H3"/></svg><span data-i18n="t_stats">통계</span></button>
       <button data-act="trash" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg><span data-i18n="t_trash">휴지통</span></button>
-      <button data-act="backup" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M4 19h16"/></svg><span data-i18n="t_backup">백업</span></button>
       <button data-act="settings" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.5-2.4 1a7 7 0 00-2-1.2L14 3h-4l-.5 2.6a7 7 0 00-2 1.2l-2.4-1-2 3.5 2 1.5A7 7 0 005 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.5 2.4-1a7 7 0 002 1.2L10 21h4l.5-2.6a7 7 0 002-1.2l2.4 1 2-3.5-2-1.5c.1-.4.1-.8.1-1.2z"/></svg><span data-i18n="t_settings">설정</span></button>
       <button data-act="help" type="button" title="도움말"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 114 2c-.8.6-1.5 1.1-1.5 2.2M12 17h.01"/></svg></button>
       <button data-act="status" type="button" id="statusBtn" hidden><span class="st-dot st-work" id="stDot"></span><span id="stLabel"></span> ▾</button>
@@ -880,15 +873,6 @@
     <div class="modal-box">
       <div class="modal-head"><span data-i18n="sync_head">☁️ 기기 간 동기화</span><button class="modal-close" id="syncClose">✕</button></div>
       <div class="sync-state" id="syncState"></div>
-      <div class="mlabel" style="margin-bottom:6px" data-i18n-html="sync_label">동기화 코드 — 두 기기에 <b>똑같이</b> 입력하세요</div>
-      <div class="mrow sync-row">
-        <input id="syncCodeInput" type="text" data-i18n-ph="sync_ph" placeholder="예: my-note-7Fk29q" autocomplete="off" />
-        <button id="syncSaveBtn" class="mbtn" data-i18n="save_btn">저장</button>
-      </div>
-      <div class="mrow">
-        <button id="syncGenBtn" class="mbtn ghost" data-i18n="sync_gen">🎲 새 코드 만들기</button>
-        <button id="syncCopyBtn" class="mbtn ghost" data-i18n="sync_copy">📋 코드 복사</button>
-      </div>
       <p class="sync-help" id="syncHelp"></p>
     </div>
   </div>
@@ -914,6 +898,9 @@
       <div class="mrow"><span class="mlabel" data-i18n="set_teamfeed">팀 최근 활동 표시(사이드바)</span>
         <button id="teamFeedToggle" class="seg-toggle mbtn ghost"></button>
       </div>
+      <div class="mrow"><span class="mlabel" data-i18n="t_backup">백업</span>
+        <button id="openBackupBtn" class="mbtn ghost" data-i18n="set_backup_open">백업 열기</button>
+      </div>
     </div>
   </div>
 
@@ -938,9 +925,11 @@
       <div class="modal-head"><span data-i18n="backup_head">💾 백업</span><button class="modal-close" id="backupClose">✕</button></div>
       <p class="modal-desc" data-i18n="backup_desc">클라우드와 별개로, 파일로 백업하고 불러올 수 있어요. (불러오면 현재 내용을 덮어씁니다 — 확인 후 진행)</p>
       <div class="mrow">
-        <button id="exportBtn" class="mbtn" data-i18n="export_btn">⬇️ 파일로 내보내기</button>
-        <button id="importBtn" class="mbtn ghost" data-i18n="import_btn">⬆️ 파일에서 불러오기</button>
+        <button id="exportBtn" class="mbtn" data-i18n="export_btn">파일로 내보내기</button>
+        <button id="importBtn" class="mbtn ghost" data-i18n="import_btn">파일에서 불러오기</button>
       </div>
+      <div class="mrow"><button id="exportAllBtn" class="mbtn ghost" hidden data-i18n="bk_all">전체 백업 — 팀 데이터 포함 (관리자)</button></div>
+      <p class="modal-desc" style="margin-top:8px" data-i18n="bk_scope">일반 백업에는 내 할 일만 담겨요. 요청·프로젝트까지 담으려면 전체 백업(관리자)을 사용하세요.</p>
     </div>
   </div>
 
@@ -1575,6 +1564,16 @@
     wk_story: { ko: "이번 주 도미노 {0}개를 넘어뜨렸고, {1}을 '단 하나'에 썼습니다.", en: "This week you toppled {0} dominoes and spent {1} on the one thing." },
     wk_guard: { ko: "집중하는 동안 알림 {0}건이 조용히 기다렸습니다 — 지켜진 집중이에요.", en: "{0} notifications waited quietly while you focused — protected focus." },
     cmd_ph: { ko: "전체 검색 — 할 일 · 요청 · 프로젝트 (Ctrl+K)", en: "Search everything — todos · requests · projects (Ctrl+K)" },
+    set_backup_open: { ko: "백업 열기", en: "Open backup" },
+    bk_all: { ko: "전체 백업 — 팀 데이터 포함 (관리자)", en: "Full backup — team data (admin)" },
+    bk_scope: { ko: "일반 백업에는 내 할 일만 담겨요. 요청·프로젝트까지 담으려면 전체 백업(관리자)을 사용하세요.", en: "Regular backup covers only your to-dos. Use full backup (admin) for requests & projects." },
+    pin_reset: { ko: "PIN 재설정", en: "Reset PIN" },
+    pin_new_prompt: { ko: "{0}님의 새 4자리 PIN을 입력하세요", en: "New 4-digit PIN for {0}" },
+    pin_reset_done: { ko: "PIN을 재설정했어요", en: "PIN has been reset" },
+    break_btn: { ko: "휴식 5분", en: "Break 5m" },
+    break_t: { ko: "5분 휴식 후 다시 집중", en: "5-minute break, then refocus" },
+    break_started: { ko: "휴식 시작 — 5분 뒤에 알려드릴게요", en: "Break started — I'll ping you in 5 minutes" },
+    break_done: { ko: "휴식 끝 — 다시 단 하나로 돌아갈 시간이에요", en: "Break's over — back to your one thing" },
     cmd_todos: { ko: "할 일", en: "To-dos" },
     cmd_reqs: { ko: "요청", en: "Requests" },
     cmd_prj: { ko: "프로젝트", en: "Projects" },
@@ -1765,8 +1764,6 @@
     else if (kind === "history") { const h = state.history.find((x) => x.id === id); if (!h || !v) return; h.text = v; }
     save(); render();
   }
-  const COLORS = [null, "red", "yellow", "green", "blue", "purple"];
-  function cycleColor(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; const i = COLORS.indexOf(t.color || null); t.color = COLORS[(i + 1) % COLORS.length]; save(); render(); }
   function setDue(id, v) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.due = v || null; save(); render(); }
   function cycleRepeat(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.repeat = t.repeat === null ? "daily" : t.repeat === "daily" ? "weekly" : null; save(); render(); }
   function toggleLater(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; if (t.status === "active") { t.status = "todo"; pauseTimer(); } t.later = !t.later; save(); render(); }
@@ -1800,8 +1797,22 @@
   let timerRunning = false, timerRemaining = 0, timerIv = null;
   function pomoSec() { return (state.settings.pomodoroMin || 25) * 60; }
   function resetTimer(silent) { pauseTimer(); timerRemaining = pomoSec(); if (!silent) updateTimerUI(); }
+  let breakIv = null, breakRemaining = 0;
+  function startBreak() {   // 집중 사이클: 5분 휴식
+    pauseTimer();
+    if (breakIv) clearInterval(breakIv);
+    breakRemaining = 300;
+    const d0 = $id("timeDisp"); if (d0) d0.textContent = fmtMMSS(breakRemaining);
+    breakIv = setInterval(() => {
+      breakRemaining--;
+      const d = $id("timeDisp"); if (d) d.textContent = fmtMMSS(breakRemaining);
+      if (breakRemaining <= 0) { clearInterval(breakIv); breakIv = null; beep(); toast(t("break_done")); resetTimer(); }
+    }, 1000);
+    toast(t("break_started"));
+  }
   function startTimer() {
     const a = activeTodo(); if (!a) return;
+    if (breakIv) { clearInterval(breakIv); breakIv = null; }   // 휴식 중이면 종료
     if (timerRemaining <= 0) timerRemaining = pomoSec();
     timerRunning = true; requestNotify();
     if (myStatus() !== "focus") beforeFocusStatus = myStatus();
@@ -2389,6 +2400,13 @@
     si.addEventListener("keydown", (e) => { if (e.key === "Enter") { addSub(td.id, si.value); } });
     sa.append(si); d.append(sa);
     const act = document.createElement("div"); act.className = "detail-actions";
+    // 우선순위 변경 (모바일에서도 가능하게)
+    PRIO_GROUPS.forEach((key) => {
+      const pb = document.createElement("button"); pb.textContent = t("prio_" + key);
+      pb.className = "det-prio" + ((td.priority || "normal") === key ? " sel-" + key : "");
+      pb.addEventListener("click", () => { td.priority = key; save(); render(); });
+      act.append(pb);
+    });
     const due = document.createElement("input"); due.type = "date"; due.value = td.due || ""; due.title = t("ti_due"); due.addEventListener("change", () => setDue(td.id, due.value));
     const rep = document.createElement("button"); rep.textContent = td.repeat ? (td.repeat === "daily" ? t("rep_daily") : t("rep_weekly")) : t("rep_none"); rep.addEventListener("click", () => cycleRepeat(td.id));
     const lat = document.createElement("button"); lat.textContent = t("ti_later"); lat.addEventListener("click", () => toggleLater(td.id));
@@ -2403,6 +2421,12 @@
     const head = document.createElement("div"); head.className = "ot-subs-head";
     head.textContent = subs.length ? t("subs_head", doneN, subs.length) : t("subs_empty");
     wrap.append(head);
+    if (subs.length) {   // 하위 할 일 진행률 바
+      const bar = document.createElement("div"); bar.className = "ms-bar"; bar.style.height = "6px"; bar.style.margin = "2px 0 8px";
+      const fill = document.createElement("div"); fill.className = "ms-fill"; fill.style.width = Math.round((doneN / subs.length) * 100) + "%";
+      if (!doneN) fill.style.minWidth = "0";
+      bar.append(fill); wrap.append(bar);
+    }
     const ul = document.createElement("ul"); ul.className = "ot-sub-list";
     subs.forEach((s) => {
       const li = document.createElement("li");
@@ -2469,7 +2493,9 @@
       const timer = document.createElement("div"); timer.className = "timer";
       timer.innerHTML = '<span class="time" id="timeDisp">' + fmtMMSS(timerRemaining > 0 ? timerRemaining : pomoSec()) + '</span>'
         + '<button id="timerToggle">' + (timerRunning ? t("timer_pause") : t("timer_start")) + '</button>'
-        + '<button id="timerReset" title="' + t("tt_reset") + '">↺</button><span class="focus-acc" id="focusAcc" title="' + t("tt_acc") + '">' + t("focus_acc", fmtDur(cur.focusSec || 0)) + '</span>';
+        + '<button id="timerReset" title="' + t("tt_reset") + '">↺</button>'
+        + '<button id="breakBtn" title="' + t("break_t") + '">' + t("break_btn") + '</button>'
+        + '<span class="focus-acc" id="focusAcc" title="' + t("tt_acc") + '">' + t("focus_acc", fmtDur(cur.focusSec || 0)) + '</span>';
       const presetEl = document.createElement("div"); presetEl.className = "timer-presets";
       const pm = state.settings.pomodoroMin || 25; const presets = [15, 25, 30, 45, 60];
       let ph = '<span class="tp-label">' + t("tp_label") + '</span>';
@@ -2480,7 +2506,7 @@
       const done = document.createElement("button"); done.className = "complete-btn"; done.innerHTML = '<span class="box"></span> ' + t("complete"); done.addEventListener("click", () => completeTodo(cur.id));
       foot.append(done); card.append(text, buildOtSubs(cur), timer, presetEl, foot); slot.append(card);
       $id("rightHint").textContent = t("hint_active");
-      setTimeout(() => { const tb = $id("timerToggle"), tr = $id("timerReset"); if (tb) tb.onclick = toggleTimer; if (tr) tr.onclick = () => resetTimer(); }, 0);
+      setTimeout(() => { const tb = $id("timerToggle"), tr = $id("timerReset"), bb = $id("breakBtn"); if (tb) tb.onclick = toggleTimer; if (tr) tr.onclick = () => resetTimer(); if (bb) bb.onclick = startBreak; }, 0);
     } else if (isToday) {
       const empty = document.createElement("div"); empty.className = "empty-ot";
       empty.innerHTML = EMPTY_OT_SVG + "<div>" + t("empty_ot") + "</div>";
@@ -2695,6 +2721,27 @@
     });
     $id("trashModal").hidden = false;
   }
+  function openBackup() {
+    const ab = $id("exportAllBtn"); if (ab) ab.hidden = !isAdmin();
+    $id("backupModal").hidden = false;
+  }
+  function downloadJson(obj, name) {
+    try {
+      const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+      a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+      toast(t("bk_exported"));
+    } catch (e) { toast(t("bk_export_fail")); }
+  }
+  function exportAllBackup() {   // 관리자: 팀 데이터 전체 (PIN은 제외)
+    const users = {};
+    Object.keys(usersCache).forEach((id) => {
+      const u = Object.assign({}, usersCache[id]); delete u.pin; delete u.pinH; users[id] = u;
+    });
+    downloadJson({ exportedAt: Date.now(), users: users, requests: requestsCache, projects: projectsCache, projectTodos: projectTodosCache, status: statusCache },
+      "onething-full-backup-" + todayStr() + ".json");
+  }
   function exportBackup() {
     try {
       const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -2728,11 +2775,10 @@
   }
 
   // ---------- cloud sync ----------
-  const SYNC_CODE_KEY = "onething-sync-code", CLIENT_KEY = "onething-client";
+  const CLIENT_KEY = "onething-client";
   let clientId = localStorage.getItem(CLIENT_KEY); if (!clientId) { clientId = uid() + uid(); try { localStorage.setItem(CLIENT_KEY, clientId); } catch (_) {} }
   let syncRef = null, cloudReady = false, lastTs = 0, applyingRemote = false;
   let authReady = false, cloudStarted = false;   // 익명 인증 완료/클라우드 연결 시작 여부
-  function getSyncCode() { return (localStorage.getItem(SYNC_CODE_KEY) || "").trim(); }
   function cloudConfigured() { return typeof firebase !== "undefined" && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL; }
   function initSync() {
     if (!cloudConfigured()) { setSyncStatus("unconfigured"); return; }
@@ -2764,13 +2810,9 @@
     chip.textContent = c; if (stateEl) { stateEl.textContent = m; stateEl.className = "sync-state " + cls; }
   }
   function refreshSyncState() { if (!cloudConfigured()) setSyncStatus("unconfigured"); else if (!currentUser) setSyncStatus("nocode"); else if (cloudReady) setSyncStatus("ok"); else setSyncStatus("nocode"); }
-  function saveSyncCode(code) { code = (code || "").trim(); try { localStorage.setItem(SYNC_CODE_KEY, code); } catch (_) {} initSync(); refreshSyncState(); if (code && cloudConfigured()) toast(t("s_saved")); }
-  function genCode() { const p = () => Math.random().toString(36).slice(2, 6); return "note-" + p() + p(); }
   function openSync() {
-    const box = $id("syncModal");
-    box.querySelectorAll(".mlabel, .sync-row, .mrow").forEach((el) => { el.style.display = "none"; });
     $id("syncHelp").textContent = t("sync_acct_help");
-    refreshSyncState(); box.hidden = false;
+    refreshSyncState(); $id("syncModal").hidden = false;
   }
 
   // ===== 요청(메신저) — 노트와 분리된 별도 데이터 =====
@@ -3132,9 +3174,16 @@
       const li = document.createElement("li");
       const dot = statusDot(id);
       const tx = document.createElement("span"); tx.className = "mtext"; tx.textContent = u.name || "?";
+      const rp = document.createElement("button"); rp.textContent = t("pin_reset");
+      rp.addEventListener("click", async () => {
+        const np = (prompt(t("pin_new_prompt", u.name || "?"), "") || "").trim();
+        if (!np) return;
+        if (!/^\d{4}$/.test(np)) { toast(t("rq_need_pin")); return; }
+        try { msgDb.ref("users/" + id).update({ pinH: await hashPin(np), pin: null }); toast(t("pin_reset_done")); } catch (_) {}
+      });
       const del = document.createElement("button"); del.textContent = t("um_del");
       del.addEventListener("click", () => deleteUser(id));
-      li.append(dot, tx, del); ul.append(li);
+      li.append(dot, tx, rp, del); ul.append(li);
     });
     if (!ul.children.length) { const li = document.createElement("li"); li.className = "empty-note"; li.textContent = t("lg_empty"); ul.append(li); }
   }
@@ -3155,22 +3204,36 @@
     for (const id in usersCache) if (((usersCache[id] || {}).name || "").trim() === name) return Object.assign({ id }, usersCache[id]);
     return null;
   }
-  function registerUser(name, pin) {
+  // PIN은 해시로 저장 (평문 노출 방지). 구버전 평문 PIN은 로그인 성공 시 자동 전환.
+  async function hashPin(pin) {
+    try {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("ot#" + pin));
+      return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    } catch (_) { return "plain:" + pin; }
+  }
+  async function registerUser(name, pin) {
     name = (name || "").trim(); pin = (pin || "").trim();
     if (!name) return { ok: false, msg: t("rq_need_name") };
     if (!/^\d{4}$/.test(pin)) return { ok: false, msg: t("rq_need_pin") };
     if (!msgDb) return { ok: false, msg: t("rq_offline") };
     if (findUserByName(name)) return { ok: false, msg: t("rq_dup_name") };
-    const id = uid(); const rec = { name, pin, createdAt: Date.now() };
+    const id = uid(); const rec = { name: name, pinH: await hashPin(pin), createdAt: Date.now() };
     msgDb.ref("users/" + id).set(rec);
     usersCache[id] = rec;                                   // 낙관적 반영
     localStorage.setItem(USER_KEY, JSON.stringify({ id, name }));
     resolveCurrentUser(); switchNotebook();
     return { ok: true };
   }
-  function loginUser(id, pin) {
+  async function loginUser(id, pin) {
     const u = usersCache[id]; if (!u) return { ok: false, msg: t("rq_no_user") };
-    if ((u.pin || "") !== (pin || "").trim()) return { ok: false, msg: t("rq_wrong_pin") };
+    pin = (pin || "").trim();
+    let ok = false;
+    if (u.pinH) ok = (await hashPin(pin)) === u.pinH;
+    else ok = (u.pin || "") === pin;
+    if (!ok) return { ok: false, msg: t("rq_wrong_pin") };
+    if (!u.pinH && msgDb) {   // 평문 → 해시 자동 전환
+      try { const h = await hashPin(pin); msgDb.ref("users/" + id).update({ pinH: h, pin: null }); u.pinH = h; delete u.pin; } catch (_) {}
+    }
     localStorage.setItem(USER_KEY, JSON.stringify({ id, name: u.name }));
     resolveCurrentUser(); switchNotebook();
     return { ok: true };
@@ -3416,9 +3479,9 @@
     setTimeout(() => inp.focus(), 30);
   }
   function closePinModal() { $id("pinModal").hidden = true; pinTargetId = null; }
-  function submitPin() {
+  async function submitPin() {
     if (!pinTargetId) return;
-    const r = loginUser(pinTargetId, ($id("pinInput").value || "").trim());
+    const r = await loginUser(pinTargetId, ($id("pinInput").value || "").trim());
     if (r.ok) { closePinModal(); hideLoginGate(); toast(t("lg_welcome", currentUser.name)); }
     else { $id("pinMsg").textContent = r.msg; const inp = $id("pinInput"); inp.value = ""; inp.focus(); }
   }
@@ -3823,6 +3886,17 @@
     const m = {}; ids.forEach((id) => { const r = requestsCache[id]; m[id] = (r && r.nudge && r.nudge.ts) || 0; });
     return m;
   }
+  // 완료 후 90일 지난 요청 자동 정리 (용량·로딩 보호, 한 번에 최대 50건)
+  function cleanupOldRequests() {
+    if (!msgDb || !currentUser) return;
+    const cutoff = Date.now() - 90 * 864e5;
+    const updates = {}; let n = 0;
+    Object.keys(requestsCache).forEach((id) => {
+      const r = requestsCache[id];
+      if (r && r.status === "done" && (r.doneAt || r.ts || 0) < cutoff && n < 50) { updates[id] = null; n++; }
+    });
+    if (n) { try { msgDb.ref("requests").update(updates); } catch (_) {} }
+  }
   // 반복 요청: 보낸 사람 접속 시 주기가 지난 반복 요청을 자동 재발송
   function checkRepeats() {
     if (!currentUser || !msgDb) return;
@@ -3870,7 +3944,7 @@
       knownStatuses = snapshotStatuses(ids);
       knownTos = snapshotTos(ids);
       knownNudges = snapshotNudges(ids);
-      if (currentUser) { dueSummaryToast(); setTimeout(checkRepeats, 1500); }
+      if (currentUser) { dueSummaryToast(); setTimeout(checkRepeats, 1500); setTimeout(cleanupOldRequests, 4000); }
       return;
     }
     ids.forEach((id) => {
@@ -4077,7 +4151,7 @@
     const b = e.target.closest("button"); if (!b) return; const act = b.dataset.act;
     if (act === "lang") toggleLang();
     else if (act === "stats") openStats(); else if (act === "trash") openTrash();
-    else if (act === "backup") $id("backupModal").hidden = false; else if (act === "settings") openSettings(); else if (act === "help") $id("helpModal").hidden = false;
+    else if (act === "settings") openSettings(); else if (act === "help") $id("helpModal").hidden = false;
     else if (act === "user") { if (currentUser) { $id("userWho").textContent = t("um_who", currentUser.name); renderMembers(); $id("userModal").hidden = false; } else showLoginGate(); }
     else if (act === "status") { if (currentUser) { renderMyStatus(); $id("statusModal").hidden = false; } else showLoginGate(); }
     else if (act === "inbox") openReqPopup("inbox");
@@ -4138,8 +4212,8 @@
     toast(t("st_changed", t("st_vacation")));
   });
 
-  $id("lgRegisterBtn").addEventListener("click", () => {
-    const r = registerUser($id("lgName").value, $id("lgPin").value);
+  $id("lgRegisterBtn").addEventListener("click", async () => {
+    const r = await registerUser($id("lgName").value, $id("lgPin").value);
     if (r.ok) { hideLoginGate(); toast(t("lg_welcome", currentUser.name)); $id("lgName").value = ""; $id("lgPin").value = ""; const m = $id("lgMsg"); if (m) m.textContent = ""; }
     else { const m = $id("lgMsg"); if (m) m.textContent = r.msg; }
   });
@@ -4263,12 +4337,9 @@
 
   $id("syncChip").addEventListener("click", openSync);
   $id("syncClose").addEventListener("click", () => { $id("syncModal").hidden = true; });
-  $id("syncSaveBtn").addEventListener("click", () => saveSyncCode($id("syncCodeInput").value));
-  $id("syncCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveSyncCode(e.target.value); });
-  $id("syncGenBtn").addEventListener("click", () => { $id("syncCodeInput").value = genCode(); });
-  $id("syncCopyBtn").addEventListener("click", () => { const v = $id("syncCodeInput").value.trim(); if (!v) return; if (navigator.clipboard) navigator.clipboard.writeText(v).then(() => toast(t("s_copied")), () => {}); else toast(t("s_copyfail")); });
 
   $id("settingsClose").addEventListener("click", () => { $id("settingsModal").hidden = true; });
+  $id("openBackupBtn").addEventListener("click", () => { $id("settingsModal").hidden = true; openBackup(); });
   $id("themeSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.settings.theme = b.dataset.theme; save(); openSettings(); applyTheme(); });
   $id("pomoInput").addEventListener("change", (e) => { const v = Math.max(1, Math.min(180, parseInt(e.target.value, 10) || 25)); state.settings.pomodoroMin = v; if (!timerRunning) resetTimer(); save(); });
   $id("reminderToggle").addEventListener("click", () => { state.settings.reminder = !state.settings.reminder; if (state.settings.reminder) requestNotify(); $id("reminderToggle").textContent = state.settings.reminder ? t("rem_on") : t("rem_off"); save(); });
@@ -4295,6 +4366,7 @@
   $id("trashEmptyBtn").addEventListener("click", emptyTrash);
   $id("backupClose").addEventListener("click", () => { $id("backupModal").hidden = true; });
   $id("exportBtn").addEventListener("click", exportBackup);
+  $id("exportAllBtn").addEventListener("click", exportAllBackup);
   $id("importBtn").addEventListener("click", () => $id("importFile").click());
   $id("importFile").addEventListener("change", (e) => { if (e.target.files && e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ""; });
   $id("helpClose").addEventListener("click", () => { $id("helpModal").hidden = true; });
