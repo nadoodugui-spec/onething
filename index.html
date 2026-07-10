@@ -229,10 +229,6 @@
   .kb-done .kb-card { opacity: .6; }
   .kb-done .kb-text { text-decoration: line-through; color: var(--text-soft); }
   .kb-empty { color: var(--text-soft); font-size: .82rem; font-style: italic; padding: 14px 6px; text-align: center; }
-  @media (max-width: 900px) {
-    .kb-board { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .kb-col { min-width: 74vw; }
-  }
 
   /* todo detail panel */
   .detail {
@@ -450,55 +446,7 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 130; display: none; }
 
-  /* ===== 모바일 최적화 ===== */
-  @media (max-width: 900px) {
-    body { padding: 8px 8px calc(52px + env(safe-area-inset-bottom)); height: auto; font-size: 14.5px; }
-    /* 상단 바: 검색 한 줄 + 아이콘 도구 한 줄(라벨 숨김, 가로 스크롤) */
-    .toolbar { margin-bottom: 8px; gap: 6px; }
-    .search { min-width: 0; width: 100%; order: -1; }
-    .tools { width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
-    .tools::-webkit-scrollbar { display: none; }
-    .tools button { flex: none; padding: 8px 10px; }
-    .tools button > span[data-i18n] { display: none; }          /* 라벨 숨기고 아이콘+배지만 */
-    #tbComposeBtn > span[data-i18n] { display: inline; }        /* '요청 보내기'는 라벨 유지 */
-    #stLabel { display: inline; }                                /* 상태명 유지 */
-    #userChipName { display: none; }
-    /* 본문: 원씽 먼저, 할 일 다음 — 카드 한 컬럼 */
-    .notebook { grid-template-columns: 1fr; gap: 10px; min-height: 0; }
-    .page { padding: 16px 14px 20px; }
-    .page.right { order: -1; }
-    .page-head { min-height: 0; }
-    .page.right .page-head { flex-wrap: wrap; gap: 6px; }
-    .onething-title { font-size: 1.05rem; white-space: nowrap; }
-    .page-title { font-size: 1.05rem; white-space: nowrap; }
-    .date { font-size: .85rem; white-space: nowrap; }
-    .goal-badge { font-size: .9rem; }
-    /* 원씽 카드 컴팩트 */
-    #activeSlot { flex: 0 0 auto; }
-    .onething-card { padding: 18px 16px; }
-    .onething-card .ot-text { font-size: 1.3rem; }
-    .timer .time { font-size: 1.35rem; }
-    .empty-ot { padding: 26px 16px 32px; font-size: 1.02rem; }
-    .empty-ot .ot-lamp { width: 100px; height: 90px; margin-bottom: 10px; }
-    /* List 탭: 한 줄 가로 스크롤 */
-    .group-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-left: 4px; padding-right: 4px; }
-    .group-tabs::-webkit-scrollbar { display: none; }
-    .group-tabs button { flex: none; padding: 8px 10px 9px; }
-    /* 입력줄 */
-    .add-row { gap: 6px; padding-left: 4px; }
-    .add-row input { font-size: 16px; }                          /* iOS 확대 방지 */
-    .add-row button { flex: none; white-space: nowrap; padding: 8px 14px; }
-    .add-hint { display: none; }                                  /* 조합키 힌트는 데스크톱 전용 */
-    li.todo { line-height: 30px; min-height: 32px; }
-    .list, .later-wrap, .done-wrap { padding-left: 4px; }
-    /* 팀 사이드바: 화면 대부분 차지, 본문 밀지 않음(오버레이) */
-    .side-panel { width: 84vw; }
-    .side-tab { top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); }
-    /* 요청함/모달 */
-    #reqPopup .modal-box { min-height: 70vh; }
-    .modal-box { padding: 16px 14px 18px; }
-    .sync-chip { bottom: calc(10px + env(safe-area-inset-bottom)); left: 10px; }
-  }
+  /* (모바일 최적화 블록은 스타일 맨 끝에 위치 — 뒤에 정의된 규칙에 덮이지 않도록) */
   /* ===== 요청(메신저) ===== */
   .login-gate { position: fixed; inset: 0; z-index: 200; background: var(--bg);
     display: flex; align-items: center; justify-content: center; padding: 18px; }
@@ -716,6 +664,57 @@
   #spPin.on { color: var(--accent); }
   /* 사이드바가 열리면 본문을 오른쪽으로 밀어 가리지 않음 (좁은 화면에선 오버레이) */
   @media (min-width: 900px) { body.sp-open { padding-left: 296px; } }
+
+  /* ===== 모바일 최적화 (항상 스타일 맨 끝 — 뒤 규칙에 덮이지 않게) ===== */
+  @media (max-width: 900px) {
+    html, body { overflow-x: hidden; }
+    body { padding: 8px 8px calc(52px + env(safe-area-inset-bottom)); height: auto; font-size: 14.5px; }
+    /* 상단 바: 검색 한 줄 + 아이콘 도구 한 줄(라벨 숨김, 가로 스크롤) */
+    .toolbar { margin-bottom: 8px; gap: 6px; }
+    .search { min-width: 0; width: 100%; order: -1; }
+    .tools { width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+    .tools::-webkit-scrollbar { display: none; }
+    .tools button { flex: none; padding: 8px 10px; }
+    .tools button > span[data-i18n] { display: none; }
+    #tbComposeBtn > span[data-i18n] { display: inline; }
+    #stLabel { display: inline; }
+    #userChipName { display: none; }
+    /* 본문: 원씽 먼저, 한 컬럼, 가로 넘침 차단 */
+    .notebook { grid-template-columns: 1fr; gap: 10px; min-height: 0; min-width: 0; }
+    .page { padding: 16px 14px 20px; min-width: 0; overflow: hidden; }
+    .page.right { order: -1; }
+    .page-head { min-height: 0; }
+    .page.right .page-head { flex-wrap: wrap; gap: 6px; }
+    .onething-title { font-size: 1.05rem; white-space: nowrap; }
+    .page-title { font-size: 1.05rem; white-space: nowrap; }
+    .date { font-size: .85rem; white-space: nowrap; }
+    .goal-badge { font-size: .9rem; }
+    #activeSlot { flex: 0 0 auto; }
+    .onething-card { padding: 18px 16px; }
+    .onething-card .ot-text { font-size: 1.3rem; }
+    .timer .time { font-size: 1.35rem; }
+    .empty-ot { padding: 26px 16px 32px; font-size: 1.02rem; }
+    .empty-ot .ot-lamp { width: 100px; height: 90px; margin-bottom: 10px; }
+    .group-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-left: 4px; padding-right: 4px; }
+    .group-tabs::-webkit-scrollbar { display: none; }
+    .group-tabs button { flex: none; padding: 8px 10px 9px; }
+    .add-row { gap: 6px; padding-left: 4px; }
+    .add-row input { font-size: 16px; }
+    .add-row button { flex: none; white-space: nowrap; padding: 8px 14px; }
+    .add-hint { display: none; }
+    li.todo { line-height: 30px; min-height: 32px; }
+    .list, .later-wrap, .done-wrap { padding-left: 4px; }
+    /* 팀 사이드바: 오버레이 + 열기 탭은 왼쪽 하단, 본문은 밀지 않음 */
+    .side-panel { width: 84vw; }
+    .side-tab { top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); }
+    body.sp-open { padding-left: 8px; }
+    /* 칸반 보드: 페이지 안에서만 가로 스와이프 */
+    .kb-board { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+    .kb-col { min-width: 74vw; flex: none; }
+    #reqPopup .modal-box { min-height: 70vh; }
+    .modal-box { padding: 16px 14px 18px; }
+    .sync-chip { bottom: calc(10px + env(safe-area-inset-bottom)); left: 10px; }
+  }
 </style>
 </head>
 <body data-theme="light" data-lang="ko">
