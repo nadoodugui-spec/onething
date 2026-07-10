@@ -1179,6 +1179,8 @@
     rq_reply_prompt: { ko: "답장을 입력하세요", en: "Enter your reply" },
     rq_replied: { ko: "답장을 보냈어요", en: "Reply sent" },
     rq_reply_new: { ko: "{0}님이 답장했어요", en: "{0} replied" },
+    rq_done_new: { ko: "{0}님이 요청을 완료했어요", en: "{0} completed your request" },
+    rq_done_now_new: { ko: "{0}님이 요청을 즉시완료했어요", en: "{0} instantly completed your request" },
     rq_newrep: { ko: "새 답장 {0}", en: "{0} new" },
     rq_modal_head: { ko: "요청", en: "Requests" },
     rq_tab_inbox: { ko: "받은 요청", en: "Received" },
@@ -2587,7 +2589,7 @@
     const mu = $id("memoUnread"); if (mu) mu.textContent = unreadOf("memo") || "";
     const tu = $id("taskUnread"); if (tu) tu.textContent = unreadOf("task") || "";
     if (reqTab === "inbox") { markInboxRead(); markRepliesSeen(inbox); }
-    if (reqTab === "sent") markRepliesSeen(sent);
+    if (reqTab === "sent") { markRepliesSeen(sent); markDoneSeen(sent); }
     renderUnreadBadge();
   }
   const EMPTY_RQ_SVG = '<svg width="84" height="66" viewBox="0 0 84 66" fill="none" aria-hidden="true">'
@@ -2747,6 +2749,16 @@
   let pendingNotifyIds = new Set();   // 원씽 중(focus)에 조용히 쌓인 새 요청 id
   let pendingReplyIds = new Set();    // 원씽 중에 조용히 쌓인 새 답장(요청 id)
   let knownRepCounts = null;          // 답장 알림용: 요청별 답장 개수 기억
+  let knownStatuses = null;           // 완료 알림용: 요청별 상태 기억
+  function doneUnseen(r) {            // 내가 보낸 요청이 완료됐는데 아직 확인 안 함
+    return !!(currentUser && r.from === currentUser.id && r.status === "done" && !(r.doneSeen && r.doneSeen[currentUser.id]));
+  }
+  function markDoneSeen(items) {
+    if (!currentUser || !msgDb) return;
+    items.forEach((r) => {
+      if (doneUnseen(r)) { try { msgDb.ref("requests/" + r.id + "/doneSeen/" + currentUser.id).set(true); } catch (_) {} }
+    });
+  }
   function lastActivity(r) {          // 마지막 활동 시각(답장 포함) — 정렬용
     const reps = Array.isArray(r.replies) ? r.replies : [];
     return Math.max(r.ts || 0, reps.length ? (reps[reps.length - 1].ts || 0) : 0);
@@ -2784,9 +2796,12 @@
         if (!isHandledByMe(id, r) && !(focus && pendingNotifyIds.has(id))) n++;
         if (!(focus && pendingReplyIds.has(id))) n += unseenReplies(r);
       } else if (r.from === currentUser.id) {
-        // 보낸 요청: 상대가 아직 확인 안 한 건 + 나에게 온 새 답장
+        // 보낸 요청: 상대가 아직 확인 안 한 건 + 나에게 온 새 답장 + 확인 안 한 완료 처리
         if (r.status === "sent") sn++;
-        if (!(focus && pendingReplyIds.has(id))) sn += unseenReplies(r);
+        if (!(focus && pendingReplyIds.has(id))) {
+          sn += unseenReplies(r);
+          if (doneUnseen(r)) sn++;
+        }
       }
     });
     if (b) { b.textContent = n; b.hidden = false; b.classList.toggle("zero", n === 0); }
@@ -2834,6 +2849,24 @@
       });
     }
     knownRepCounts = counts;
+    // ----- 내가 보낸 요청의 완료 감지 -----
+    const statuses = {};
+    ids.forEach((id) => { const r = requestsCache[id]; statuses[id] = (r && r.status) || "sent"; });
+    if (knownStatuses && currentUser) {
+      ids.forEach((id) => {
+        const r = requestsCache[id]; if (!r || r.from !== currentUser.id) return;
+        if ((r.hiddenFor || []).includes(currentUser.id)) return;
+        if (statuses[id] !== "done" || knownStatuses[id] === "done") return;
+        if (myStatus() === "focus") { pendingReplyIds.add(id); return; }   // 조용히 쌓기
+        const msg = t(r.instant ? "rq_done_now_new" : "rq_done_new", r.toName || "?");
+        toast(msg);
+        try {
+          if (document.hidden && window.Notification && Notification.permission === "granted")
+            new Notification(msg, { body: r.title || r.text || "", icon: "icon-192.png" });
+        } catch (_) {}
+      });
+    }
+    knownStatuses = statuses;
   }
   function openReqPopup(tab) { if (!currentUser) { showLoginGate(); return; } setReqTab(tab); setReqKind(reqKind); $id("reqPopup").hidden = false; }
   function closeReqPopup() { $id("reqPopup").hidden = true; setReqTab(null); }
