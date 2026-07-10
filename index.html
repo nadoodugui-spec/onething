@@ -728,6 +728,9 @@
       <div id="srTaskForm" hidden>
         <input id="srTitle" type="text" maxlength="200" data-i18n-ph="sr_title_ph" placeholder="제목"
           style="width:100%;margin-top:10px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:1rem;font-weight:600;outline:none;box-sizing:border-box" />
+        <div class="mrow" style="margin-top:8px"><span class="mlabel" data-i18n="sr_due">마감일</span>
+          <input id="srDue" type="date" style="border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);padding:5px 8px;outline:none" />
+        </div>
         <div class="ed-toolbar" id="edToolbar">
           <button type="button" data-cmd="bold" title="굵게"><b>B</b></button>
           <button type="button" data-cmd="underline" title="밑줄"><u>U</u></button>
@@ -1043,6 +1046,8 @@
     sr_att_total: { ko: "첨부 합계가 2MB를 넘어요", en: "Attachments exceed 2MB total" },
     rq_flush: { ko: "집중하는 동안 요청 {0}건이 도착했어요", en: "{0} request(s) arrived while you were focusing" },
     st_until: { ko: "약 {0}분 후 종료 예정", en: "ends in ~{0} min" },
+    sr_due: { ko: "마감일", en: "Due" },
+    rq_due: { ko: "마감 {0}", en: "due {0}" },
     set_sharefocus: { ko: "원씽 중일 때 남은 시간 공개", en: "Share remaining focus time" }
   };
   function t(key) {
@@ -1088,6 +1093,7 @@
       priority: (t.priority === "urgent" || t.priority === "important") ? t.priority : "normal",
       subtasks: Array.isArray(t.subtasks) ? t.subtasks : [], repeat: t.repeat || null,
       later: !!t.later, status: (t.status === "active" || t.status === "done") ? t.status : "todo",
+      reqId: t.reqId || null,
       activatedAt: t.activatedAt || null, focusSec: t.focusSec || 0,
       createdAt: t.createdAt || Date.now(), completedAt: t.completedAt || null
     })) : [];
@@ -1132,10 +1138,11 @@
   }
 
   // ---------- actions ----------
-  function addTodo(text) {
+  function addTodo(text, opts) {
     text = (text || "").trim(); if (!text) return;
-    state.todos.push({ id: uid(), text, color: null, priority: "normal", due: null, subtasks: [], repeat: null,
-      later: false, status: "todo", activatedAt: null, focusSec: 0, createdAt: Date.now(), completedAt: null });
+    state.todos.push({ id: uid(), text, color: null, priority: "normal", due: (opts && opts.due) || null, subtasks: [], repeat: null,
+      later: false, status: "todo", activatedAt: null, focusSec: 0, createdAt: Date.now(), completedAt: null,
+      reqId: (opts && opts.reqId) || null });
     save(); render();
   }
   function sendToOneThing(id) {
@@ -1167,6 +1174,10 @@
         createdAt: Date.now(), completedAt: null });
     }
     t.status = "done"; t.completedAt = Date.now();
+    // 요청에서 온 할 일이면 보낸 사람에게 '완료됨' 자동 전달
+    if (t.reqId && msgDb && requestsCache[t.reqId]) {
+      try { msgDb.ref("requests/" + t.reqId).update({ status: "done", doneAt: Date.now() }); } catch (_) {}
+    }
     save(); render();
     if (wasActive) { celebrate(); toast(pickCheer()); }
   }
@@ -1978,7 +1989,7 @@
     const others = Object.keys(usersCache).filter((id) => id !== currentUser.id);
     if (!others.length) { const o = document.createElement("option"); o.value = ""; o.textContent = t("sr_no_one"); sel.appendChild(o); }
     else others.forEach((id) => { const o = document.createElement("option"); o.value = id; o.textContent = (usersCache[id] || {}).name || "?"; sel.appendChild(o); });
-    $id("sendReqText").value = ""; $id("srTitle").value = ""; $id("srEditor").innerHTML = "";
+    $id("sendReqText").value = ""; $id("srTitle").value = ""; $id("srEditor").innerHTML = ""; $id("srDue").value = "";
     pendingAtts = []; renderAttList();
     $id("sendReqMsg").textContent = "";
     setComposeKind(kind === "task" ? "task" : "memo");
@@ -2007,6 +2018,7 @@
       const total = pendingAtts.reduce((s, a) => s + a.size, 0);
       if (total > ATT_TOTAL_MAX) { $id("sendReqMsg").textContent = t("sr_att_total"); return; }
       rec.title = title; rec.html = html; rec.text = title;
+      const due = $id("srDue").value; if (due) rec.due = due;
       if (pendingAtts.length) rec.attachments = pendingAtts;
     }
     msgDb.ref("requests/" + uid()).set(rec);
@@ -2076,8 +2088,15 @@
     const inboxAll = all.filter((r) => r.to === currentUser.id && mine(r));
     const sentAll = all.filter((r) => r.from === currentUser.id && mine(r));
     const byTs = (a, b) => (b.ts || 0) - (a.ts || 0);
-    const inbox = inboxAll.filter((r) => reqKindOf(r) === reqKind).sort(byTs);
-    const sent = sentAll.filter((r) => reqKindOf(r) === reqKind).sort(byTs);
+    // 업무 요청은 마감 임박 순(마감 없는 건 뒤), 쪽지는 최신 순
+    const byDue = (a, b) => {
+      if (a.due && b.due && a.due !== b.due) return a.due < b.due ? -1 : 1;
+      if (!!a.due !== !!b.due) return a.due ? -1 : 1;
+      return byTs(a, b);
+    };
+    const sorter = reqKind === "task" ? byDue : byTs;
+    const inbox = inboxAll.filter((r) => reqKindOf(r) === reqKind).sort(sorter);
+    const sent = sentAll.filter((r) => reqKindOf(r) === reqKind).sort(sorter);
     renderReqList(inboxUl, inbox, "inbox");
     renderReqList(sentUl, sent, "sent");
     // 서브탭별 안읽음 수 (받은함 기준)
@@ -2108,13 +2127,22 @@
     const who = document.createElement("span"); who.className = "rq-who";
     who.textContent = kind === "inbox" ? (r.fromName || "?") : (t("rq_to_prefix") + " " + (r.toName || "?"));
     const meta = document.createElement("span"); meta.className = "rq-meta";
-    meta.textContent = fmtReqTime(r.ts) + " · " + t("rq_status_" + (r.status || "sent"));
+    let metaTxt = fmtReqTime(r.ts) + " · " + t("rq_status_" + (r.status || "sent"));
+    if (r.status === "read" && r.readAt) metaTxt += " " + fmtReqTime(r.readAt);
+    if (r.status === "done" && r.doneAt) metaTxt += " " + fmtReqTime(r.doneAt);
+    meta.textContent = metaTxt;
     const chip = document.createElement("span"); chip.className = "rq-kind-chip " + reqKindOf(r); chip.textContent = t("kind_" + reqKindOf(r));
     who.prepend(chip);
     head.append(who, meta);
     li.append(head);
     if (reqKindOf(r) === "task") {
       const title = document.createElement("div"); title.className = "rq-title"; title.textContent = r.title || "";
+      if (r.due) {
+        const today = todayStr();
+        const dc = document.createElement("span"); dc.className = "chip" + (r.due < today ? " due-over" : r.due === today ? " due-soon" : "");
+        dc.style.marginLeft = "6px"; dc.textContent = t("rq_due", r.due.slice(5));
+        title.append(dc);
+      }
       li.append(title);
       if (r.html) { const body = document.createElement("div"); body.className = "rq-html"; body.innerHTML = sanitizeHtml(r.html); li.append(body); }
       if (Array.isArray(r.attachments) && r.attachments.length) {
@@ -2142,7 +2170,7 @@
     });
     const acts = document.createElement("div"); acts.className = "rq-acts";
     if (kind === "inbox") {
-      acts.appendChild(reqBtn(t("rq_to_todo"), () => { markRead(r.id); addTodo(r.text || ""); toast(t("rq_added_todo")); }));
+      acts.appendChild(reqBtn(t("rq_to_todo"), () => { markRead(r.id); addTodo(r.text || "", { reqId: r.id, due: r.due || null }); toast(t("rq_added_todo")); }));
       acts.appendChild(reqBtn(t("rq_done"), () => { markRead(r.id); setReqStatus(r.id, "done"); }));
       acts.appendChild(reqBtn(t("rq_reply"), () => { markRead(r.id); doReply(r.id); }));
       acts.appendChild(reqBtn(t("rq_delete"), () => hideRequest(r.id)));
@@ -2156,8 +2184,12 @@
   }
   function reqBtn(label, fn) { const b = document.createElement("button"); b.className = "rq-btn"; b.textContent = label; b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); return b; }
   function fmtReqTime(ts) { if (!ts) return ""; const d = new Date(ts); return (d.getMonth() + 1) + "/" + d.getDate() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
-  function markRead(id) { const r = requestsCache[id]; if (r && r.status === "sent" && msgDb) msgDb.ref("requests/" + id + "/status").set("read"); }
-  function setReqStatus(id, st) { if (msgDb) msgDb.ref("requests/" + id + "/status").set(st); }
+  function markRead(id) { const r = requestsCache[id]; if (r && r.status === "sent" && msgDb) msgDb.ref("requests/" + id).update({ status: "read", readAt: Date.now() }); }
+  function setReqStatus(id, st) {
+    if (!msgDb) return;
+    const patch = { status: st }; if (st === "done") patch.doneAt = Date.now();
+    msgDb.ref("requests/" + id).update(patch);
+  }
   function hideRequest(id) {
     const r = requestsCache[id]; if (!r || !msgDb || !currentUser) return;
     const hf = Array.isArray(r.hiddenFor) ? r.hiddenFor.slice() : [];
@@ -2212,7 +2244,7 @@
     if (!currentUser || !msgDb) return;
     Object.keys(requestsCache).forEach((id) => {
       const r = requestsCache[id];
-      if (r && r.to === currentUser.id && r.status === "sent" && reqKindOf(r) === reqKind && !((r.hiddenFor || []).includes(currentUser.id))) msgDb.ref("requests/" + id + "/status").set("read");
+      if (r && r.to === currentUser.id && r.status === "sent" && reqKindOf(r) === reqKind && !((r.hiddenFor || []).includes(currentUser.id))) msgDb.ref("requests/" + id).update({ status: "read", readAt: Date.now() });
     });
   }
 
