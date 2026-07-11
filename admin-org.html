@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>관리자 권한 흐름도 · The One Thing</title>
+<link rel="icon" type="image/png" href="icon-192.png" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+  :root {
+    --bg:#f7f8fa; --surface:#fff; --border:#e3e6eb; --text:#1f2430; --sub:#6b7280;
+    --accent:#3b5bdb; --soft:#e8edfb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16181d; --surface:#1e2128; --border:#33383f; --text:#e4e7ee; --sub:#9aa1ad; --accent:#7c93f0; --soft:#2a3350; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.7; letter-spacing:-.01em; }
+  .wrap { max-width:760px; margin:0 auto; padding:48px 22px 90px; }
+  .logo { color:var(--accent); font-weight:800; }
+  h1 { font-size:1.7rem; margin:14px 0 4px; }
+  .lead { color:var(--sub); margin:0 0 30px; font-size:.92rem; }
+  /* 흐름도 */
+  .node { border:2px solid var(--accent); border-radius:14px; padding:16px 20px; background:var(--surface); margin:0 auto; max-width:620px; }
+  .node .nm { font-size:1.05rem; font-weight:800; }
+  .node .who { color:var(--sub); font-size:.85rem; margin:2px 0 8px; }
+  .node ul { margin:0; padding-left:18px; font-size:.9rem; }
+  .node .no-h { margin-top:8px; font-size:.85rem; font-weight:700; color:#c0392b; }
+  .node.super { border-color:#b07b10; background:linear-gradient(0deg,var(--surface),var(--surface)), var(--surface); box-shadow:0 0 0 3px rgba(242,193,78,.25); }
+  .node.mgr { border-color:#8b5cf6; opacity:.8; border-style:dashed; }
+  .node.owner { border-color:#178a50; }
+  .node.admin { border-color:#178a50; }
+  .node.member { border-color:#9aa1ad; }
+  .down { text-align:center; font-size:1.3rem; color:var(--sub); margin:8px 0; }
+  .down small { display:block; font-size:.75rem; }
+  .row2 { display:flex; gap:14px; max-width:620px; margin:0 auto; flex-wrap:wrap; }
+  .row2 .node { flex:1; min-width:250px; }
+  h2 { font-size:1.2rem; margin:52px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--accent); }
+  table { width:100%; border-collapse:collapse; font-size:.85rem; margin:14px 0; }
+  th,td { border:1px solid var(--border); padding:7px 9px; text-align:center; }
+  th { background:var(--soft); }
+  td.l { text-align:left; }
+  .ok{color:#178a50;font-weight:700} .no{color:#c0392b;font-weight:700} .half{color:#b07b10;font-weight:700}
+  .tip { background:var(--soft); border-radius:10px; padding:10px 14px; font-size:.88rem; margin:14px 0; }
+  .foot { text-align:center; color:var(--sub); font-size:.8rem; margin-top:60px; }
+  #gate { text-align:center; padding:110px 20px; }
+  #content { display:none; }
+  a.back { color:var(--accent); text-decoration:none; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="gate">
+    <div class="logo">◉ The One Thing</div>
+    <p id="gateMsg">권한 확인 중…</p>
+    <p><a class="back" href="index.html">← 앱으로 돌아가기</a></p>
+  </div>
+
+  <div id="content">
+    <div class="logo">◉ The One Thing</div>
+    <h1>관리자 권한 흐름도</h1>
+    <p class="lead">최고관리자 전용 문서 · 위에서 아래로 권한이 좁아집니다 · 모든 권한은 서버 보안 규칙으로 강제됨</p>
+
+    <div class="node super">
+      <div class="nm">👑 1. 최고관리자</div>
+      <div class="who">플랫폼 운영자 — 나두혁 (nadoodugui@gmail.com) · 계정 1개, 코드에 고정</div>
+      <ul>
+        <li><b>플랫폼 관리 화면</b>: 전체 워크스페이스(회사)·회원 수 요약, 회사별 구성원 목록, 이름/이메일 실시간 검색</li>
+        <li><b>계정(프로필) 삭제</b> — 시스템 전체에서 유일한 삭제 권한 (본인 계정은 삭제 불가 처리)</li>
+        <li><b>비밀번호 재설정 메일 발송</b> — 본인 셀프 재설정이 안 될 때의 최종 지원 창구</li>
+        <li>모든 회원의 프로필(이름·이메일) 수정 가능</li>
+        <li>보안 규칙 배포, 시스템·서버 설정, 데이터 정리 등 운영 전권</li>
+        <li>+ 아래 모든 등급의 기능 사용 가능(본인도 한 회사의 오너)</li>
+      </ul>
+    </div>
+    <div class="down">▼ <small>임명 (아직 도입 전)</small></div>
+
+    <div class="node mgr">
+      <div class="nm">🛡 2. 웹사이트 관리매니저 <span style="font-weight:400;font-size:.8em;color:var(--sub)">(예정)</span></div>
+      <div class="who">최고관리자가 지정하는 플랫폼 운영 보조 등급 — 현재 미구현, 유료화/규모 확대 시 도입</div>
+      <ul>
+        <li>도입 시 예상 권한: 플랫폼 현황 조회·검색, 회원 지원(비밀번호 재설정 메일), 문의 대응</li>
+        <li>계정 삭제·시스템 설정은 최고관리자 전용으로 유지 권장</li>
+      </ul>
+    </div>
+    <div class="down">▼ <small>회사(워크스페이스)마다 아래 구조가 반복</small></div>
+
+    <div class="node owner">
+      <div class="nm">🏢 3. 오너 (오너관리자)</div>
+      <div class="who">회사(워크스페이스)를 만든 사람 · 회사당 1명</div>
+      <ul>
+        <li><b>관리자 승격/해제</b> — 구성원을 사내관리자로 올리고 내림 (화면·서버 규칙 모두 오너 전용)</li>
+        <li>워크스페이스 정보(이름 등) 관리</li>
+        <li>+ 사내관리자의 모든 권한 포함</li>
+      </ul>
+      <div class="no-h">✗ 불가: 구성원의 프로필(이름·이메일) 수정, 비밀번호 관련, 계정 삭제, 다른 회사 데이터 접근</div>
+    </div>
+    <div class="down">▼ <small>승격</small></div>
+
+    <div class="node admin">
+      <div class="nm">💼 4. 사내관리자</div>
+      <div class="who">오너가 승격한 구성원 · 여러 명 가능</div>
+      <ul>
+        <li><b>초대</b>: 초대 코드(6자리) 확인·재발급 — 유출 시 재발급으로 무효화</li>
+        <li><b>내보내기</b>: 구성원의 소속 해제(계정·개인 데이터는 그대로) — 미완료 요청은 나에게 자동 전달, 6초 실행 취소</li>
+        <li>팀 통계(통계의 '팀' 탭) 열람</li>
+        <li>관리 기록(감사 로그) 열람 — 모든 관리 행위가 기록됨</li>
+      </ul>
+      <div class="no-h">✗ 불가: 승격/해제(오너 전용), 구성원 프로필 수정, 비밀번호 관련, 계정 삭제</div>
+    </div>
+    <div class="down">▼ <small>초대 코드로 참여</small></div>
+
+    <div class="row2">
+      <div class="node member">
+        <div class="nm">👤 5-A. 일반 구성원</div>
+        <div class="who">회사에 소속된 가입자</div>
+        <ul>
+          <li>개인 기능 전부: 원씽·할 일(Now/Next/Routine)·List·타이머·통계·백업</li>
+          <li>팀 기능 전부: 상태 표시, 쪽지/업무 요청(보내기·수정·회수·전달·진행), 프로젝트 칸반, 팀 현황</li>
+          <li>내 프로필(이름)·내 비밀번호·내 공개 설정은 <b>본인만</b> 관리</li>
+        </ul>
+      </div>
+      <div class="node member">
+        <div class="nm">🙋 5-B. 무소속 가입자</div>
+        <div class="who">회사에 참여하지 않은 가입자</div>
+        <ul>
+          <li>개인 기능은 전부 사용 가능</li>
+          <li>팀 기능은 잠김 — 초대 코드 참여 또는 회사 만들기(→오너)로 열림</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>권한 한눈표</h2>
+    <table>
+      <tr><th class="l">권한</th><th>최고관리자</th><th>관리매니저(예정)</th><th>오너</th><th>사내관리자</th><th>일반가입자</th></tr>
+      <tr><td class="l">개인 기능(원씽·할 일·타이머·통계)</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+      <tr><td class="l">팀 기능(요청·프로젝트·팀 현황)</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="half">소속 시</td></tr>
+      <tr><td class="l">초대 코드 확인·재발급</td><td class="ok">✓</td><td class="no">✗</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td></tr>
+      <tr><td class="l">구성원 내보내기(소속 해제)</td><td class="ok">✓</td><td class="no">✗</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td></tr>
+      <tr><td class="l">관리자 승격/해제</td><td class="ok">✓</td><td class="no">✗</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td class="l">팀 통계·감사 로그 열람</td><td class="ok">✓</td><td class="no">✗</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td></tr>
+      <tr><td class="l">타인 프로필(이름·이메일) 수정</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td class="l">비밀번호 재설정 메일 발송</td><td class="ok">✓</td><td class="half">도입 시 ✓</td><td class="no">✗</td><td class="no">✗</td><td class="half">본인만</td></tr>
+      <tr><td class="l">계정(프로필) 삭제</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td class="l">전체 회사·회원 현황 조회·검색</td><td class="ok">✓</td><td class="half">도입 시 ✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td class="l">보안 규칙·시스템 설정</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+    </table>
+
+    <div class="tip">
+      <b>설계 원칙 3가지</b><br>
+      ① <b>계정은 개인의 것, 소속은 회사의 것</b> — 회사는 초대·내보내기만, 계정·비밀번호·프로필은 본인(+최고관리자)만.<br>
+      ② <b>직책은 오너만</b> — 사내관리자가 세력을 불릴 수 없음.<br>
+      ③ <b>회사 간 완전 격리</b> — 각 회사의 요청·상태·프로젝트는 그 회사 구성원 외에는 서버가 읽기조차 거부.
+    </div>
+
+    <h2>운영 시나리오 빠른 참조</h2>
+    <ul style="font-size:.9rem">
+      <li><b>구성원이 비밀번호를 잊음</b> → 본인이 로그인 화면 "비밀번호 찾기" → 안 되면 최고관리자가 플랫폼 관리에서 재설정 메일 발송</li>
+      <li><b>퇴사 처리</b> → 사내관리자가 "내보내기"(소속만 해제, 미완료 업무는 관리자에게 인계)</li>
+      <li><b>계정 완전 삭제 요청</b> → 최고관리자가 플랫폼 관리에서 삭제 (소속 여부와 무관하게 가능)</li>
+      <li><b>초대 코드 유출</b> → 사내관리자/오너가 코드 재발급 (기존 코드 즉시 무효)</li>
+      <li><b>사내관리자가 말썽</b> → 오너가 해제 → 필요 시 내보내기 → 심각하면 최고관리자가 계정 삭제</li>
+    </ul>
+
+    <p style="margin-top:40px"><a class="back" href="index.html">← 앱으로 돌아가기</a></p>
+    <div class="foot">이 문서는 최고관리자 계정으로 로그인된 브라우저에서만 표시됩니다 · 2026-07 기준</div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+  // 최고관리자 계정으로 로그인된 경우에만 본문 표시
+  const SUPER_ADMIN_UID = "srqAaRgdmLhYeCyEFeiUA552cvA3";
+  firebase.initializeApp({
+    apiKey: "AIzaSyASo_vj9aOyAfv0F6HlOlJ7e2oPjmKqfSo",
+    authDomain: "onething-7f4d7.firebaseapp.com",
+    projectId: "onething-7f4d7",
+    appId: "1:9113682878:web:b7b4571af1d5bed37defef"
+  });
+  firebase.auth().onAuthStateChanged((u) => {
+    const gate = document.getElementById("gate"), body = document.getElementById("content"), msg = document.getElementById("gateMsg");
+    if (u && u.uid === SUPER_ADMIN_UID) { gate.style.display = "none"; body.style.display = "block"; }
+    else if (u) { msg.textContent = "이 문서는 최고관리자 전용입니다."; }
+    else { msg.textContent = "앱에서 최고관리자 계정으로 로그인한 뒤 다시 열어주세요."; }
+  });
+</script>
+</body>
+</html>

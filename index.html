@@ -715,14 +715,12 @@
   @media (max-width: 900px) {
     html, body { overflow-x: hidden; }
     body { padding: 8px 8px calc(52px + env(safe-area-inset-bottom)); height: auto; font-size: 14.5px; }
-    /* 상단 바: 검색 한 줄 + 아이콘 도구 한 줄(라벨 숨김, 가로 스크롤) */
+    /* 상단 바: 검색 한 줄 + 아이콘 도구(라벨 숨김) — 넘치면 두 줄로 감싸기, 가로 스크롤 금지 */
     .toolbar { margin-bottom: 8px; gap: 6px; }
     .search { min-width: 0; width: 100%; order: -1; }
-    .tools { width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
-    .tools::-webkit-scrollbar { display: none; }
+    .tools { width: 100%; flex-wrap: wrap; }
     .tools button { flex: none; padding: 8px 10px; }
     .tools button > span[data-i18n] { display: none; }
-    #tbComposeBtn > span[data-i18n] { display: inline; }
     #stLabel { display: inline; }
     #userChipName { display: none; }
     /* 본문: 원씽 먼저, 한 컬럼, 가로 넘침 차단 */
@@ -1048,7 +1046,8 @@
       </div>
       <div id="umPlatform" hidden>
         <div class="section-h" data-i18n="pf_h">플랫폼 관리 (최고관리자)</div>
-        <div class="mrow"><button id="pfOpenBtn" class="mbtn ghost" data-i18n="pf_open">전체 현황 보기</button></div>
+        <div class="mrow"><button id="pfOpenBtn" class="mbtn ghost" data-i18n="pf_open">전체 현황 보기</button>
+          <a class="mbtn ghost" href="admin-org.html" target="_blank" rel="noopener" style="text-decoration:none" data-i18n="pf_org">권한 흐름도</a></div>
       </div>
     </div>
   </div>
@@ -1574,6 +1573,7 @@
     pf_members_n: { ko: "구성원 $1명", en: "$1 members" },
     pf_solo_h: { ko: "무소속 회원", en: "Unaffiliated members" },
     pf_empty: { ko: "검색 결과가 없어요", en: "No results" },
+    pf_org: { ko: "권한 흐름도", en: "Permission chart" },
     rq_edited: { ko: "(수정됨)", en: "(edited)" },
     rq_edited_done: { ko: "요청을 수정했어요", en: "Request updated" },
     au_verify_sent: { ko: "인증 메일을 보냈어요 — 받은편지함을 확인하세요", en: "Verification email sent — check your inbox" },
