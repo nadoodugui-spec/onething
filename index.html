@@ -4601,7 +4601,6 @@
     else if (act === "sentbox") openReqPopup("sent");
     else if (act === "team") {
       $id("sidePanel").hidden = false;
-      try { localStorage.setItem("onething-sp-open", "1"); } catch (_) {}
       updateBodyShift(); renderTeamBoard();
     }
     else if (act === "compose") openSendReq(composeKind);
