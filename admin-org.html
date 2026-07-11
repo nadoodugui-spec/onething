@@ -79,12 +79,15 @@
 
     <div class="node mgr" style="opacity:1;border-style:solid">
       <div class="nm">🛡 2. 웹사이트 관리매니저</div>
-      <div class="who">최고관리자가 관제 센터에서 지정/해제 — 플랫폼 운영 보조 등급</div>
+      <div class="who">최고관리자가 지정하는 플랫폼 운영 보조 등급 · 여러 명 가능 · 소속 회사와 무관</div>
       <ul>
-        <li>관제 센터(admin.html) 접속: 전체 현황·상세 통계 조회, 회사·회원 검색</li>
-        <li>회원 지원: 비밀번호 재설정 메일 발송</li>
+        <li><b>임명/해제 방법</b>: 최고관리자가 관제 센터(admin.html)의 회원 행에서 [매니저 지정]/[매니저 해제] 버튼으로. 별도 가입 절차 없이 기존 회원 누구나 지정 가능하며, 즉시 적용됩니다.</li>
+        <li><b>접속 방법</b>: 매니저 본인 계정으로 앱에 로그인한 상태에서 admin.html 주소를 열면 "관리매니저 모드"로 열립니다(위험 버튼은 화면에서 아예 사라짐).</li>
+        <li><b>조회 권한</b>: 전체 현황 숫자(회사·회원·신규 가입), 주간 가입 추이, 회원 구성, 회사별 카드·구성원 목록·상세 통계(요청 완료율·프로젝트·상태 분포), 검색.</li>
+        <li><b>회원 지원 권한</b>: 비밀번호 재설정 메일 발송, <b>문의(Q&amp;A) 답변 작성·수정</b> — 회원이 앱의 "문의하기"로 남긴 질문에 답하면 그 회원의 문의 내역에 매니저 이름으로 표시됩니다.</li>
+        <li><b>일반 회원으로서의 활동</b>: 매니저 지정과 무관하게 자기 회사의 원씽·요청 등 일반 기능은 평소대로 사용합니다.</li>
       </ul>
-      <div class="no-h">✗ 불가: 계정 삭제, 회사 삭제, 이름 변경, 매니저 지정, 시스템 설정 (모두 최고관리자 전용)</div>
+      <div class="no-h">✗ 불가: 계정 삭제, 회사 삭제, 회원 이름 변경, 다른 매니저 지정/해제, 문의 삭제, 보안 규칙·시스템 설정 — 전부 최고관리자 전용이며 화면이 아니라 서버 규칙이 거부합니다. 매니저는 각 회사의 팀 데이터를 조회(통계)할 수만 있고 수정할 수 없습니다.</div>
     </div>
     <div class="down">▼ <small>회사(워크스페이스)마다 아래 구조가 반복</small></div>
 
@@ -146,6 +149,8 @@
       <tr><td class="l">비밀번호 재설정 메일 발송</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="half">본인만</td></tr>
       <tr><td class="l">계정(프로필) 삭제</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
       <tr><td class="l">전체 회사·회원 현황 조회·검색</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td class="l">문의(Q&amp;A) 답변 작성</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="half">질문만</td></tr>
+      <tr><td class="l">관리매니저 지정/해제</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
       <tr><td class="l">보안 규칙·시스템 설정</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
     </table>
 
@@ -162,6 +167,7 @@
       <li><b>퇴사 처리</b> → 사내관리자가 "내보내기"(소속만 해제, 미완료 업무는 관리자에게 인계)</li>
       <li><b>계정 완전 삭제 요청</b> → 최고관리자가 플랫폼 관리에서 삭제 (소속 여부와 무관하게 가능)</li>
       <li><b>초대 코드 유출</b> → 사내관리자/오너가 코드 재발급 (기존 코드 즉시 무효)</li>
+      <li><b>회원 문의 접수</b> → 회원이 앱 "문의하기(Q&A)"에 작성 → 관제 센터 문의 패널에서 최고관리자/관리매니저가 답변 → 회원의 문의 내역에 표시</li>
       <li><b>사내관리자가 말썽</b> → 오너가 해제 → 필요 시 내보내기 → 심각하면 최고관리자가 계정 삭제</li>
     </ul>
 

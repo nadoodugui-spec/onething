@@ -1024,6 +1024,7 @@
       </div>
       <div class="mrow">
         <button id="renameBtn" class="mbtn ghost" data-i18n="um_rename">이름 변경</button>
+        <button id="qnaBtn" class="mbtn ghost" data-i18n="qna_btn">문의하기 (Q&amp;A)</button>
         <button id="switchUserBtn" class="mbtn ghost" data-i18n="um_switch">사용자 바꾸기 / 로그아웃</button>
       </div>
       <div class="section-h" data-i18n="ws_h">워크스페이스</div>
@@ -1055,6 +1056,20 @@
           <button id="pfOpenBtn" class="mbtn ghost" data-i18n="pf_open">간단 현황</button>
           <a class="mbtn ghost" href="admin-org.html" target="_blank" rel="noopener" style="text-decoration:none" data-i18n="pf_org">권한 흐름도</a></div>
       </div>
+    </div>
+  </div>
+
+  <div class="modal" id="qnaModal" hidden>
+    <div class="modal-box" style="width:min(94vw,540px);max-height:84vh;overflow:auto">
+      <div class="modal-head"><span data-i18n="qna_head">💬 문의하기 (Q&amp;A)</span><button class="modal-close" id="qnaClose">✕</button></div>
+      <p class="modal-desc" data-i18n="qna_desc">서비스 이용 중 궁금한 점이나 문제를 남겨주세요. 운영진이 확인 후 답변을 달아드려요.</p>
+      <div class="mrow" style="align-items:flex-start">
+        <textarea id="qnaText" rows="3" maxlength="3000" data-i18n-ph="qna_ph" placeholder="질문이나 불편한 점을 적어주세요"
+          style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.93rem;outline:none;resize:vertical"></textarea>
+        <button id="qnaSend" class="mbtn" data-i18n="qna_send">보내기</button>
+      </div>
+      <div class="section-h" data-i18n="qna_mine">내 문의 내역</div>
+      <div id="qnaList"></div>
     </div>
   </div>
 
@@ -1581,6 +1596,17 @@
     pf_empty: { ko: "검색 결과가 없어요", en: "No results" },
     pf_org: { ko: "권한 흐름도", en: "Permission chart" },
     pf_console: { ko: "🛠 관제 센터 열기", en: "🛠 Open control center" },
+    qna_btn: { ko: "문의하기 (Q&A)", en: "Contact us (Q&A)" },
+    qna_head: { ko: "💬 문의하기 (Q&A)", en: "💬 Contact us (Q&A)" },
+    qna_desc: { ko: "서비스 이용 중 궁금한 점이나 문제를 남겨주세요. 운영진이 확인 후 답변을 달아드려요.", en: "Leave a question or issue. The operators will reply here." },
+    qna_ph: { ko: "질문이나 불편한 점을 적어주세요", en: "Write your question or issue" },
+    qna_send: { ko: "보내기", en: "Send" },
+    qna_mine: { ko: "내 문의 내역", en: "My questions" },
+    qna_sent: { ko: "문의를 보냈어요. 답변이 달리면 이곳에서 확인할 수 있어요.", en: "Sent. Replies will appear here." },
+    qna_wait: { ko: "답변 대기 중", en: "Awaiting reply" },
+    qna_ans: { ko: "답변", en: "Reply" },
+    qna_empty: { ko: "아직 남긴 문의가 없어요", en: "No questions yet" },
+    qna_del: { ko: "삭제", en: "Delete" },
     rq_edited: { ko: "(수정됨)", en: "(edited)" },
     rq_edited_done: { ko: "요청을 수정했어요", en: "Request updated" },
     au_verify_sent: { ko: "인증 메일을 보냈어요 — 받은편지함을 확인하세요", en: "Verification email sent — check your inbox" },
@@ -3770,6 +3796,48 @@
     }
     if (!shown) { const em = document.createElement("p"); em.className = "empty-note"; em.textContent = t("pf_empty"); body.append(em); }
   }
+  // ─── 플랫폼 문의(Q&A) ───
+  function renderQna() {
+    const list = $id("qnaList"); if (!list || !currentUser || !msgDb) return;
+    msgDb.ref("qna/" + currentUser.id).once("value").then((s) => {
+      const d = s.val() || {}; list.innerHTML = "";
+      const ids = Object.keys(d).sort((a, b) => (d[b].ts || 0) - (d[a].ts || 0));
+      if (!ids.length) { const p = document.createElement("p"); p.className = "empty-note"; p.textContent = t("qna_empty"); list.append(p); return; }
+      ids.forEach((qid) => {
+        const q = d[qid] || {};
+        const box = document.createElement("div");
+        box.style.cssText = "border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin:8px 0;font-size:.9rem";
+        const head = document.createElement("div"); head.className = "rq-meta"; head.style.marginBottom = "3px";
+        head.textContent = fmtReqTime(q.ts) + " · " + (q.answer ? t("qna_ans") + " ✓" : t("qna_wait"));
+        const del = document.createElement("button"); del.className = "rq-btn"; del.style.float = "right"; del.textContent = t("qna_del");
+        del.addEventListener("click", () => { msgDb.ref("qna/" + currentUser.id + "/" + qid).remove().then(renderQna); });
+        head.append(del);
+        const tx = document.createElement("div"); tx.textContent = q.text || "";
+        box.append(head, tx);
+        if (q.answer && q.answer.text) {
+          const an = document.createElement("div");
+          an.style.cssText = "margin-top:7px;padding:7px 10px;border-radius:8px;background:var(--accent-soft);white-space:pre-line";
+          an.textContent = "↩ " + (q.answer.byName || "운영진") + ": " + q.answer.text;
+          const at = document.createElement("div"); at.className = "rq-meta"; at.textContent = fmtReqTime(q.answer.ts);
+          an.append(at); box.append(an);
+        }
+        list.append(box);
+      });
+    }).catch(() => {});
+  }
+  (function wireQna() {
+    const ob = $id("qnaBtn"), md = $id("qnaModal"), cb = $id("qnaClose"), sd = $id("qnaSend"), tx = $id("qnaText");
+    if (ob) ob.addEventListener("click", () => { $id("userModal").hidden = true; md.hidden = false; renderQna(); });
+    if (cb) cb.addEventListener("click", () => { md.hidden = true; });
+    if (md) md.addEventListener("click", (e) => { if (e.target === md) md.hidden = true; });
+    if (sd) sd.addEventListener("click", () => {
+      const v = (tx.value || "").trim(); if (!v || !currentUser || !msgDb) return;
+      const qid = uid();
+      msgDb.ref("qna/" + currentUser.id + "/" + qid).set({
+        text: v, ts: Date.now(), name: currentUser.name || "?", email: (usersCache[currentUser.id] || {}).email || ""
+      }).then(() => { tx.value = ""; toast(t("qna_sent")); renderQna(); }).catch(() => {});
+    });
+  })();
   (function wirePlatform() {
     const ob = $id("pfOpenBtn"), cb = $id("pfClose"), si = $id("pfSearch"), md = $id("pfModal");
     if (ob) ob.addEventListener("click", () => { $id("userModal").hidden = true; openPlatform(); });

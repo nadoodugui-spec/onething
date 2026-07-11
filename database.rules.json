@@ -18,6 +18,17 @@
         ".write": "auth != null && $nid === 'user_' + auth.uid"
       }
     },
+    "qna": {
+      ".read": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || root.child('managers').child(auth.uid).val() === true)",
+      ".write": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || root.child('managers').child(auth.uid).val() === true)",
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".write": "auth != null && $uid === auth.uid",
+        "$qid": {
+          "text": { ".validate": "newData.isString() && newData.val().length <= 3000" }
+        }
+      }
+    },
     "managers": {
       ".read": "auth != null",
       "$uid": {

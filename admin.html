@@ -94,6 +94,12 @@
       <div class="stat"><div class="n" id="stSolo">0</div><div class="l">무소속 회원</div></div>
       <div class="stat"><div class="n" id="stNew">0</div><div class="l">최근 7일 신규</div></div>
       <div class="stat"><div class="n" id="stMgr">0</div><div class="l">관리매니저</div></div>
+      <div class="stat"><div class="n" id="stQna" style="color:var(--warn)">0</div><div class="l">미답변 문의</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>💬 문의(Q&amp;A) <small style="color:var(--sub);font-weight:400">— 회원이 앱의 '문의하기'로 남긴 질문 · 답변하면 그 회원의 문의 내역에 표시됩니다</small></h3>
+      <div id="qnaBox"></div>
     </div>
 
     <div class="panel">
@@ -129,7 +135,7 @@
     appId: "1:9113682878:web:b7b4571af1d5bed37defef"
   });
   const $id = (i) => document.getElementById(i);
-  let users = {}, wss = {}, managers = {}, ready = false, isSuper = false;
+  let users = {}, wss = {}, managers = {}, qna = {}, ready = false, isSuper = false;
   const coStats = {};   // wid → 집계(상세 통계 버튼으로 로드)
   let toastT = null;
   function toast(m) { const el = $id("toast"); el.textContent = m; el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), 2600); }
@@ -157,8 +163,73 @@
     db.ref("users").on("value", (s) => { users = s.val() || {}; render(); });
     db.ref("workspaces").on("value", (s) => { wss = s.val() || {}; render(); });
     db.ref("managers").on("value", (s) => { managers = s.val() || {}; render(); });
+    db.ref("qna").on("value", (s) => { qna = s.val() || {}; render(); });
     $id("q").addEventListener("input", render);
   }
+
+  // ── 문의(Q&A): 최고관리자·관리매니저 모두 답변 가능 ──
+  function myName() {
+    const u = firebase.auth().currentUser;
+    return (u && users[u.uid] && users[u.uid].name) || (isSuper ? "최고관리자" : "관리매니저");
+  }
+  let qnaSnap = "";
+  function renderQna() {
+    const box = $id("qnaBox"); if (!box) return;
+    const snap = JSON.stringify(qna);   // 데이터가 안 바뀌면 다시 그리지 않음(입력 보호)
+    if (snap === qnaSnap && box.children.length) return;
+    qnaSnap = snap;
+    const items = [];
+    Object.keys(qna).forEach((uid) => {
+      Object.keys(qna[uid] || {}).forEach((qid) => {
+        const q = qna[uid][qid] || {};
+        items.push({ uid, qid, q });
+      });
+    });
+    // 미답변 먼저, 그 안에서 최신순
+    items.sort((a, b) => (a.q.answer ? 1 : 0) - (b.q.answer ? 1 : 0) || (b.q.ts || 0) - (a.q.ts || 0));
+    $id("stQna").textContent = items.filter((it) => !it.q.answer).length;
+    box.innerHTML = "";
+    if (!items.length) { box.innerHTML = "<div class='empty' style='padding:12px 0'>아직 접수된 문의가 없어요.</div>"; return; }
+    items.slice(0, 30).forEach((it) => {
+      const { uid, qid, q } = it;
+      const card = document.createElement("div");
+      card.style.cssText = "border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:.88rem"
+        + (q.answer ? ";opacity:.75" : "");
+      const head = document.createElement("div");
+      head.style.cssText = "display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;color:var(--sub);font-size:.78rem;margin-bottom:3px";
+      head.innerHTML = "<span><b style='color:var(--text)'>" + esc(q.name || "?") + "</b> · " + esc(q.email || "") + "</span><span>"
+        + fmtD(q.ts) + (q.answer ? " · 답변 완료" : " · <b style='color:var(--warn)'>미답변</b>") + "</span>";
+      const tx = document.createElement("div"); tx.textContent = q.text || ""; tx.style.whiteSpace = "pre-line";
+      card.append(head, tx);
+      if (q.answer && q.answer.text) {
+        const an = document.createElement("div");
+        an.style.cssText = "margin-top:7px;padding:7px 10px;border-radius:8px;background:var(--soft);white-space:pre-line";
+        an.textContent = "↩ " + (q.answer.byName || "운영진") + ": " + q.answer.text;
+        card.append(an);
+      }
+      const arow = document.createElement("div"); arow.style.cssText = "display:flex;gap:6px;margin-top:8px";
+      const inp = document.createElement("textarea"); inp.rows = 1; inp.placeholder = q.answer ? "답변 수정…" : "답변 작성…";
+      inp.style.cssText = "flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-family:inherit;font-size:.85rem;outline:none;resize:vertical";
+      const sb = document.createElement("button"); sb.textContent = q.answer ? "답변 수정" : "답변 달기";
+      sb.addEventListener("click", () => {
+        const v = (inp.value || "").trim(); if (!v) return;
+        firebase.database().ref("qna/" + uid + "/" + qid + "/answer").set({ text: v, byName: myName(), ts: Date.now() })
+          .then(() => toast("답변을 등록했어요")).catch((e) => toast("실패: " + e.message));
+      });
+      arow.append(inp, sb);
+      if (isSuper) {
+        const dl = document.createElement("button"); dl.className = "danger"; dl.textContent = "삭제";
+        dl.addEventListener("click", () => {
+          if (!confirm("이 문의를 삭제할까요?")) return;
+          firebase.database().ref("qna/" + uid + "/" + qid).remove().catch((e) => toast("실패: " + e.message));
+        });
+        arow.append(dl);
+      }
+      card.append(arow);
+      box.append(card);
+    });
+  }
+  function esc(s) { const d = document.createElement("span"); d.textContent = s || ""; return d.innerHTML; }
 
   // ── 회사 상세 통계: 버튼 클릭 시 그 회사의 팀 데이터를 한 번 읽어 집계 ──
   async function loadCoStats(wid, btn) {
@@ -252,6 +323,7 @@
   }
 
   function render() {
+    renderQna();
     const q = ($id("q").value || "").trim().toLowerCase();
     const uids = Object.keys(users), wids = Object.keys(wss);
     const solo = uids.filter((u) => !(users[u] || {}).ws);
