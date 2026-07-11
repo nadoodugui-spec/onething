@@ -473,6 +473,9 @@
   .login-msg { color: var(--accent); min-height: 1.2em; margin-top: 8px; font-size: .9rem; text-align: center; }
   .login-skip { display: block; margin: 12px auto 0; background: none; border: none; color: var(--ink-soft);
     cursor: pointer; font-family: var(--font-body); font-size: .85rem; text-decoration: underline; }
+  .pw-hint { font-size: .78rem; color: var(--text-soft); margin: 8px 2px 4px; }
+  .pw-meter { height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; margin: 0 2px 4px; }
+  .pw-meter div { height: 100%; width: 0; border-radius: 2px; transition: width .2s ease, background .2s ease; }
   .unread-badge { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 11px;
     background: #e5484d; color: #fff; font-size: .82rem; font-weight: 800; line-height: 20px; text-align: center;
     box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(0,0,0,.35); }
@@ -734,30 +737,49 @@
     <div class="login-card">
       <div class="login-logo">◉ The One Thing</div>
       <div class="login-hero" data-i18n-html="lg_hero">모든 게 급하다고 말하는 시대,<br><b>성과는 언제나 '단 하나'에서 나옵니다.</b></div>
-      <div class="login-title" data-i18n="lg_title">누구로 시작할까요?</div>
-      <ul class="login-users" id="loginUsers"></ul>
-      <div class="login-or" data-i18n="lg_or">또는 새로 등록</div>
-      <div class="login-form">
-        <input id="lgName" type="text" maxlength="20" data-i18n-ph="lg_name_ph" placeholder="이름" autocomplete="off" />
-        <input id="lgPin" type="password" inputmode="numeric" maxlength="4" data-i18n-ph="lg_pin_ph" placeholder="숫자 4자리" autocomplete="off" />
-        <button id="lgRegisterBtn" class="mbtn" data-i18n="lg_register">등록하고 시작</button>
+      <button id="googleBtn" class="mbtn" type="button" style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:none;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="17" height="17" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.3 6 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.3 6 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.7l6.2 5.2C41.4 35.4 44 30.1 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+        <span data-i18n="au_google">Google로 계속하기</span>
+      </button>
+      <div class="login-or" data-i18n="au_or">또는 이메일로</div>
+      <div class="login-form" style="flex-direction:column">
+        <input id="auEmail" type="email" data-i18n-ph="au_email_ph" placeholder="이메일" autocomplete="email" style="flex:none;width:100%" />
+        <input id="auPw" type="password" data-i18n-ph="au_pw_ph" placeholder="비밀번호" autocomplete="current-password" style="flex:none;width:100%" />
+        <div id="signupExtra" hidden style="width:100%">
+          <input id="auPw2" type="password" data-i18n-ph="au_pw2_ph" placeholder="비밀번호 확인" autocomplete="new-password" style="width:100%;padding:10px;border:none;border-bottom:1px solid var(--border);background:transparent;color:var(--text);font-family:var(--font-body);font-size:1rem;outline:none;box-sizing:border-box" />
+          <input id="auName" type="text" maxlength="20" data-i18n-ph="au_name_ph" placeholder="이름 (팀에 보이는 이름)" autocomplete="name" style="width:100%;padding:10px;border:none;border-bottom:1px solid var(--border);background:transparent;color:var(--text);font-family:var(--font-body);font-size:1rem;outline:none;box-sizing:border-box" />
+          <div class="pw-hint" data-i18n="au_pw_rule">비밀번호: 8자 이상, 영문과 숫자 포함 (특수문자 권장)</div>
+          <div class="pw-meter"><div id="pwBar"></div></div>
+        </div>
+        <button id="authPrimary" class="mbtn" data-i18n="au_login" style="width:100%">로그인</button>
       </div>
-      <div class="login-msg" id="lgMsg"></div>
+      <div class="login-msg" id="authMsg"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px">
+        <button id="authToggle" class="login-skip" type="button" style="margin:0" data-i18n="au_to_signup">이메일로 회원가입 →</button>
+        <button id="pwForgot" class="login-skip" type="button" style="margin:0" data-i18n="au_forgot">비밀번호 찾기</button>
+      </div>
       <a class="login-story" href="about.html" target="_blank" rel="noopener" data-i18n="lg_story">우리의 이야기 →</a>
     </div>
   </div>
 
-  <div class="modal" id="pinModal" hidden style="z-index:300">
-    <div class="modal-box" style="width:min(94vw,340px)">
-      <div class="modal-head"><span data-i18n="lg_pin_head">🔒 비밀번호 입력</span><button class="modal-close" id="pinClose">✕</button></div>
-      <p class="modal-desc" id="pinModalDesc"></p>
-      <input id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="●●●●" autocomplete="off"
-        style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--ink);font-family:var(--font-body);font-size:1.4rem;letter-spacing:.5em;text-align:center;outline:none;box-sizing:border-box" />
-      <div class="mrow" style="margin-top:14px;justify-content:flex-end">
-        <button id="pinCancel" class="mbtn ghost" data-i18n="lg_pin_cancel">취소</button>
-        <button id="pinConfirm" class="mbtn" data-i18n="lg_pin_confirm">확인</button>
+  <!-- 첫 로그인 프로필 설정 + 기존(이름/PIN) 계정 연결 -->
+  <div class="modal" id="profileModal" hidden style="z-index:300">
+    <div class="modal-box" style="width:min(94vw,400px)">
+      <div class="modal-head"><span data-i18n="pf_head">프로필 설정</span></div>
+      <p class="modal-desc" data-i18n="pf_desc">팀에 보일 이름을 정해주세요.</p>
+      <input id="pfName" type="text" maxlength="20" data-i18n-ph="au_name_ph" placeholder="이름 (팀에 보이는 이름)" autocomplete="off"
+        style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:1rem;outline:none;box-sizing:border-box" />
+      <div class="mrow" style="margin-top:12px;justify-content:flex-end"><button id="pfStart" class="mbtn" data-i18n="pf_start">시작하기</button></div>
+      <div class="login-msg" id="pfMsg"></div>
+      <div id="pfLegacy" hidden style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+        <div class="mlabel" data-i18n="pf_legacy_h">예전 이름+PIN 계정이 있나요? 연결하면 할 일·소속이 그대로 이어져요.</div>
+        <div class="mrow" style="margin-top:8px">
+          <select id="lcSel" style="flex:1;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);padding:8px;outline:none"></select>
+          <input id="lcPin" type="password" inputmode="numeric" maxlength="4" placeholder="PIN" autocomplete="off"
+            style="width:70px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);text-align:center;outline:none" />
+          <button id="lcLink" class="mbtn ghost" data-i18n="pf_link">연결</button>
+        </div>
       </div>
-      <div class="login-msg" id="pinMsg"></div>
     </div>
   </div>
 
@@ -1424,6 +1446,38 @@
     lg_title: { ko: "누구로 시작할까요?", en: "Who are you?" },
     lg_hero: { ko: "모든 게 급하다고 말하는 시대,<br><b>성과는 언제나 '단 하나'에서 나옵니다.</b>", en: "In a world where everything feels urgent,<br><b>results always come from one thing.</b>" },
     lg_story: { ko: "우리의 이야기 →", en: "Our story →" },
+    au_google: { ko: "Google로 계속하기", en: "Continue with Google" },
+    au_or: { ko: "또는 이메일로", en: "or with email" },
+    au_email_ph: { ko: "이메일", en: "Email" },
+    au_pw_ph: { ko: "비밀번호", en: "Password" },
+    au_pw2_ph: { ko: "비밀번호 확인", en: "Confirm password" },
+    au_name_ph: { ko: "이름 (팀에 보이는 이름)", en: "Name (shown to your team)" },
+    au_pw_rule: { ko: "비밀번호: 8자 이상, 영문과 숫자 포함 (특수문자 권장)", en: "Password: 8+ chars with letters & numbers (symbols recommended)" },
+    au_login: { ko: "로그인", en: "Log in" },
+    au_signup: { ko: "가입하기", en: "Sign up" },
+    au_to_signup: { ko: "이메일로 회원가입 →", en: "Sign up with email →" },
+    au_to_login: { ko: "← 로그인으로", en: "← Back to log in" },
+    au_forgot: { ko: "비밀번호 찾기", en: "Forgot password" },
+    au_forgot_need: { ko: "이메일을 먼저 입력하세요", en: "Enter your email first" },
+    au_forgot_sent: { ko: "비밀번호 재설정 메일을 보냈어요 — 받은편지함을 확인하세요", en: "Password reset email sent — check your inbox" },
+    au_e_email: { ko: "올바른 이메일을 입력하세요", en: "Enter a valid email" },
+    au_e_dup: { ko: "이미 가입된 이메일이에요 — 로그인하거나 비밀번호 찾기를 이용하세요", en: "Email already registered — log in or reset password" },
+    au_e_weak: { ko: "비밀번호는 8자 이상, 영문과 숫자를 포함해야 해요", en: "Password needs 8+ chars with letters & numbers" },
+    au_e_pw2: { ko: "비밀번호 확인이 일치하지 않아요", en: "Passwords don't match" },
+    au_e_cred: { ko: "이메일 또는 비밀번호가 올바르지 않아요", en: "Wrong email or password" },
+    au_e_nouser: { ko: "가입되지 않은 이메일이에요", en: "No account with this email" },
+    au_e_many: { ko: "시도가 너무 많아요 — 잠시 후 다시 해주세요", en: "Too many attempts — try again later" },
+    au_e_off: { ko: "관리자 설정 대기 중이에요 (콘솔에서 로그인 방법을 켜주세요)", en: "Sign-in method not enabled yet" },
+    au_e_popup: { ko: "팝업이 닫혔거나 차단됐어요 — 다시 시도해주세요", en: "Popup closed or blocked — try again" },
+    pf_head: { ko: "프로필 설정", en: "Set up your profile" },
+    pf_desc: { ko: "팀에 보일 이름을 정해주세요.", en: "Choose the name your team will see." },
+    pf_start: { ko: "시작하기", en: "Get started" },
+    pf_legacy_h: { ko: "예전 이름+PIN 계정이 있나요? 연결하면 할 일·소속이 그대로 이어져요.", en: "Have an old name+PIN account? Link it to keep your data." },
+    pf_link: { ko: "연결", en: "Link" },
+    pf_linking: { ko: "계정을 연결하는 중…", en: "Linking account…" },
+    pw_reset: { ko: "비밀번호 재설정 메일", en: "Send password reset" },
+    pw_reset_noemail: { ko: "이 계정에 이메일이 없어요(구계정) — 본인이 이메일 가입 후 '계정 연결'을 하면 돼요", en: "No email on this account — they should sign up and link it" },
+    pw_reset_confirm: { ko: "{0}님({1})에게 비밀번호 재설정 메일을 보낼까요?", en: "Send a password reset email to {0} ({1})?" },
     rt_kicker: { ko: "오늘의 시작", en: "START YOUR DAY" },
     rt_q: { ko: "이걸 끝내면, 나머지가 쉬워지는<br><b>단 하나</b>는 무엇인가요?", en: "What's the <b>one thing</b> that makes<br>everything else easier?" },
     rt_sub: { ko: "여러 개를 잘하는 사람보다, 하나를 끝내는 사람이 이깁니다.", en: "The one who finishes one thing beats the one who juggles many." },
@@ -3265,7 +3319,9 @@
     if (!msgDb) { updateLoginGate(); return; }   // Firebase 미설정/오프라인 → 메시징 비활성
     msgDb.ref("users").on("value", (snap) => {
       usersCache = snap.val() || {};
-      resolveCurrentUser(); renderLoginUsers(); renderTeamBoard();
+      usersLoaded = true;
+      resolveCurrentUser(); renderTeamBoard();
+      maybeProfileSetup();   // 첫 로그인이면 이름 설정/기존 계정 연결
       attachWsListeners();   // 소속이 확인되면 팀 데이터 연결
       maybeMigrateWs();      // 구버전(전역) 데이터 → 워크스페이스 1회 이전
     });
@@ -3305,28 +3361,144 @@
     if (currentUser) initSync();
     refreshSyncState();
   }
-  // 눈에 안 보이는 익명 인증. 성공 시 startCloud(). 실패/오프라인이면 로컬 저장만 유지.
+  // ===== 정식 인증(Firebase Auth): 이메일+비밀번호 / Google =====
+  let authUser = null;       // firebase auth user
+  let usersLoaded = false;   // users 프로필 목록 1회 로드 여부
   function ensureAuth() {
     const db = ensureFirebase();
-    if (!db) return;   // Firebase 미설정/오프라인 → 이 컴퓨터에만 저장(기존 동작)
+    if (!db) return;
     try {
       const auth = firebase.auth();
-      auth.onAuthStateChanged((user) => { if (user) { authReady = true; startCloud(); } });
-      // 익명 로그인 시도. 아직 콘솔에서 익명 로그인을 안 켰거나 실패해도(규칙이 열려 있는 동안엔)
-      // startCloud()로 폴백 연결 → 앱이 끊기지 않음. 익명 로그인을 켜면 다음 새로고침부터 자동 인증.
-      if (!auth.currentUser) auth.signInAnonymously().catch(() => { startCloud(); });
-    } catch (e) { startCloud(); }
+      auth.onAuthStateChanged((user) => {
+        authUser = (user && !user.isAnonymous) ? user : null;
+        if (authUser) { authReady = true; startCloud(); resolveCurrentUser(); maybeProfileSetup(); }
+        else { currentUser = null; myWsId = null; updateLoginGate(); showLoginGate(); }
+      });
+    } catch (e) {}
   }
-
+  function mapAuthErr(e) {
+    const c = (e && e.code) || "";
+    if (c.includes("invalid-email")) return t("au_e_email");
+    if (c.includes("email-already-in-use")) return t("au_e_dup");
+    if (c.includes("weak-password")) return t("au_e_weak");
+    if (c.includes("wrong-password") || c.includes("invalid-credential") || c.includes("invalid-login")) return t("au_e_cred");
+    if (c.includes("user-not-found")) return t("au_e_nouser");
+    if (c.includes("too-many-requests")) return t("au_e_many");
+    if (c.includes("operation-not-allowed")) return t("au_e_off");
+    if (c.includes("popup")) return t("au_e_popup");
+    return t("ws_err");
+  }
+  // 비밀번호 정책: 8자 이상 + 영문 + 숫자 (특수문자 권장)
+  function pwPolicyOk(pw) { return /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(pw); }
+  function pwScore(pw) {
+    let s = 0;
+    if (pw.length >= 8) s++;
+    if (pw.length >= 12) s++;
+    if (/[A-Za-z]/.test(pw) && /\d/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw)) s++;
+    return Math.min(4, s);
+  }
   function resolveCurrentUser() {
-    let local = null;
-    try { local = JSON.parse(localStorage.getItem(USER_KEY) || "null"); } catch (_) {}
-    if (local && local.id) currentUser = Object.assign({ id: local.id, name: local.name || "?" }, usersCache[local.id] || {});
+    if (authUser && usersCache[authUser.uid]) currentUser = Object.assign({ id: authUser.uid }, usersCache[authUser.uid]);
     else currentUser = null;
-    myWsId = (currentUser && usersCache[currentUser.id] && usersCache[currentUser.id].ws) || null;
+    myWsId = (currentUser && currentUser.ws) || null;
     claimAdmin();
+    if (currentUser) hideLoginGate();
     updateLoginGate();
   }
+  // 로그인은 됐는데 프로필(users/{uid})이 없으면 → 이름 설정 + (선택) 기존 계정 연결
+  function maybeProfileSetup() {
+    if (!authUser || !usersLoaded) return;
+    if (usersCache[authUser.uid]) { $id("profileModal").hidden = true; return; }
+    hideLoginGate();
+    $id("pfName").value = authUser.displayName || "";
+    $id("pfMsg").textContent = "";
+    // 이메일이 아직 연결 안 된 예전(이름+PIN) 계정 목록
+    const legacy = Object.keys(usersCache).filter((k) => !(usersCache[k] || {}).email);
+    const wrap = $id("pfLegacy"), sel = $id("lcSel");
+    if (legacy.length) {
+      wrap.hidden = false; sel.innerHTML = "";
+      legacy.forEach((k) => { const o = document.createElement("option"); o.value = k; o.textContent = (usersCache[k] || {}).name || "?"; sel.appendChild(o); });
+    } else wrap.hidden = true;
+    $id("profileModal").hidden = false;
+  }
+  async function createProfile() {
+    if (!authUser || !msgDb) return;
+    const name = ($id("pfName").value || "").trim();
+    if (!name) { $id("pfMsg").textContent = t("rq_need_name"); return; }
+    if (findUserByName(name)) { $id("pfMsg").textContent = t("rq_dup_name"); return; }
+    try {
+      await msgDb.ref("users/" + authUser.uid).set({ name: name, email: authUser.email || "", createdAt: Date.now() });
+      $id("profileModal").hidden = true;
+    } catch (_) { $id("pfMsg").textContent = t("ws_err"); }
+  }
+  // 예전 계정 연결: PIN 검증 → 프로필·노트·팀 데이터 참조를 새 uid로 이전
+  async function linkLegacy() {
+    if (!authUser || !msgDb) return;
+    const legacyId = $id("lcSel").value; const pin = ($id("lcPin").value || "").trim();
+    const prof = usersCache[legacyId];
+    if (!prof) return;
+    let ok = false;
+    if (prof.pinH) ok = (await hashPin(pin)) === prof.pinH;
+    else ok = (prof.pin || "") === pin;
+    if (!ok) { $id("pfMsg").textContent = t("rq_wrong_pin"); return; }
+    $id("pfMsg").textContent = t("pf_linking");
+    try {
+      const uid2 = authUser.uid;
+      const rec = { name: prof.name, email: authUser.email || "", createdAt: prof.createdAt || Date.now() };
+      if (prof.ws) rec.ws = prof.ws;
+      if (prof.role) rec.role = prof.role;
+      if (prof.admin) rec.admin = true;
+      await msgDb.ref("users/" + uid2).set(rec);
+      // 개인 노트(클라우드) 이전
+      const nb = await msgDb.ref("notes/user_" + legacyId).once("value");
+      if (nb.val()) await msgDb.ref("notes/user_" + uid2).set(nb.val());
+      // 개인 노트(이 기기) 이전
+      try {
+        const localNb = localStorage.getItem("onething-notebook::" + legacyId);
+        if (localNb) localStorage.setItem("onething-notebook::" + uid2, localNb);
+      } catch (_) {}
+      // 팀 데이터 참조 교체
+      if (prof.ws) {
+        const wsId = prof.ws;
+        const snap = await msgDb.ref("ws/" + wsId).once("value");
+        const d = snap.val() || {};
+        const ups = {};
+        Object.keys(d.requests || {}).forEach((id) => {
+          const r = d.requests[id] || {};
+          if (r.from === legacyId) ups["requests/" + id + "/from"] = uid2;
+          if (r.to === legacyId) ups["requests/" + id + "/to"] = uid2;
+          if (Array.isArray(r.hiddenFor) && r.hiddenFor.indexOf(legacyId) >= 0) ups["requests/" + id + "/hiddenFor"] = r.hiddenFor.map((x) => x === legacyId ? uid2 : x);
+          if (r.replySeen && r.replySeen[legacyId] != null) { ups["requests/" + id + "/replySeen/" + uid2] = r.replySeen[legacyId]; ups["requests/" + id + "/replySeen/" + legacyId] = null; }
+          if (r.doneSeen && r.doneSeen[legacyId]) { ups["requests/" + id + "/doneSeen/" + uid2] = true; ups["requests/" + id + "/doneSeen/" + legacyId] = null; }
+          if (Array.isArray(r.replies)) {
+            let ch = false;
+            const nr = r.replies.map((rep) => { if (rep && rep.from === legacyId) { ch = true; return Object.assign({}, rep, { from: uid2 }); } return rep; });
+            if (ch) ups["requests/" + id + "/replies"] = nr;
+          }
+        });
+        if ((d.status || {})[legacyId]) { ups["status/" + uid2] = d.status[legacyId]; ups["status/" + legacyId] = null; }
+        Object.keys(d.projects || {}).forEach((pid) => {
+          const p = d.projects[pid] || {};
+          if (p.owner === legacyId) ups["projects/" + pid + "/owner"] = uid2;
+          if (p.members && p.members[legacyId]) { ups["projects/" + pid + "/members/" + uid2] = true; ups["projects/" + pid + "/members/" + legacyId] = null; }
+        });
+        Object.keys(d.projectTodos || {}).forEach((pid) => {
+          Object.keys(d.projectTodos[pid] || {}).forEach((tid) => {
+            const c = d.projectTodos[pid][tid] || {};
+            if (c.assignee === legacyId) ups["projectTodos/" + pid + "/" + tid + "/assignee"] = uid2;
+          });
+        });
+        // 워크스페이스 오너 승계
+        const wsm = await msgDb.ref("workspaces/" + wsId).once("value");
+        if (wsm.val() && wsm.val().owner === legacyId) ups2Owner(wsId, uid2);
+        if (Object.keys(ups).length) await msgDb.ref("ws/" + wsId).update(ups);
+      }
+      await msgDb.ref("users/" + legacyId).remove();
+      location.reload();
+    } catch (_) { $id("pfMsg").textContent = t("ws_err"); }
+  }
+  function ups2Owner(wsId, uid2) { try { msgDb.ref("workspaces/" + wsId + "/owner").set(uid2); } catch (_) {} }
   // ----- 워크스페이스 만들기/참여/이전 -----
   async function createWs(name) {
     if (!msgDb || !currentUser) { toast(t("rq_offline")); return; }
@@ -3411,12 +3583,11 @@
       const li = document.createElement("li");
       const dot = statusDot(id);
       const tx = document.createElement("span"); tx.className = "mtext"; tx.textContent = u.name || "?";
-      const rp = document.createElement("button"); rp.textContent = t("pin_reset");
+      const rp = document.createElement("button"); rp.textContent = t("pw_reset");
       rp.addEventListener("click", async () => {
-        const np = (prompt(t("pin_new_prompt", u.name || "?"), "") || "").trim();
-        if (!np) return;
-        if (!/^\d{4}$/.test(np)) { toast(t("rq_need_pin")); return; }
-        try { msgDb.ref("users/" + id).update({ pinH: await hashPin(np), pin: null }); toast(t("pin_reset_done")); } catch (_) {}
+        if (!u.email) { toast(t("pw_reset_noemail")); return; }
+        if (!confirm(t("pw_reset_confirm", u.name || "?", u.email))) return;
+        try { await firebase.auth().sendPasswordResetEmail(u.email); toast(t("au_forgot_sent")); } catch (e) { toast(mapAuthErr(e)); }
       });
       const del = document.createElement("button"); del.textContent = t("um_del");
       del.addEventListener("click", () => deleteUser(id));
@@ -3448,38 +3619,54 @@
       return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
     } catch (_) { return "plain:" + pin; }
   }
-  async function registerUser(name, pin) {
-    name = (name || "").trim(); pin = (pin || "").trim();
-    if (!name) return { ok: false, msg: t("rq_need_name") };
-    if (!/^\d{4}$/.test(pin)) return { ok: false, msg: t("rq_need_pin") };
-    if (!msgDb) return { ok: false, msg: t("rq_offline") };
-    if (findUserByName(name)) return { ok: false, msg: t("rq_dup_name") };
-    const id = uid(); const rec = { name: name, pinH: await hashPin(pin), createdAt: Date.now() };
-    msgDb.ref("users/" + id).set(rec);
-    usersCache[id] = rec;                                   // 낙관적 반영
-    localStorage.setItem(USER_KEY, JSON.stringify({ id, name }));
-    resolveCurrentUser(); switchNotebook();
-    return { ok: true };
+  // ----- 이메일/구글 인증 액션 -----
+  let signupMode = false;
+  function setAuthMode(signup) {
+    signupMode = signup;
+    $id("signupExtra").hidden = !signup;
+    $id("authPrimary").textContent = signup ? t("au_signup") : t("au_login");
+    $id("authToggle").textContent = signup ? t("au_to_login") : t("au_to_signup");
+    $id("authMsg").textContent = "";
   }
-  async function loginUser(id, pin) {
-    const u = usersCache[id]; if (!u) return { ok: false, msg: t("rq_no_user") };
-    pin = (pin || "").trim();
-    let ok = false;
-    if (u.pinH) ok = (await hashPin(pin)) === u.pinH;
-    else ok = (u.pin || "") === pin;
-    if (!ok) return { ok: false, msg: t("rq_wrong_pin") };
-    if (!u.pinH && msgDb) {   // 평문 → 해시 자동 전환
-      try { const h = await hashPin(pin); msgDb.ref("users/" + id).update({ pinH: h, pin: null }); u.pinH = h; delete u.pin; } catch (_) {}
-    }
-    localStorage.setItem(USER_KEY, JSON.stringify({ id, name: u.name }));
-    resolveCurrentUser(); switchNotebook();
-    if (wsAttached !== myWsId) setTimeout(() => location.reload(), 400);   // 다른 워크스페이스 계정으로 전환 시 재연결
-    return { ok: true };
+  async function doAuthPrimary() {
+    const auth = firebase.auth();
+    const email = ($id("auEmail").value || "").trim();
+    const pw = $id("auPw").value || "";
+    const msg = $id("authMsg");
+    msg.textContent = "";
+    if (!email) { msg.textContent = t("au_e_email"); return; }
+    try {
+      if (signupMode) {
+        const name = ($id("auName").value || "").trim();
+        if (!name) { msg.textContent = t("rq_need_name"); return; }
+        if (!pwPolicyOk(pw)) { msg.textContent = t("au_e_weak"); return; }
+        if (pw !== $id("auPw2").value) { msg.textContent = t("au_e_pw2"); return; }
+        const cred = await auth.createUserWithEmailAndPassword(email, pw);
+        try { await cred.user.updateProfile({ displayName: name }); } catch (_) {}
+        // 프로필은 로그인 후 users 스냅샷 기준으로 maybeProfileSetup에서 생성(이름 미리 채움)
+      } else {
+        await auth.signInWithEmailAndPassword(email, pw);
+      }
+    } catch (e) { msg.textContent = mapAuthErr(e); }
+  }
+  async function doGoogle() {
+    try {
+      await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    } catch (e) { $id("authMsg").textContent = mapAuthErr(e); }
+  }
+  async function doForgot() {
+    const email = ($id("auEmail").value || "").trim();
+    if (!email) { $id("authMsg").textContent = t("au_forgot_need"); return; }
+    try {
+      await firebase.auth().sendPasswordResetEmail(email);
+      $id("authMsg").textContent = t("au_forgot_sent");
+    } catch (e) { $id("authMsg").textContent = mapAuthErr(e); }
   }
   function logoutUser() {
     releaseMyPresence();
-    localStorage.removeItem(USER_KEY); currentUser = null;
+    currentUser = null;
     if (syncRef) { syncRef.off(); syncRef = null; } cloudReady = false;
+    try { firebase.auth().signOut(); } catch (_) {}
     state = migrate(null); render(); updateLoginGate(); refreshSyncState();
   }
   function switchNotebook() {
@@ -3694,36 +3881,9 @@
     if (inTeam) { renderRequests(); ensureMyPresence(); }
     renderMyStatus(); applySidePin(); renderTeamBoard();
   }
-  function renderLoginUsers() {
-    const ul = $id("loginUsers"); if (!ul) return; ul.innerHTML = "";
-    const ids = Object.keys(usersCache);
-    if (!ids.length) { const li = document.createElement("li"); li.className = "login-empty"; li.textContent = t("lg_empty"); ul.appendChild(li); return; }
-    ids.forEach((id) => {
-      const li = document.createElement("li"); li.className = "login-user";
-      li.textContent = (usersCache[id] || {}).name || "?";
-      li.addEventListener("click", () => openPinModal(id));
-      ul.appendChild(li);
-    });
-  }
-  function showLoginGate() { const g = $id("loginGate"); if (g && cloudConfigured()) { g.hidden = false; renderLoginUsers(); const m = $id("lgMsg"); if (m) m.textContent = ""; } }
+  function renderLoginUsers() {}   // (구버전 게이트 계정 목록 — 이메일 인증으로 대체)
+  function showLoginGate() { const g = $id("loginGate"); if (g && cloudConfigured() && !currentUser) { g.hidden = false; const m = $id("authMsg"); if (m) m.textContent = ""; } }
   function hideLoginGate() { const g = $id("loginGate"); if (g) g.hidden = true; }
-  // 비밀번호(PIN) 입력 모달 — native prompt 대체, 입력값을 ● 로 가림
-  let pinTargetId = null;
-  function openPinModal(id) {
-    pinTargetId = id;
-    $id("pinModalDesc").textContent = t("lg_pin_prompt", (usersCache[id] || {}).name || "?");
-    const inp = $id("pinInput"); inp.value = "";
-    $id("pinMsg").textContent = "";
-    $id("pinModal").hidden = false;
-    setTimeout(() => inp.focus(), 30);
-  }
-  function closePinModal() { $id("pinModal").hidden = true; pinTargetId = null; }
-  async function submitPin() {
-    if (!pinTargetId) return;
-    const r = await loginUser(pinTargetId, ($id("pinInput").value || "").trim());
-    if (r.ok) { closePinModal(); hideLoginGate(); toast(t("lg_welcome", currentUser.name)); }
-    else { $id("pinMsg").textContent = r.msg; const inp = $id("pinInput"); inp.value = ""; inp.focus(); }
-  }
   function reqKindOf(r) { return r && r.kind === "task" ? "task" : "memo"; }   // 구버전 데이터는 쪽지 취급
   let reqKind = "memo";   // 요청 팝업의 쪽지/업무요청 서브탭
   function setReqKind(k) {
@@ -4451,28 +4611,23 @@
     toast(t("st_changed", t("st_vacation")));
   });
 
-  $id("lgRegisterBtn").addEventListener("click", async () => {
-    const r = await registerUser($id("lgName").value, $id("lgPin").value);
-    if (r.ok) {
-      hideLoginGate(); toast(t("lg_welcome", currentUser.name));
-      $id("lgName").value = ""; $id("lgPin").value = ""; const m = $id("lgMsg"); if (m) m.textContent = "";
-      // 새 계정: 워크스페이스 참여/만들기 안내 (개인으로도 사용 가능)
-      setTimeout(() => {
-        if (!myWsId && currentUser) {
-          $id("userWho").textContent = t("um_who", currentUser.name);
-          renderMembers(); renderUmWs();
-          $id("userModal").hidden = false;
-        }
-      }, 500);
-    }
-    else { const m = $id("lgMsg"); if (m) m.textContent = r.msg; }
+  // ----- 인증 UI 이벤트 -----
+  $id("googleBtn").addEventListener("click", doGoogle);
+  $id("authPrimary").addEventListener("click", doAuthPrimary);
+  $id("authToggle").addEventListener("click", () => setAuthMode(!signupMode));
+  $id("pwForgot").addEventListener("click", doForgot);
+  $id("auPw").addEventListener("keydown", (e) => { if (e.key === "Enter" && !signupMode) doAuthPrimary(); });
+  $id("auName").addEventListener("keydown", (e) => { if (e.key === "Enter") doAuthPrimary(); });
+  $id("auPw").addEventListener("input", () => {
+    if (!signupMode) return;
+    const sc = pwScore($id("auPw").value);
+    const bar = $id("pwBar");
+    bar.style.width = (sc * 25) + "%";
+    bar.style.background = sc <= 1 ? "var(--danger)" : sc <= 2 ? "var(--warn)" : "var(--ok)";
   });
-  $id("lgPin").addEventListener("keydown", (e) => { if (e.key === "Enter") $id("lgRegisterBtn").click(); });
-  $id("pinConfirm").addEventListener("click", submitPin);
-  $id("pinCancel").addEventListener("click", closePinModal);
-  $id("pinClose").addEventListener("click", closePinModal);
-  $id("pinInput").addEventListener("keydown", (e) => { if (e.key === "Enter") submitPin(); else if (e.key === "Escape") closePinModal(); });
-  $id("pinModal").addEventListener("click", (e) => { if (e.target.id === "pinModal") closePinModal(); });
+  $id("pfStart").addEventListener("click", createProfile);
+  $id("pfName").addEventListener("keydown", (e) => { if (e.key === "Enter") createProfile(); });
+  $id("lcLink").addEventListener("click", linkLegacy);
   $id("userClose").addEventListener("click", () => { $id("userModal").hidden = true; });
   $id("switchUserBtn").addEventListener("click", () => { $id("userModal").hidden = true; logoutUser(); showLoginGate(); });
   $id("renameBtn").addEventListener("click", () => {
@@ -4484,7 +4639,6 @@
       msgDb.ref("users/" + currentUser.id + "/name").set(name);
       currentUser.name = name;
       if (usersCache[currentUser.id]) usersCache[currentUser.id].name = name;
-      localStorage.setItem(USER_KEY, JSON.stringify({ id: currentUser.id, name: name }));
       const n = $id("userChipName"); if (n) n.textContent = name;
       $id("userWho").textContent = t("um_who", name);
       renderTeamBoard();
