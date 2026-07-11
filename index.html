@@ -3432,12 +3432,18 @@
     if (/[^A-Za-z0-9]/.test(pw)) s++;
     return Math.min(4, s);
   }
+  let lastResolvedUid = null;   // 계정이 바뀐 순간에만 노트를 다시 연결
   function resolveCurrentUser() {
     if (authUser && usersCache[authUser.uid]) currentUser = Object.assign({ id: authUser.uid }, usersCache[authUser.uid]);
     else currentUser = null;
     myWsId = (currentUser && currentUser.ws) || null;
     claimAdmin();
     if (currentUser) hideLoginGate();
+    const uidNow = currentUser ? currentUser.id : null;
+    if (uidNow !== lastResolvedUid) {
+      lastResolvedUid = uidNow;
+      if (uidNow) switchNotebook();   // ★ 로그인 확정 시 개인 노트 로드 + 클라우드 동기화 연결
+    }
     updateLoginGate();
   }
   // 로그인은 됐는데 프로필(users/{uid})이 없으면 → 이름 설정 + (선택) 기존 계정 연결
