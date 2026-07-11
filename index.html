@@ -3808,9 +3808,13 @@
           if (Object.keys(ups).length) wsRef("requests").update(ups);
           wsRef("status/" + id).remove();
           const oldWs = u.ws || null, oldRole = u.role || null;
-          msgDb.ref("users/" + id).update({ ws: null, role: null });
+          const amOwner = (usersCache[currentUser.id] || {}).role === "owner";
+          const upd = { ws: null }; if (amOwner) upd.role = null;   // 직책 변경은 오너만(규칙과 일치)
+          msgDb.ref("users/" + id).update(upd);
           logAdmin("내보내기", u.name || "?");
-          toastUndo(t("kick_done", u.name || "?"), () => { try { msgDb.ref("users/" + id).update({ ws: oldWs, role: oldRole }); } catch (_) {} });
+          toastUndo(t("kick_done", u.name || "?"), () => {
+            try { const back = { ws: oldWs }; if (amOwner) back.role = oldRole; msgDb.ref("users/" + id).update(back); } catch (_) {}
+          });
         } catch (_) {}
         setTimeout(renderMembers, 300);
       });
