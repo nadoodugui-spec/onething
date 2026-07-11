@@ -3402,7 +3402,8 @@
     try {
       const auth = firebase.auth();
       auth.onAuthStateChanged((user) => {
-        authUser = (user && !user.isAnonymous) ? user : null;
+        if (user && user.isAnonymous) { try { auth.signOut(); } catch (_) {} return; }   // 구버전 익명 세션 정리
+        authUser = user || null;
         if (authUser) { authReady = true; startCloud(); resolveCurrentUser(); maybeProfileSetup(); }
         else { currentUser = null; myWsId = null; updateLoginGate(); showLoginGate(); }
       });

@@ -1,5 +1,5 @@
 // OneThing service worker — 앱 셸 캐시(오프라인 실행), 페이지는 네트워크 우선(항상 최신 유지)
-const CACHE = "onething-v1";
+const CACHE = "onething-v2";   // 인증 개편 — 구버전 캐시 폐기
 const SHELL = ["./", "./index.html", "./icon-192.png", "./icon-512.png", "./manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
