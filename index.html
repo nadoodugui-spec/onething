@@ -1037,6 +1037,22 @@
         <div class="section-h" data-i18n="audit_h">최근 관리 기록</div>
         <div id="umAuditList"></div>
       </div>
+      <div id="umPlatform" hidden>
+        <div class="section-h" data-i18n="pf_h">플랫폼 관리 (최고관리자)</div>
+        <div class="mrow"><button id="pfOpenBtn" class="mbtn ghost" data-i18n="pf_open">전체 현황 보기</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="pfModal" hidden>
+    <div class="modal-box" style="width:min(94vw,640px);max-height:86vh;overflow:auto">
+      <div class="modal-head"><span data-i18n="pf_head">🛠 플랫폼 전체 현황</span><button class="modal-close" id="pfClose">✕</button></div>
+      <p class="modal-desc" id="pfSummary" style="margin:6px 0 10px"></p>
+      <div class="mrow">
+        <input id="pfSearch" type="search" data-i18n-ph="pf_search_ph" placeholder="회사·회원 이름/이메일 검색" autocomplete="off"
+          style="flex:1;padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.95rem;outline:none" />
+      </div>
+      <div id="pfBody"></div>
     </div>
   </div>
 
@@ -1533,8 +1549,20 @@
     undo_deleted: { ko: "삭제했어요", en: "Deleted" },
     rq_edit: { ko: "수정", en: "Edit" },
     rq_recall: { ko: "회수", en: "Recall" },
-    rq_recall_confirm: { ko: "이 요청을 회수할까요? 상대의 받은함에서 사라집니다.", en: "Recall this request? It disappears from their inbox." },
+    rq_recall_confirm: { ko: "이 요청을 회수할까요? 상대에게는 '회수됨'으로 표시되고 내용은 보이지 않아요.", en: "Recall this request? The recipient will see it marked as recalled, without its content." },
     rq_recalled: { ko: "요청을 회수했어요", en: "Request recalled" },
+    rq_recalled_pill: { ko: "회수됨", en: "Recalled" },
+    rq_recalled_body: { ko: "보낸 사람이 이 요청을 회수했어요.", en: "The sender recalled this request." },
+    pf_h: { ko: "플랫폼 관리 (최고관리자)", en: "Platform admin (super admin)" },
+    pf_open: { ko: "전체 현황 보기", en: "View overall status" },
+    pf_head: { ko: "🛠 플랫폼 전체 현황", en: "🛠 Platform overview" },
+    pf_search_ph: { ko: "회사·회원 이름/이메일 검색", en: "Search companies or members" },
+    pf_sum: { ko: "워크스페이스(회사) $1곳 · 전체 회원 $2명 · 무소속 $3명", en: "$1 workspaces · $2 members total · $3 unaffiliated" },
+    pf_owner: { ko: "오너", en: "Owner" },
+    pf_admin: { ko: "관리자", en: "Admin" },
+    pf_members_n: { ko: "구성원 $1명", en: "$1 members" },
+    pf_solo_h: { ko: "무소속 회원", en: "Unaffiliated members" },
+    pf_empty: { ko: "검색 결과가 없어요", en: "No results" },
     rq_edited: { ko: "(수정됨)", en: "(edited)" },
     rq_edited_done: { ko: "요청을 수정했어요", en: "Request updated" },
     au_verify_sent: { ko: "인증 메일을 보냈어요 — 받은편지함을 확인하세요", en: "Verification email sent — check your inbox" },
@@ -3611,6 +3639,7 @@
     if (!info || !join) return;
     const vb = $id("umVerify");
     if (vb) vb.hidden = !(authUser && authUser.providerData.some((pd) => pd.providerId === "password") && !authUser.emailVerified);
+    const pf = $id("umPlatform"); if (pf) pf.hidden = !isSuperAdmin();
     if (myWsId) {
       join.hidden = true;
       let txt = t("ws_current", (wsMeta && wsMeta.name) || myWsId);
@@ -3623,6 +3652,82 @@
       join.hidden = false;
     }
   }
+  // ─── 플랫폼 관리(최고관리자 전용) ───
+  const SUPER_ADMIN_UID = "srqAaRgdmLhYeCyEFeiUA552cvA3";   // 서비스 운영자(나두혁) 계정
+  function isSuperAdmin() { return !!(currentUser && currentUser.id === SUPER_ADMIN_UID); }
+  let pfWsCache = {};
+  async function openPlatform() {
+    if (!isSuperAdmin() || !msgDb) return;
+    try { const snap = await msgDb.ref("workspaces").once("value"); pfWsCache = snap.val() || {}; } catch (_) { pfWsCache = {}; }
+    $id("pfModal").hidden = false;
+    const si = $id("pfSearch"); if (si) { si.value = ""; si.focus(); }
+    renderPlatform("");
+  }
+  function renderPlatform(q) {
+    const body = $id("pfBody"), sum = $id("pfSummary");
+    if (!body) return;
+    q = (q || "").trim().toLowerCase();
+    const allUids = Object.keys(usersCache);
+    const wsIds = Object.keys(pfWsCache);
+    const soloUids = allUids.filter((u2) => !(usersCache[u2] || {}).ws);
+    if (sum) sum.textContent = t("pf_sum", wsIds.length, allUids.length, soloUids.length);
+    const hitUser = (u2) => { const rec = usersCache[u2] || {}; return !q || (rec.name || "").toLowerCase().includes(q) || (rec.email || "").toLowerCase().includes(q); };
+    body.innerHTML = "";
+    let shown = 0;
+    wsIds.sort((a, b) => ((pfWsCache[b] || {}).createdAt || 0) - ((pfWsCache[a] || {}).createdAt || 0)).forEach((wid) => {
+      const w = pfWsCache[wid] || {};
+      const members = allUids.filter((u2) => (usersCache[u2] || {}).ws === wid);
+      const wsHit = !q || (w.name || "").toLowerCase().includes(q);
+      const memberHits = members.filter(hitUser);
+      if (!wsHit && !memberHits.length) return;
+      shown++;
+      const card = document.createElement("div");
+      card.style.cssText = "border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:10px 0;background:var(--surface)";
+      const h = document.createElement("div"); h.style.cssText = "font-weight:700;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap";
+      const hl = document.createElement("span"); hl.textContent = (w.name || wid);
+      const hr = document.createElement("span"); hr.className = "rq-meta";
+      hr.textContent = t("pf_members_n", members.length) + (w.createdAt ? " · " + fmtReqTime(w.createdAt) : "") + (w.code ? " · " + w.code : "");
+      h.append(hl, hr); card.append(h);
+      const ul = document.createElement("div"); ul.style.marginTop = "6px";
+      (q ? memberHits : members).forEach((u2) => {
+        const rec = usersCache[u2] || {};
+        const row = document.createElement("div"); row.className = "sp-feed-item";
+        const nm = document.createElement("span");
+        nm.textContent = (rec.name || "?") + (rec.email ? " · " + rec.email : "");
+        if (rec.role === "owner" || rec.role === "admin") {
+          const rc = document.createElement("span"); rc.className = "rq-kind-chip task"; rc.style.marginLeft = "6px";
+          rc.textContent = rec.role === "owner" ? t("pf_owner") : t("pf_admin"); nm.append(rc);
+        }
+        const tm = document.createElement("span"); tm.className = "rq-meta"; tm.textContent = rec.createdAt ? fmtReqTime(rec.createdAt) : "";
+        row.append(nm, tm); ul.append(row);
+      });
+      card.append(ul); body.append(card);
+    });
+    const soloHits = soloUids.filter(hitUser);
+    if (soloHits.length) {
+      shown++;
+      const sc = document.createElement("div");
+      sc.style.cssText = "border:1px dashed var(--border);border-radius:10px;padding:10px 12px;margin:10px 0";
+      const sh = document.createElement("div"); sh.style.fontWeight = "700"; sh.textContent = t("pf_solo_h") + " (" + soloHits.length + ")";
+      sc.append(sh);
+      soloHits.forEach((u2) => {
+        const rec = usersCache[u2] || {};
+        const row = document.createElement("div"); row.className = "sp-feed-item";
+        const nm = document.createElement("span"); nm.textContent = (rec.name || "?") + (rec.email ? " · " + rec.email : "");
+        const tm = document.createElement("span"); tm.className = "rq-meta"; tm.textContent = rec.createdAt ? fmtReqTime(rec.createdAt) : "";
+        row.append(nm, tm); sc.append(row);
+      });
+      body.append(sc);
+    }
+    if (!shown) { const em = document.createElement("p"); em.className = "empty-note"; em.textContent = t("pf_empty"); body.append(em); }
+  }
+  (function wirePlatform() {
+    const ob = $id("pfOpenBtn"), cb = $id("pfClose"), si = $id("pfSearch"), md = $id("pfModal");
+    if (ob) ob.addEventListener("click", () => { $id("userModal").hidden = true; openPlatform(); });
+    if (cb) cb.addEventListener("click", () => { md.hidden = true; });
+    if (md) md.addEventListener("click", (e) => { if (e.target === md) md.hidden = true; });
+    if (si) si.addEventListener("input", () => renderPlatform(si.value));
+  })();
   // 관리자 행위 기록
   function logAdmin(action, target) {
     if (!msgDb || !myWsId || !currentUser) return;
@@ -4081,6 +4186,23 @@
     const li = document.createElement("li");
     li.className = "rq-card st-" + st + (kind === "inbox" && st === "sent" ? " unread" : "");
     li.dataset.rid = r.id;
+    if (r.recalled) {   // 회수된 요청: 수신자에겐 내용 대신 회수 표시, 발신자에겐 회수됨 상태
+      li.className = "rq-card st-done";
+      const rhead = document.createElement("div"); rhead.className = "rq-card-head";
+      const rwho = document.createElement("span"); rwho.className = "rq-who";
+      rwho.textContent = kind === "inbox" ? (r.fromName || "?") : (t("rq_to_prefix") + " " + (r.toName || "?"));
+      const rchip = document.createElement("span"); rchip.className = "rq-kind-chip " + reqKindOf(r); rchip.textContent = t("kind_" + reqKindOf(r)); rwho.prepend(rchip);
+      const rmeta = document.createElement("span"); rmeta.className = "rq-meta"; rmeta.textContent = fmtReqTime(r.ts) + " ";
+      const rpill = document.createElement("span"); rpill.className = "rq-status-pill pill-read"; rpill.textContent = t("rq_recalled_pill") + " " + fmtReqTime(r.recalled);
+      rmeta.appendChild(rpill); rhead.append(rwho, rmeta); li.append(rhead);
+      const rbody = document.createElement("div"); rbody.className = "rq-text"; rbody.style.opacity = ".6";
+      rbody.textContent = kind === "inbox" ? t("rq_recalled_body") : (r.title || r.text || "");
+      li.append(rbody);
+      const racts = document.createElement("div"); racts.className = "rq-acts";
+      racts.appendChild(reqBtn(t("rq_delete"), () => hideRequest(r.id)));
+      li.appendChild(racts);
+      return li;
+    }
     const head = document.createElement("div"); head.className = "rq-card-head";
     if (reqSelectMode) {   // 선택 삭제 모드: 체크박스
       const cb = document.createElement("button"); cb.type = "button";
@@ -4098,7 +4220,7 @@
     who.textContent = kind === "inbox" ? (r.fromName || "?") : (t("rq_to_prefix") + " " + (r.toName || "?"));
     const meta = document.createElement("span"); meta.className = "rq-meta";
     let metaTxt = fmtReqTime(r.ts);
-    if (r.edited) metaTxt += " · " + t("rq_edited");
+    if (r.edited) metaTxt += " · " + t("rq_edited") + " " + fmtReqTime(r.edited);
     if (st === "read" && r.readAt) metaTxt += " · " + t("rq_status_read") + " " + fmtReqTime(r.readAt);
     if (st === "done" && r.doneAt) metaTxt += " · " + fmtReqTime(r.doneAt);
     meta.textContent = metaTxt + " ";
@@ -4206,9 +4328,8 @@
         acts.appendChild(reqBtn(t("rq_edit"), () => openEditRequest(r)));
         acts.appendChild(reqBtn(t("rq_recall"), () => {
           if (!confirm(t("rq_recall_confirm"))) return;
-          const copy = Object.assign({}, r); delete copy.id;
-          try { wsRef("requests/" + r.id).remove(); } catch (_) {}
-          toastUndo(t("rq_recalled"), () => { try { wsRef("requests/" + r.id).set(copy); } catch (_) {} });
+          try { wsRef("requests/" + r.id + "/recalled").set(Date.now()); } catch (_) {}
+          toastUndo(t("rq_recalled"), () => { try { wsRef("requests/" + r.id + "/recalled").set(null); } catch (_) {} });
         }));
       }
       if (st !== "done") {
@@ -4379,7 +4500,7 @@
   }
   // '처리됨' = 즉시완료(완료 상태) 또는 내 할 일로 옮김. 단순히 읽기만 한 건 처리 아님.
   function isHandledByMe(id, r) {
-    return r.status === "done" || state.todos.some((td) => td.reqId === id);
+    return !!r.recalled || r.status === "done" || state.todos.some((td) => td.reqId === id);
   }
   function renderUnreadBadge() {
     const b = $id("unreadBadge"), sb = $id("sentBadge");
@@ -4395,7 +4516,7 @@
         if (!(focus && pendingReplyIds.has(id))) n += unseenReplies(r);
       } else if (r.from === currentUser.id) {
         // 보낸 요청: 상대가 아직 확인 안 한 건 + 나에게 온 새 답장 + 확인 안 한 완료 처리
-        if (r.status === "sent") sn++;
+        if (r.status === "sent" && !r.recalled) sn++;
         if (!(focus && pendingReplyIds.has(id))) {
           sn += unseenReplies(r);
           if (doneUnseen(r)) sn++;
@@ -4437,7 +4558,7 @@
     const now = Date.now();
     Object.keys(requestsCache).forEach((id) => {
       const r = requestsCache[id];
-      if (!r || r.from !== currentUser.id || !r.repeat) return;
+      if (!r || r.from !== currentUser.id || !r.repeat || r.recalled) return;
       const iv = r.repeat === "daily" ? 864e5 : r.repeat === "weekly" ? 7 * 864e5 : 30 * 864e5;
       if (now - (r.ts || 0) < iv) return;
       const nid = uid();
