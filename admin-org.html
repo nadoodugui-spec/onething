@@ -77,13 +77,14 @@
     </div>
     <div class="down">▼ <small>임명 (아직 도입 전)</small></div>
 
-    <div class="node mgr">
-      <div class="nm">🛡 2. 웹사이트 관리매니저 <span style="font-weight:400;font-size:.8em;color:var(--sub)">(예정)</span></div>
-      <div class="who">최고관리자가 지정하는 플랫폼 운영 보조 등급 — 현재 미구현, 유료화/규모 확대 시 도입</div>
+    <div class="node mgr" style="opacity:1;border-style:solid">
+      <div class="nm">🛡 2. 웹사이트 관리매니저</div>
+      <div class="who">최고관리자가 관제 센터에서 지정/해제 — 플랫폼 운영 보조 등급</div>
       <ul>
-        <li>도입 시 예상 권한: 플랫폼 현황 조회·검색, 회원 지원(비밀번호 재설정 메일), 문의 대응</li>
-        <li>계정 삭제·시스템 설정은 최고관리자 전용으로 유지 권장</li>
+        <li>관제 센터(admin.html) 접속: 전체 현황·상세 통계 조회, 회사·회원 검색</li>
+        <li>회원 지원: 비밀번호 재설정 메일 발송</li>
       </ul>
+      <div class="no-h">✗ 불가: 계정 삭제, 회사 삭제, 이름 변경, 매니저 지정, 시스템 설정 (모두 최고관리자 전용)</div>
     </div>
     <div class="down">▼ <small>회사(워크스페이스)마다 아래 구조가 반복</small></div>
 
@@ -134,7 +135,7 @@
 
     <h2>권한 한눈표</h2>
     <table>
-      <tr><th class="l">권한</th><th>최고관리자</th><th>관리매니저(예정)</th><th>오너</th><th>사내관리자</th><th>일반가입자</th></tr>
+      <tr><th class="l">권한</th><th>최고관리자</th><th>관리매니저</th><th>오너</th><th>사내관리자</th><th>일반가입자</th></tr>
       <tr><td class="l">개인 기능(원씽·할 일·타이머·통계)</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
       <tr><td class="l">팀 기능(요청·프로젝트·팀 현황)</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="half">소속 시</td></tr>
       <tr><td class="l">초대 코드 확인·재발급</td><td class="ok">✓</td><td class="no">✗</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td></tr>
@@ -142,9 +143,9 @@
       <tr><td class="l">관리자 승격/해제</td><td class="ok">✓</td><td class="no">✗</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td></tr>
       <tr><td class="l">팀 통계·감사 로그 열람</td><td class="ok">✓</td><td class="no">✗</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td></tr>
       <tr><td class="l">타인 프로필(이름·이메일) 수정</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
-      <tr><td class="l">비밀번호 재설정 메일 발송</td><td class="ok">✓</td><td class="half">도입 시 ✓</td><td class="no">✗</td><td class="no">✗</td><td class="half">본인만</td></tr>
+      <tr><td class="l">비밀번호 재설정 메일 발송</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="half">본인만</td></tr>
       <tr><td class="l">계정(프로필) 삭제</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
-      <tr><td class="l">전체 회사·회원 현황 조회·검색</td><td class="ok">✓</td><td class="half">도입 시 ✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td class="l">전체 회사·회원 현황 조회·검색</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
       <tr><td class="l">보안 규칙·시스템 설정</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
     </table>
 

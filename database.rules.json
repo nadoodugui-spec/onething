@@ -18,6 +18,13 @@
         ".write": "auth != null && $nid === 'user_' + auth.uid"
       }
     },
+    "managers": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3'",
+        ".validate": "newData.isBoolean()"
+      }
+    },
     "workspaces": {
       ".read": "auth != null",
       "$ws": {
@@ -27,7 +34,7 @@
     },
     "ws": {
       "$ws": {
-        ".read": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || root.child('users').child(auth.uid).child('ws').val() === $ws)",
+        ".read": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || root.child('managers').child(auth.uid).val() === true || root.child('users').child(auth.uid).child('ws').val() === $ws)",
         ".write": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || root.child('users').child(auth.uid).child('ws').val() === $ws)",
         "status": {
           "$uid": {
