@@ -784,15 +784,6 @@
         style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:1rem;outline:none;box-sizing:border-box" />
       <div class="mrow" style="margin-top:12px;justify-content:flex-end"><button id="pfStart" class="mbtn" data-i18n="pf_start">시작하기</button></div>
       <div class="login-msg" id="pfMsg"></div>
-      <div id="pfLegacy" hidden style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
-        <div class="mlabel" data-i18n="pf_legacy_h">예전 이름+PIN 계정이 있나요? 연결하면 할 일·소속이 그대로 이어져요.</div>
-        <div class="mrow" style="margin-top:8px">
-          <select id="lcSel" style="flex:1;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);padding:8px;outline:none"></select>
-          <input id="lcPin" type="password" inputmode="numeric" maxlength="4" placeholder="PIN" autocomplete="off"
-            style="width:70px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font-body);text-align:center;outline:none" />
-          <button id="lcLink" class="mbtn ghost" data-i18n="pf_link">연결</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -921,16 +912,18 @@
 
   <div class="modal" id="settingsModal" hidden>
     <div class="modal-box">
-      <div class="modal-head"><span data-i18n="set_head">⚙️ 설정</span><button class="modal-close" id="settingsClose">✕</button></div>
+      <div class="modal-head"><span data-i18n="set_head">설정</span><button class="modal-close" id="settingsClose">✕</button></div>
+      <div class="section-h" data-i18n="set_g_me">개인</div>
       <div class="mrow"><span class="mlabel" data-i18n="set_theme">테마(배경)</span><div class="seg" id="themeSeg">
         <button data-theme="auto" data-i18n="th_auto">자동</button><button data-theme="light" data-i18n="th_light">라이트</button><button data-theme="dark" data-i18n="th_dark">다크</button>
       </div></div>
       <div class="mrow"><span class="mlabel" data-i18n="set_timer">집중 타이머 길이</span>
         <input id="pomoInput" type="number" min="1" max="180" style="width:70px;border:none;border-bottom:1px solid var(--border);background:transparent;color:var(--ink);font-family:var(--font-body);font-size:1.1rem;text-align:center;outline:none" /> <span data-i18n="min_unit">분</span>
       </div>
-      <div class="mrow"><span class="mlabel" data-i18n="set_reminder">매일 ‘오늘의 원씽 정하기’ 알림</span>
-        <button id="reminderToggle" class="seg-toggle mbtn ghost"></button>
-      </div>
+      <div class="mrow"><span class="mlabel" data-i18n="set_unlock">잠금 해제 방식</span><div class="seg" id="unlockSeg">
+        <button data-unlock="puzzle" data-i18n="ul_puzzle">퍼즐</button><button data-unlock="button" data-i18n="ul_button">버튼 한 번</button>
+      </div></div>
+      <div class="section-h" data-i18n="set_g_team">팀에 공개</div>
       <div class="mrow"><span class="mlabel" data-i18n="set_sharefocus">원씽 중일 때 남은 시간 공개</span>
         <button id="shareFocusToggle" class="seg-toggle mbtn ghost"></button>
       </div>
@@ -940,6 +933,7 @@
       <div class="mrow"><span class="mlabel" data-i18n="set_teamfeed">팀 최근 활동 표시(사이드바)</span>
         <button id="teamFeedToggle" class="seg-toggle mbtn ghost"></button>
       </div>
+      <div class="section-h" data-i18n="set_g_data">데이터</div>
       <div class="mrow"><span class="mlabel" data-i18n="t_backup">백업</span>
         <button id="openBackupBtn" class="mbtn ghost" data-i18n="set_backup_open">백업 열기</button>
       </div>
@@ -1004,6 +998,7 @@
       </div>
       <div class="section-h" data-i18n="ws_h">워크스페이스</div>
       <p class="modal-desc" id="umWsInfo" style="margin:4px 0 8px;white-space:pre-line"></p>
+      <div class="mrow"><button id="wsRegenBtn" class="mbtn ghost" hidden data-i18n="ws_regen">초대 코드 재발급</button></div>
       <div id="umWsJoin" hidden>
         <div class="mrow">
           <input id="wsCodeInput" type="text" maxlength="6" data-i18n-ph="ws_join_ph" placeholder="초대 코드 6자리" autocomplete="off"
@@ -1497,6 +1492,21 @@
     pw_reset: { ko: "비밀번호 재설정 메일", en: "Send password reset" },
     pw_reset_noemail: { ko: "이 계정에 이메일이 없어요(구계정) — 본인이 이메일 가입 후 '계정 연결'을 하면 돼요", en: "No email on this account — they should sign up and link it" },
     pw_reset_confirm: { ko: "{0}님({1})에게 비밀번호 재설정 메일을 보낼까요?", en: "Send a password reset email to {0} ({1})?" },
+    set_g_me: { ko: "개인", en: "Personal" },
+    set_g_team: { ko: "팀에 공개", en: "Shared with team" },
+    set_g_data: { ko: "데이터", en: "Data" },
+    set_unlock: { ko: "잠금 해제 방식", en: "Unlock method" },
+    ul_puzzle: { ko: "퍼즐", en: "Puzzle" },
+    ul_button: { ko: "버튼 한 번", en: "One click" },
+    ws_regen: { ko: "초대 코드 재발급", en: "Regenerate invite code" },
+    ws_regen_confirm: { ko: "초대 코드를 새로 만들까요? 기존 코드는 더 이상 쓸 수 없어요.", en: "Regenerate the invite code? The old one stops working." },
+    ws_regen_done: { ko: "새 초대 코드: {0}", en: "New invite code: {0}" },
+    role_admin: { ko: "관리자", en: "Admin" },
+    role_promote: { ko: "관리자로", en: "Make admin" },
+    role_demote: { ko: "관리자 해제", en: "Remove admin" },
+    kick_btn: { ko: "내보내기", en: "Remove from team" },
+    kick_confirm: { ko: "'{0}'님을 워크스페이스에서 내보낼까요? 계정은 유지되고, 미완료 요청은 나에게 전달됩니다.", en: "Remove '{0}' from the workspace? Their account stays; pending requests come to you." },
+    kick_done: { ko: "{0}님을 내보냈어요 — 미완료 요청은 나에게 전달됐습니다", en: "{0} removed — pending requests forwarded to you" },
     rt_kicker: { ko: "오늘의 시작", en: "START YOUR DAY" },
     rt_q: { ko: "이걸 끝내면, 나머지가 쉬워지는<br><b>단 하나</b>는 무엇인가요?", en: "What's the <b>one thing</b> that makes<br>everything else easier?" },
     rt_sub: { ko: "여러 개를 잘하는 사람보다, 하나를 끝내는 사람이 이깁니다.", en: "The one who finishes one thing beats the one who juggles many." },
@@ -2793,7 +2803,7 @@
   }
   function toggleLang() {
     state.settings.lang = (LANG === "ko") ? "en" : "ko";
-    save(); applyLang(); render(); refreshSyncState(); renderRequests(); renderLoginUsers();
+    save(); applyLang(); render(); refreshSyncState(); renderRequests();
   }
 
   // ---------- modals: stats / trash / later / backup / settings ----------
@@ -3007,8 +3017,9 @@
   function openSettings() {
     const curTh = ["auto", "light", "dark"].includes(state.settings.theme) ? state.settings.theme : "light";
     $id("themeSeg").querySelectorAll("button").forEach((b) => b.classList.toggle("sel", b.dataset.theme === curTh));
+    const curUl = state.settings.unlockMode === "button" ? "button" : "puzzle";
+    $id("unlockSeg").querySelectorAll("button").forEach((b) => b.classList.toggle("sel", b.dataset.unlock === curUl));
     $id("pomoInput").value = state.settings.pomodoroMin || 25;
-    $id("reminderToggle").textContent = state.settings.reminder ? t("rem_on") : t("rem_off");
     $id("shareFocusToggle").textContent = state.settings.shareFocusTime !== false ? t("rem_on") : t("rem_off");
     $id("shareOtToggle").textContent = state.settings.shareOneThing ? t("rem_on") : t("rem_off");
     $id("teamFeedToggle").textContent = state.settings.teamFeed ? t("rem_on") : t("rem_off");
@@ -3049,7 +3060,7 @@
     else if (kind === "nocode") { chip.classList.add("warn"); c = t("s_nocode"); m = t("s_nocode_msg"); cls = "warn"; }
     else if (kind === "error") { chip.classList.add("err"); c = t("s_err"); m = t("s_err_msg"); cls = "err"; }
     else { c = t("s_unconf"); m = t("s_unconf_msg"); cls = "warn"; }
-    chip.textContent = c; if (stateEl) { stateEl.textContent = m; stateEl.className = "sync-state " + cls; }
+    chip.hidden = (kind !== "error"); chip.textContent = c; if (stateEl) { stateEl.textContent = m; stateEl.className = "sync-state " + cls; }
   }
   function refreshSyncState() { if (!cloudConfigured()) setSyncStatus("unconfigured"); else if (!currentUser) setSyncStatus("nocode"); else if (cloudReady) setSyncStatus("ok"); else setSyncStatus("nocode"); }
   function openSync() {
@@ -3360,7 +3371,6 @@
       resolveCurrentUser(); renderTeamBoard();
       maybeProfileSetup();   // 첫 로그인이면 이름 설정/기존 계정 연결
       attachWsListeners();   // 소속이 확인되면 팀 데이터 연결
-      maybeMigrateWs();      // 구버전(전역) 데이터 → 워크스페이스 1회 이전
     });
   }
   // 워크스페이스가 정해진 뒤에만 팀 데이터(요청·상태·프로젝트) 연결
@@ -3457,13 +3467,6 @@
     hideLoginGate();
     $id("pfName").value = authUser.displayName || "";
     $id("pfMsg").textContent = "";
-    // 이메일이 아직 연결 안 된 예전(이름+PIN) 계정 목록
-    const legacy = Object.keys(usersCache).filter((k) => !(usersCache[k] || {}).email);
-    const wrap = $id("pfLegacy"), sel = $id("lcSel");
-    if (legacy.length) {
-      wrap.hidden = false; sel.innerHTML = "";
-      legacy.forEach((k) => { const o = document.createElement("option"); o.value = k; o.textContent = (usersCache[k] || {}).name || "?"; sel.appendChild(o); });
-    } else wrap.hidden = true;
     $id("profileModal").hidden = false;
   }
   async function createProfile() {
@@ -3476,73 +3479,6 @@
       $id("profileModal").hidden = true;
     } catch (_) { $id("pfMsg").textContent = t("ws_err"); }
   }
-  // 예전 계정 연결: PIN 검증 → 프로필·노트·팀 데이터 참조를 새 uid로 이전
-  async function linkLegacy() {
-    if (!authUser || !msgDb) return;
-    const legacyId = $id("lcSel").value; const pin = ($id("lcPin").value || "").trim();
-    const prof = usersCache[legacyId];
-    if (!prof) return;
-    let ok = false;
-    if (prof.pinH) ok = (await hashPin(pin)) === prof.pinH;
-    else ok = (prof.pin || "") === pin;
-    if (!ok) { $id("pfMsg").textContent = t("rq_wrong_pin"); return; }
-    $id("pfMsg").textContent = t("pf_linking");
-    try {
-      const uid2 = authUser.uid;
-      const rec = { name: prof.name, email: authUser.email || "", createdAt: prof.createdAt || Date.now() };
-      if (prof.ws) rec.ws = prof.ws;
-      if (prof.role) rec.role = prof.role;
-      if (prof.admin) rec.admin = true;
-      await msgDb.ref("users/" + uid2).set(rec);
-      // 개인 노트(클라우드) 이전
-      const nb = await msgDb.ref("notes/user_" + legacyId).once("value");
-      if (nb.val()) await msgDb.ref("notes/user_" + uid2).set(nb.val());
-      // 개인 노트(이 기기) 이전
-      try {
-        const localNb = localStorage.getItem("onething-notebook::" + legacyId);
-        if (localNb) localStorage.setItem("onething-notebook::" + uid2, localNb);
-      } catch (_) {}
-      // 팀 데이터 참조 교체
-      if (prof.ws) {
-        const wsId = prof.ws;
-        const snap = await msgDb.ref("ws/" + wsId).once("value");
-        const d = snap.val() || {};
-        const ups = {};
-        Object.keys(d.requests || {}).forEach((id) => {
-          const r = d.requests[id] || {};
-          if (r.from === legacyId) ups["requests/" + id + "/from"] = uid2;
-          if (r.to === legacyId) ups["requests/" + id + "/to"] = uid2;
-          if (Array.isArray(r.hiddenFor) && r.hiddenFor.indexOf(legacyId) >= 0) ups["requests/" + id + "/hiddenFor"] = r.hiddenFor.map((x) => x === legacyId ? uid2 : x);
-          if (r.replySeen && r.replySeen[legacyId] != null) { ups["requests/" + id + "/replySeen/" + uid2] = r.replySeen[legacyId]; ups["requests/" + id + "/replySeen/" + legacyId] = null; }
-          if (r.doneSeen && r.doneSeen[legacyId]) { ups["requests/" + id + "/doneSeen/" + uid2] = true; ups["requests/" + id + "/doneSeen/" + legacyId] = null; }
-          if (Array.isArray(r.replies)) {
-            let ch = false;
-            const nr = r.replies.map((rep) => { if (rep && rep.from === legacyId) { ch = true; return Object.assign({}, rep, { from: uid2 }); } return rep; });
-            if (ch) ups["requests/" + id + "/replies"] = nr;
-          }
-        });
-        if ((d.status || {})[legacyId]) { ups["status/" + uid2] = d.status[legacyId]; ups["status/" + legacyId] = null; }
-        Object.keys(d.projects || {}).forEach((pid) => {
-          const p = d.projects[pid] || {};
-          if (p.owner === legacyId) ups["projects/" + pid + "/owner"] = uid2;
-          if (p.members && p.members[legacyId]) { ups["projects/" + pid + "/members/" + uid2] = true; ups["projects/" + pid + "/members/" + legacyId] = null; }
-        });
-        Object.keys(d.projectTodos || {}).forEach((pid) => {
-          Object.keys(d.projectTodos[pid] || {}).forEach((tid) => {
-            const c = d.projectTodos[pid][tid] || {};
-            if (c.assignee === legacyId) ups["projectTodos/" + pid + "/" + tid + "/assignee"] = uid2;
-          });
-        });
-        // 워크스페이스 오너 승계
-        const wsm = await msgDb.ref("workspaces/" + wsId).once("value");
-        if (wsm.val() && wsm.val().owner === legacyId) ups2Owner(wsId, uid2);
-        if (Object.keys(ups).length) await msgDb.ref("ws/" + wsId).update(ups);
-      }
-      await msgDb.ref("users/" + legacyId).remove();
-      location.reload();
-    } catch (_) { $id("pfMsg").textContent = t("ws_err"); }
-  }
-  function ups2Owner(wsId, uid2) { try { msgDb.ref("workspaces/" + wsId + "/owner").set(uid2); } catch (_) {} }
   // ----- 워크스페이스 만들기/참여/이전 -----
   async function createWs(name) {
     if (!msgDb || !currentUser) { toast(t("rq_offline")); return; }
@@ -3567,30 +3503,6 @@
       location.reload();
     } catch (_) { toast(t("ws_err")); }
   }
-  // 구버전(전역 경로) 데이터 → 'main' 워크스페이스로 1회 이전 (관리자 클라이언트가 수행)
-  let wsMigrateTried = false;
-  async function maybeMigrateWs() {
-    if (wsMigrateTried || !msgDb || !currentUser || myWsId) return;
-    if (!(usersCache[currentUser.id] && usersCache[currentUser.id].admin)) return;
-    wsMigrateTried = true;
-    try {
-      const flag = await msgDb.ref("wsMigrated").once("value");
-      if (flag.val()) return;
-      const parts = {};
-      for (const p of ["requests", "status", "projects", "projectTodos"]) {
-        const s = await msgDb.ref(p).once("value"); parts[p] = s.val() || {};
-      }
-      const wsId = "main"; const code = genWsCode();
-      await msgDb.ref("workspaces/" + wsId).set({ name: "나두고잉", code: code, owner: currentUser.id, createdAt: Date.now() });
-      await msgDb.ref("ws/" + wsId).set(parts);
-      const ups = {};
-      Object.keys(usersCache).forEach((id) => { ups[id + "/ws"] = wsId; ups[id + "/role"] = id === currentUser.id ? "owner" : "member"; });
-      await msgDb.ref("users").update(ups);
-      await msgDb.ref("wsMigrated").set(Date.now());
-      for (const p of ["requests", "status", "projects", "projectTodos"]) { try { await msgDb.ref(p).remove(); } catch (_) {} }
-      location.reload();
-    } catch (_) {}
-  }
   // ----- 관리자 -----
   // 제작자(나두혁) 계정에 최초 1회 admin 플래그를 자동 부여
   function claimAdmin() {
@@ -3612,7 +3524,9 @@
       let txt = t("ws_current", (wsMeta && wsMeta.name) || myWsId);
       if (isAdmin() && wsMeta && wsMeta.code) txt += "\n" + t("ws_code", wsMeta.code);
       info.textContent = txt;
+      const rb = $id("wsRegenBtn"); if (rb) rb.hidden = !isAdmin();
     } else {
+      const rb = $id("wsRegenBtn"); if (rb) rb.hidden = true;
       info.textContent = t("ws_none");
       join.hidden = false;
     }
@@ -3627,15 +3541,47 @@
       const li = document.createElement("li");
       const dot = statusDot(id);
       const tx = document.createElement("span"); tx.className = "mtext"; tx.textContent = u.name || "?";
+      if (u.role === "admin") { const rc = document.createElement("span"); rc.className = "rq-kind-chip task"; rc.textContent = t("role_admin"); tx.append(document.createTextNode(" "), rc); }
       const rp = document.createElement("button"); rp.textContent = t("pw_reset");
       rp.addEventListener("click", async () => {
         if (!u.email) { toast(t("pw_reset_noemail")); return; }
         if (!confirm(t("pw_reset_confirm", u.name || "?", u.email))) return;
         try { await firebase.auth().sendPasswordResetEmail(u.email); toast(t("au_forgot_sent")); } catch (e) { toast(mapAuthErr(e)); }
       });
+      li.append(dot, tx, rp);
+      // 오너: 관리자 승격/해제
+      if ((usersCache[currentUser.id] || {}).role === "owner") {
+        const pr = document.createElement("button");
+        pr.textContent = u.role === "admin" ? t("role_demote") : t("role_promote");
+        pr.addEventListener("click", () => {
+          try { msgDb.ref("users/" + id + "/role").set(u.role === "admin" ? "member" : "admin"); } catch (_) {}
+          setTimeout(renderMembers, 300);
+        });
+        li.append(pr);
+      }
+      // 내보내기(퇴사 처리): 소속 해제 + 미완료 요청을 나에게 전달
+      const kick = document.createElement("button"); kick.textContent = t("kick_btn");
+      kick.addEventListener("click", () => {
+        if (!confirm(t("kick_confirm", u.name || "?"))) return;
+        try {
+          const ups = {};
+          Object.keys(requestsCache).forEach((rid) => {
+            const r = requestsCache[rid];
+            if (r && r.to === id && r.status !== "done") {
+              ups[rid + "/to"] = currentUser.id; ups[rid + "/toName"] = currentUser.name;
+              ups[rid + "/status"] = "sent"; ups[rid + "/forwardedBy"] = u.name || "?"; ups[rid + "/forwardedAt"] = Date.now();
+            }
+          });
+          if (Object.keys(ups).length) wsRef("requests").update(ups);
+          wsRef("status/" + id).remove();
+          msgDb.ref("users/" + id).update({ ws: null, role: null });
+        } catch (_) {}
+        toast(t("kick_done", u.name || "?"));
+        setTimeout(renderMembers, 300);
+      });
       const del = document.createElement("button"); del.textContent = t("um_del");
       del.addEventListener("click", () => deleteUser(id));
-      li.append(dot, tx, rp, del); ul.append(li);
+      li.append(kick, del); ul.append(li);
     });
     if (!ul.children.length) { const li = document.createElement("li"); li.className = "empty-note"; li.textContent = t("lg_empty"); ul.append(li); }
   }
@@ -3648,20 +3594,13 @@
       wsRef("status/" + id).remove();
       delete usersCache[id];
     } catch (_) {}
-    renderMembers(); renderLoginUsers(); renderTeamBoard();
+    renderMembers(); renderTeamBoard();
     toast(t("um_deleted"));
   }
   function findUserByName(name) {
     name = (name || "").trim();
     for (const id in usersCache) if (((usersCache[id] || {}).name || "").trim() === name) return Object.assign({ id }, usersCache[id]);
     return null;
-  }
-  // PIN은 해시로 저장 (평문 노출 방지). 구버전 평문 PIN은 로그인 성공 시 자동 전환.
-  async function hashPin(pin) {
-    try {
-      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("ot#" + pin));
-      return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-    } catch (_) { return "plain:" + pin; }
   }
   // ----- 이메일/구글 인증 액션 -----
   let signupMode = false;
@@ -3925,7 +3864,6 @@
     if (inTeam) { renderRequests(); ensureMyPresence(); }
     renderMyStatus(); applySidePin(); renderTeamBoard();
   }
-  function renderLoginUsers() {}   // (구버전 게이트 계정 목록 — 이메일 인증으로 대체)
   function showLoginGate() { const g = $id("loginGate"); if (g && cloudConfigured() && !currentUser) { g.hidden = false; const m = $id("authMsg"); if (m) m.textContent = ""; } }
   function hideLoginGate() { const g = $id("loginGate"); if (g) g.hidden = true; }
   function reqKindOf(r) { return r && r.kind === "task" ? "task" : "memo"; }   // 구버전 데이터는 쪽지 취급
@@ -4506,19 +4444,6 @@
     });
   }
 
-  // ---------- daily reminder ----------
-  function checkReminder() {
-    if (!state.settings.reminder) return;
-    const today = todayStr(); if (state.lastReminderDate === today) return;
-    const doneToday = state.history.some((h) => h.date === today);
-    if (!activeTodo() && !doneToday) {
-      requestNotify();
-      try { if (window.Notification && Notification.permission === "granted") new Notification(t("rem_title"), { body: t("rem_body") }); } catch (e) {}
-      toast(t("rem_toast"));
-    }
-    state.lastReminderDate = today; save();
-  }
-
   // ---------- PWA ----------
   function setupPWA() {
     try {
@@ -4586,7 +4511,11 @@
     toast(t("tp_set", v));
   });
 
-  $id("lockOverlay").addEventListener("click", openPuzzle);
+  $id("lockOverlay").addEventListener("click", () => {
+    if (state.settings.unlockMode === "button") {   // 퍼즐 없이 바로 열기 (설정 선택제)
+      leftUnlocked = true; render(); toast(t("solved_toast"));
+    } else openPuzzle();
+  });
   $id("puzzleClose").addEventListener("click", () => { $id("puzzleModal").hidden = true; });
   $id("relockBtn").addEventListener("click", () => { leftUnlocked = false; render(); toast(t("relock_toast")); });
 
@@ -4669,7 +4598,6 @@
   });
   $id("pfStart").addEventListener("click", createProfile);
   $id("pfName").addEventListener("keydown", (e) => { if (e.key === "Enter") createProfile(); });
-  $id("lcLink").addEventListener("click", linkLegacy);
   $id("userClose").addEventListener("click", () => { $id("userModal").hidden = true; });
   $id("switchUserBtn").addEventListener("click", () => { $id("userModal").hidden = true; logoutUser(); showLoginGate(); });
   $id("renameBtn").addEventListener("click", () => {
@@ -4690,6 +4618,16 @@
   $id("wsJoinBtn").addEventListener("click", () => joinWs($id("wsCodeInput").value));
   $id("wsCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") joinWs($id("wsCodeInput").value); });
   $id("wsCreateBtn").addEventListener("click", () => createWs($id("wsNameInput").value));
+  $id("wsRegenBtn").addEventListener("click", async () => {
+    if (!isAdmin() || !msgDb || !myWsId) return;
+    if (!confirm(t("ws_regen_confirm"))) return;
+    const code = genWsCode();
+    try {
+      await msgDb.ref("workspaces/" + myWsId + "/code").set(code);
+      if (wsMeta) wsMeta.code = code;
+      renderUmWs(); toast(t("ws_regen_done", code));
+    } catch (_) { toast(t("ws_err")); }
+  });
   $id("sendReqClose").addEventListener("click", () => { $id("sendReqModal").hidden = true; });
   $id("sendReqSend").addEventListener("click", sendRequest);
   $id("srKindMemo").addEventListener("click", () => setComposeKind("memo"));
@@ -4812,8 +4750,8 @@
   $id("settingsClose").addEventListener("click", () => { $id("settingsModal").hidden = true; });
   $id("openBackupBtn").addEventListener("click", () => { $id("settingsModal").hidden = true; openBackup(); });
   $id("themeSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.settings.theme = b.dataset.theme; save(); openSettings(); applyTheme(); });
+  $id("unlockSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.settings.unlockMode = b.dataset.unlock; save(); openSettings(); });
   $id("pomoInput").addEventListener("change", (e) => { const v = Math.max(1, Math.min(180, parseInt(e.target.value, 10) || 25)); state.settings.pomodoroMin = v; if (!timerRunning) resetTimer(); save(); });
-  $id("reminderToggle").addEventListener("click", () => { state.settings.reminder = !state.settings.reminder; if (state.settings.reminder) requestNotify(); $id("reminderToggle").textContent = state.settings.reminder ? t("rem_on") : t("rem_off"); save(); });
   $id("shareFocusToggle").addEventListener("click", () => {
     state.settings.shareFocusTime = state.settings.shareFocusTime === false;   // 토글
     $id("shareFocusToggle").textContent = state.settings.shareFocusTime ? t("rem_on") : t("rem_off");
@@ -4922,7 +4860,7 @@
     if (e.key === "n" || e.key === "N") { e.preventDefault(); $id("newTodo").focus(); }
     else if (e.key === "/") { e.preventDefault(); $id("searchInput").focus(); }
     else if (e.key === "s" || e.key === "S") openStats();
-    else if (e.key === "t" || e.key === "T") { state.settings.theme = (state.settings.theme === "dark") ? "light" : "dark"; save(); applyTheme(); toast(t("theme_toast", state.settings.theme)); }
+    else if (e.key === "t" || e.key === "T") { const order = ["auto", "light", "dark"]; state.settings.theme = order[(order.indexOf(state.settings.theme) + 1) % 3]; save(); applyTheme(); toast(t("theme_toast", t("th_" + state.settings.theme))); }
     else if (e.key === "?") $id("helpModal").hidden = false;
   });
 
@@ -4935,7 +4873,6 @@
   applyLang(); render();
   refreshSyncState();
   ensureAuth();                        // 익명 인증 → 성공 시 startCloud()에서 클라우드 연결
-  checkReminder();
   // 하루의 의식 — 오늘 원씽을 아직 안 정했으면 하루 1회 질문
   // ----- 온보딩 투어 (기기당 1회) -----
   const TOUR = [
