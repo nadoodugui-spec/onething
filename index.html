@@ -3195,8 +3195,7 @@
     if (on) { if (p) p.hidden = false; if (tab) tab.hidden = true; renderTeamBoard(); }
     else if (tab && currentUser && cloudConfigured() && myWsId) {
       tab.hidden = false;
-      // 새로고침해도 열림/닫힘 상태 유지
-      if (p && p.hidden && localStorage.getItem("onething-sp-open") === "1") { p.hidden = false; renderTeamBoard(); }
+      // 고정하지 않은 패널은 새로고침 시 닫힘 — 유지가 필요하면 고정핀 사용
     }
     updateBodyShift();
   }
@@ -4610,13 +4609,11 @@
 
   $id("sideTab").addEventListener("click", () => {
     $id("sidePanel").hidden = false;
-    try { localStorage.setItem("onething-sp-open", "1"); } catch (_) {}
     updateBodyShift();
     renderTeamBoard(); setTimeout(() => $id("spSearch").focus(), 30);
   });
   $id("spClose").addEventListener("click", () => {
     if (spPinned) { spPinned = false; try { localStorage.setItem("onething-sp-pin", "0"); } catch (_) {} }
-    try { localStorage.setItem("onething-sp-open", "0"); } catch (_) {}
     $id("sidePanel").hidden = true; applySidePin();
   });
   $id("spPin").addEventListener("click", () => {
