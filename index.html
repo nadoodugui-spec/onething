@@ -3663,6 +3663,12 @@
     const si = $id("pfSearch"); if (si) { si.value = ""; si.focus(); }
     renderPlatform("");
   }
+  function pfDelBtn(id) {   // 최고관리자 전용 계정(프로필) 삭제
+    const b = document.createElement("button"); b.className = "rq-btn"; b.textContent = t("um_del");
+    if (id === SUPER_ADMIN_UID) { b.disabled = true; b.style.opacity = ".4"; return b; }
+    b.addEventListener("click", () => { deleteUser(id); setTimeout(() => renderPlatform(($id("pfSearch") || {}).value || ""), 300); });
+    return b;
+  }
   function renderPlatform(q) {
     const body = $id("pfBody"), sum = $id("pfSummary");
     if (!body) return;
@@ -3699,7 +3705,7 @@
           rc.textContent = rec.role === "owner" ? t("pf_owner") : t("pf_admin"); nm.append(rc);
         }
         const tm = document.createElement("span"); tm.className = "rq-meta"; tm.textContent = rec.createdAt ? fmtReqTime(rec.createdAt) : "";
-        row.append(nm, tm); ul.append(row);
+        row.append(nm, tm, pfDelBtn(u2)); ul.append(row);
       });
       card.append(ul); body.append(card);
     });
@@ -3715,7 +3721,7 @@
         const row = document.createElement("div"); row.className = "sp-feed-item";
         const nm = document.createElement("span"); nm.textContent = (rec.name || "?") + (rec.email ? " · " + rec.email : "");
         const tm = document.createElement("span"); tm.className = "rq-meta"; tm.textContent = rec.createdAt ? fmtReqTime(rec.createdAt) : "";
-        row.append(nm, tm); sc.append(row);
+        row.append(nm, tm, pfDelBtn(u2)); sc.append(row);
       });
       body.append(sc);
     }
@@ -3801,19 +3807,18 @@
         } catch (_) {}
         setTimeout(renderMembers, 300);
       });
-      const del = document.createElement("button"); del.textContent = t("um_del");
-      del.addEventListener("click", () => deleteUser(id));
-      li.append(kick, del); ul.append(li);
+      li.append(kick); ul.append(li);   // 계정 삭제는 사내관리자 권한이 아님 — 플랫폼 관리(최고관리자)에서만
     });
     if (!ul.children.length) { const li = document.createElement("li"); li.className = "empty-note"; li.textContent = t("lg_empty"); ul.append(li); }
   }
   function deleteUser(id) {
-    if (!isAdmin() || !msgDb) return;
+    if (!isSuperAdmin() || !msgDb) return;   // 계정(프로필) 삭제는 플랫폼 운영자만
     const u = usersCache[id]; if (!u) return;
     if (!confirm(t("um_del_confirm", u.name || "?"))) return;
     try {
+      const targetWs = u.ws || null;
       msgDb.ref("users/" + id).remove();
-      wsRef("status/" + id).remove();
+      if (targetWs) msgDb.ref("ws/" + targetWs + "/status/" + id).remove().catch(() => {});
       delete usersCache[id];
     } catch (_) {}
     logAdmin("구성원 삭제", (u || {}).name || "?");

@@ -3,7 +3,7 @@
     "users": {
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && ($uid === auth.uid || ((root.child('users').child(auth.uid).child('role').val() === 'owner' || root.child('users').child(auth.uid).child('role').val() === 'admin') && root.child('users').child(auth.uid).child('ws').val() === data.child('ws').val()))"
+        ".write": "auth != null && ($uid === auth.uid || auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || (newData.exists() && (root.child('users').child(auth.uid).child('role').val() === 'owner' || root.child('users').child(auth.uid).child('role').val() === 'admin') && root.child('users').child(auth.uid).child('ws').val() === data.child('ws').val()))"
       }
     },
     "notes": {
