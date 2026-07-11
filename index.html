@@ -37,7 +37,21 @@
     --danger: #e57387; --ok: #4dbb8d; --warn: #d4a94e;
     --done: #6b7280;
     --prio-urgent: #e58585; --prio-important: #b39ce8;
+    /* 레거시 별칭 재선언 — :root에서 라이트 값으로 굳지 않도록 다크에서도 다시 계산 */
+    --paper: var(--surface); --paper-edge: var(--surface-2); --line: var(--border);
+    --ink: var(--text); --ink-soft: var(--text-soft); --margin-red: var(--border);
+    --highlight: var(--accent-soft); --binding: var(--border);
+    --desk1: var(--bg); --desk2: var(--bg); --desk3: var(--bg);
+    --card1: var(--surface); --card2: var(--surface-2);
   }
+  /* 어두운 배경에선 검정 틴트 대신 밝은 틴트 사용 */
+  body[data-theme="dark"] .seg button,
+  body[data-theme="dark"] .mbtn.ghost,
+  body[data-theme="dark"] .timer button,
+  body[data-theme="dark"] .detail-actions button,
+  body[data-theme="dark"] .detail-actions label,
+  body[data-theme="dark"] .detail-actions input[type="date"],
+  body[data-theme="dark"] li.later-item .lt-now { background: rgba(255,255,255,.08); }
 
   * { box-sizing: border-box; }
   html { height: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
