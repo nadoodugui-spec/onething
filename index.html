@@ -52,6 +52,9 @@
   body[data-theme="dark"] .detail-actions label,
   body[data-theme="dark"] .detail-actions input[type="date"],
   body[data-theme="dark"] li.later-item .lt-now { background: rgba(255,255,255,.08); }
+  /* 단, 선택된 버튼은 강조색 유지 (위 밝은 틴트가 선택 표시를 덮지 않게) */
+  body[data-theme="dark"] .seg button.sel,
+  body[data-theme="dark"] .timer-presets button.sel { background: var(--accent); color: #fff; }
 
   * { box-sizing: border-box; }
   html { height: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
