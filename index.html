@@ -3666,11 +3666,21 @@
     const si = $id("pfSearch"); if (si) { si.value = ""; si.focus(); }
     renderPlatform("");
   }
-  function pfDelBtn(id) {   // 최고관리자 전용 계정(프로필) 삭제
+  function pfDelBtn(id) {   // 최고관리자 전용: 비밀번호 재설정 메일 + 계정(프로필) 삭제
+    const wrap = document.createElement("span"); wrap.style.cssText = "display:flex;gap:4px;flex:none";
+    const rec = usersCache[id] || {};
+    const rp = document.createElement("button"); rp.className = "rq-btn"; rp.textContent = t("pw_reset");
+    rp.addEventListener("click", async () => {
+      if (!rec.email) { toast(t("pw_reset_noemail")); return; }
+      if (!confirm(t("pw_reset_confirm", rec.name || "?", rec.email))) return;
+      try { await firebase.auth().sendPasswordResetEmail(rec.email); toast(t("au_forgot_sent")); } catch (e) { toast(mapAuthErr(e)); }
+    });
+    wrap.append(rp);
     const b = document.createElement("button"); b.className = "rq-btn"; b.textContent = t("um_del");
-    if (id === SUPER_ADMIN_UID) { b.disabled = true; b.style.opacity = ".4"; return b; }
-    b.addEventListener("click", () => { deleteUser(id); setTimeout(() => renderPlatform(($id("pfSearch") || {}).value || ""), 300); });
-    return b;
+    if (id === SUPER_ADMIN_UID) { b.disabled = true; b.style.opacity = ".4"; }
+    else b.addEventListener("click", () => { deleteUser(id); setTimeout(() => renderPlatform(($id("pfSearch") || {}).value || ""), 300); });
+    wrap.append(b);
+    return wrap;
   }
   function renderPlatform(q) {
     const body = $id("pfBody"), sum = $id("pfSummary");
@@ -3771,13 +3781,7 @@
       const dot = statusDot(id);
       const tx = document.createElement("span"); tx.className = "mtext"; tx.textContent = u.name || "?";
       if (u.role === "admin") { const rc = document.createElement("span"); rc.className = "rq-kind-chip task"; rc.textContent = t("role_admin"); tx.append(document.createTextNode(" "), rc); }
-      const rp = document.createElement("button"); rp.textContent = t("pw_reset");
-      rp.addEventListener("click", async () => {
-        if (!u.email) { toast(t("pw_reset_noemail")); return; }
-        if (!confirm(t("pw_reset_confirm", u.name || "?", u.email))) return;
-        try { await firebase.auth().sendPasswordResetEmail(u.email); toast(t("au_forgot_sent")); } catch (e) { toast(mapAuthErr(e)); }
-      });
-      li.append(dot, tx, rp);
+      li.append(dot, tx);   // 비밀번호는 본인 셀프 재설정(로그인 화면) — 사내관리자 권한 아님
       // 오너: 관리자 승격/해제
       if ((usersCache[currentUser.id] || {}).role === "owner") {
         const pr = document.createElement("button");
