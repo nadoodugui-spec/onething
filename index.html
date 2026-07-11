@@ -705,6 +705,11 @@
   .sp-acts button:hover { color: var(--accent); border-color: var(--accent); }
   .sp-feed-item { font-size: .8rem; color: var(--text-soft); padding: 4px 2px; display: flex; justify-content: space-between; gap: 8px; }
   .sp-feed-item b { color: var(--text); font-weight: 600; }
+  .fd-del { border: none; background: none; color: var(--text-soft); cursor: pointer; font-size: .75rem;
+    padding: 0 2px; border-radius: 4px; opacity: 0; }
+  .sp-feed-item:hover .fd-del { opacity: .8; }
+  .fd-del:hover { color: var(--warn, #c0392b); opacity: 1 !important; }
+  @media (hover: none) { .fd-del { opacity: .6; } }
   .sp-empty { color: var(--text-soft); font-size: .85rem; padding: 8px 4px; }
   #spPin { border-radius: 6px; padding: 2px 5px; transition: all .15s ease; }
   #spPin.on { color: #fff; background: var(--accent); transform: rotate(-35deg); }
@@ -1761,6 +1766,7 @@
     sp_pinned: { ko: "사이드바 고정 — 요청을 보내도 열려 있어요", en: "Sidebar pinned — stays open" },
     sp_unpinned: { ko: "고정 해제 — 요청을 보내면 자동으로 닫혀요", en: "Unpinned — closes after you message someone" },
     sp_feed_h: { ko: "최근 활동", en: "Recent activity" },
+    fd_del: { ko: "이 활동 지우기(내 화면에서만)", en: "Dismiss (only for me)" },
     set_teamfeed: { ko: "팀 최근 활동 표시(사이드바)", en: "Show team activity (sidebar)" },
     ago_now: { ko: "방금", en: "just now" },
     ago_min: { ko: "{0}분 전", en: "{0}m ago" },
@@ -3449,26 +3455,40 @@
     if (feed) {
       feed.innerHTML = "";
       if (state.settings && state.settings.teamFeed) {
+        const hidden = loadFeedHidden();
         const evts = [];
         Object.keys(requestsCache).forEach((id) => {
           const r = requestsCache[id]; if (!r) return;
-          if (r.ts) evts.push({ ts: r.ts, txt: t("fd_sent", r.fromName || "?", r.toName || "?") });
-          if (r.status === "done" && r.doneAt) evts.push({ ts: r.doneAt, txt: t("fd_done", r.toName || "?") });
-          (Array.isArray(r.replies) ? r.replies : []).forEach((rep) => { if (rep && rep.ts) evts.push({ ts: rep.ts, txt: t("fd_reply", rep.fromName || "?") }); });
+          if (r.ts) evts.push({ key: id + ":sent:" + r.ts, ts: r.ts, txt: t("fd_sent", r.fromName || "?", r.toName || "?") });
+          if (r.status === "done" && r.doneAt) evts.push({ key: id + ":done:" + r.doneAt, ts: r.doneAt, txt: t("fd_done", r.toName || "?") });
+          (Array.isArray(r.replies) ? r.replies : []).forEach((rep) => { if (rep && rep.ts) evts.push({ key: id + ":rep:" + rep.ts, ts: rep.ts, txt: t("fd_reply", rep.fromName || "?") }); });
         });
         evts.sort((a, b) => b.ts - a.ts);
-        if (evts.length) {
+        const shown = evts.filter((ev) => !hidden.has(ev.key));
+        if (shown.length) {
           const h = document.createElement("div"); h.className = "sp-group-h"; h.textContent = t("sp_feed_h");
           feed.appendChild(h);
-          evts.slice(0, 5).forEach((ev) => {
+          shown.slice(0, 5).forEach((ev) => {
             const it = document.createElement("div"); it.className = "sp-feed-item";
             const tx = document.createElement("span"); tx.textContent = ev.txt;
+            const right = document.createElement("span"); right.style.cssText = "display:flex;gap:6px;align-items:center;flex:none";
             const tm = document.createElement("span"); tm.textContent = fmtAgo(ev.ts);
-            it.append(tx, tm); feed.appendChild(it);
+            const x = document.createElement("button"); x.className = "fd-del"; x.type = "button"; x.textContent = "✕"; x.title = t("fd_del");
+            x.addEventListener("click", () => { hidden.add(ev.key); saveFeedHidden(hidden); renderTeamBoard(); });
+            right.append(tm, x);
+            it.append(tx, right); feed.appendChild(it);
           });
         }
       }
     }
+  }
+  // 최근 활동 개별 숨김 — 내 브라우저에만 적용(기기별)
+  function feedHideKey() { return "onething-feedhide::" + ((currentUser && currentUser.id) || "anon"); }
+  function loadFeedHidden() {
+    try { return new Set(JSON.parse(localStorage.getItem(feedHideKey()) || "[]")); } catch (_) { return new Set(); }
+  }
+  function saveFeedHidden(set) {
+    try { localStorage.setItem(feedHideKey(), JSON.stringify(Array.from(set).slice(-200))); } catch (_) {}
   }
   // 경과 시간·진행 바 갱신 — 패널이 열려 있을 때만 1분마다
   setInterval(() => { const p = $id("sidePanel"); if (p && !p.hidden) renderTeamBoard(); }, 60000);
