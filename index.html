@@ -4929,10 +4929,8 @@
   if (activeTodo()) timerRemaining = pomoSec();
   setupPWA();
   applyTheme();
-  resolveCurrentUser();
-  if (cloudConfigured() && !currentUser) showLoginGate();
-  if (currentUser) switchNotebook();   // 로컬 데이터로 즉시 렌더 (initSync는 인증 후 startCloud에서 연결)
-  else { applyLang(); render(); }
+  // 로그인 화면은 여기서 미리 띄우지 않는다 — 세션 확인(onAuthStateChanged)이 끝난 뒤에만 표시(깜빡임 방지)
+  applyLang(); render();
   refreshSyncState();
   ensureAuth();                        // 익명 인증 → 성공 시 startCloud()에서 클라우드 연결
   checkReminder();
