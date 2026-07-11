@@ -317,7 +317,13 @@
   .timer-presets button:hover { filter: brightness(.96); }
   .timer-presets button.sel { background: var(--accent); color: #fff; }
   .ot-subs { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
-  .ot-subs-head { font-size: .95rem; color: var(--ink-soft); margin-bottom: 6px; }
+  .ot-subs-head { font-size: .95rem; color: var(--ink-soft); margin-bottom: 2px; }
+  .ot-subs-head b { color: var(--accent); font-size: 1rem; }
+  .obs-cnt { color: var(--text-soft); font-size: .85rem; margin-left: 4px; }
+  .ot-break-sub { font-size: .82rem; color: var(--text-soft); margin-bottom: 6px; }
+  .step-num { width: 18px; flex: none; text-align: right; font-size: .82rem; color: var(--text-soft); }
+  .ot-sub-list li.now-step { background: var(--accent-soft); border-radius: 8px; padding: 2px 6px 2px 2px; }
+  .ot-sub-list li.now-step .stext { font-weight: 700; }
   .ot-sub-list { list-style: none; margin: 0 0 6px; padding: 0; }
   .ot-sub-list li { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 1.15rem; }
   .ot-sub-list .scheck { width: 19px; height: 19px; font-size: .85rem; }
@@ -326,7 +332,13 @@
   .ot-sub-list .row-x { opacity: 0; }
   .ot-sub-list li:hover .row-x { opacity: 1; }
   .ot-subs .sub-add input { font-size: 1.05rem; }
-  .ot-foot { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
+  .ot-foot { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: 18px; }
+  .tmr-len { border: 1px solid var(--border) !important; background: var(--surface) !important; color: var(--text-soft) !important; font-size: .85rem !important; }
+  .len-wrap { position: relative; display: inline-block; }
+  .len-menu { min-width: 96px; left: 0; right: auto; }
+  .timer-sub-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .82rem; color: var(--text-soft); }
+  .timer-sub-row button { border: none; background: transparent; cursor: pointer; color: var(--text-soft); font-family: var(--font-body); font-size: .82rem; padding: 2px 4px; border-radius: 6px; }
+  .timer-sub-row button:hover { color: var(--accent); background: var(--surface-2); }
   .complete-btn { display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer; background: var(--accent); color: #fff; font-family: inherit; font-size: 1.2rem; font-weight: 700; border-radius: 24px; padding: 7px 20px; box-shadow: 0 3px 8px rgba(0,0,0,.2); }
   .complete-btn .box { width: 20px; height: 20px; border: 2px solid #fff; border-radius: 5px; }
   .putback { border: none; background: transparent; cursor: pointer; color: var(--ink-soft); font-size: 1.1rem; font-family: inherit; text-decoration: underline dotted; }
@@ -1357,6 +1369,12 @@
     ti_delete: { ko: "삭제", en: "Delete" },
     subs_head: { ko: "☑ {0}/{1} · 하위 할 일", en: "☑ {0}/{1} · Subtasks" },
     subs_empty: { ko: "하위 할 일 — 작게 쪼개기", en: "Subtasks — break it down" },
+    ot_break_h: { ko: "◉ 원씽 부수기", en: "◉ Break it down" },
+    ot_break_sub: { ko: "커서 막막한가요? 글로 쪼개는 순간, 해야 할 일이 명확해집니다.", en: "Feels too big? Write the pieces — clarity comes from writing." },
+    ot_break_sub2: { ko: "차례대로 하나씩 — 지금 조각만 생각하세요.", en: "One piece at a time — think only of the current one." },
+    ot_break_first: { ko: "＋ 첫 번째 조각을 적고 Enter", en: "＋ Write the first piece, then Enter" },
+    ot_break_next: { ko: "＋ 다음 조각 추가 후 Enter", en: "＋ Add the next piece, then Enter" },
+    tmr_reset: { ko: "처음부터", en: "Restart" },
     ti_restore: { ko: "되돌리기", en: "Restore" },
     ti_backtodo: { ko: "다시 할 일로", en: "Back to to-dos" },
     ti_totrash: { ko: "휴지통으로", en: "To trash" },
@@ -2598,30 +2616,37 @@
     act.append(due, rep, lat, del); d.append(act);
     return d;
   }
+  // '원씽 부수기' — 큰 원씽을 조각으로 쪼개 차례대로 실행
   function buildOtSubs(td) {
     const wrap = document.createElement("div"); wrap.className = "ot-subs";
     const subs = td.subtasks || [];
     const doneN = subs.filter((s) => s.done).length;
     const head = document.createElement("div"); head.className = "ot-subs-head";
-    head.textContent = subs.length ? t("subs_head", doneN, subs.length) : t("subs_empty");
+    head.innerHTML = '<b>' + t("ot_break_h") + '</b>' + (subs.length ? ' <span class="obs-cnt">' + doneN + '/' + subs.length + '</span>' : '');
     wrap.append(head);
-    if (subs.length) {   // 하위 할 일 진행률 바
-      const bar = document.createElement("div"); bar.className = "ms-bar"; bar.style.height = "6px"; bar.style.margin = "2px 0 8px";
+    const subline = document.createElement("div"); subline.className = "ot-break-sub";
+    subline.textContent = subs.length ? t("ot_break_sub2") : t("ot_break_sub");
+    wrap.append(subline);
+    if (subs.length) {   // 진행률 바
+      const bar = document.createElement("div"); bar.className = "ms-bar"; bar.style.height = "6px"; bar.style.margin = "6px 0 8px";
       const fill = document.createElement("div"); fill.className = "ms-fill"; fill.style.width = Math.round((doneN / subs.length) * 100) + "%";
       if (!doneN) fill.style.minWidth = "0";
       bar.append(fill); wrap.append(bar);
     }
     const ul = document.createElement("ul"); ul.className = "ot-sub-list";
-    subs.forEach((s) => {
+    let nowMarked = false;
+    subs.forEach((s, i) => {
       const li = document.createElement("li");
+      if (!s.done && !nowMarked) { li.className = "now-step"; nowMarked = true; }   // 지금 부술 조각
+      const num = document.createElement("span"); num.className = "step-num"; num.textContent = (i + 1) + ".";
       const cb = document.createElement("button"); cb.className = "check scheck"; cb.textContent = s.done ? "✓" : ""; cb.addEventListener("click", () => toggleSub(td.id, s.id));
       const tx = document.createElement("span"); tx.className = "stext" + (s.done ? " done" : ""); tx.textContent = s.text;
       const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.addEventListener("click", () => delSub(td.id, s.id));
-      li.append(cb, tx, x); ul.append(li);
+      li.append(num, cb, tx, x); ul.append(li);
     });
     wrap.append(ul);
     const sa = document.createElement("div"); sa.className = "sub-add";
-    const si = document.createElement("input"); si.placeholder = t("sub_ph");
+    const si = document.createElement("input"); si.placeholder = subs.length ? t("ot_break_next") : t("ot_break_first");
     si.addEventListener("keydown", (e) => { if (e.key === "Enter") addSub(td.id, si.value); });
     sa.append(si); wrap.append(sa);
     return wrap;
@@ -2674,23 +2699,30 @@
     if (isToday && cur) {
       const card = document.createElement("div"); card.className = "onething-card";
       const text = document.createElement("div"); text.className = "ot-text"; text.textContent = cur.text; text.title = t("ti_edit"); makeEditable(text, "todo", cur.id);
+      // 타이머 — 메인 한 줄(시간·시작·길이) + 보조 한 줄(처음부터·휴식·누적)
+      const pm = state.settings.pomodoroMin || 25;
       const timer = document.createElement("div"); timer.className = "timer";
       timer.innerHTML = '<span class="time" id="timeDisp">' + fmtMMSS(timerRemaining > 0 ? timerRemaining : pomoSec()) + '</span>'
-        + '<button id="timerToggle">' + (timerRunning ? t("timer_pause") : t("timer_start")) + '</button>'
-        + '<button id="timerReset" title="' + t("tt_reset") + '">↺</button>'
-        + '<button id="breakBtn" title="' + t("break_t") + '">' + t("break_btn") + '</button>'
+        + '<button id="timerToggle" class="tmr-main">' + (timerRunning ? t("timer_pause") : t("timer_start")) + '</button>'
+        + '<span class="len-wrap"><button id="lenBtn" class="tmr-len" type="button">' + pm + t("min_unit") + ' ▾</button>'
+        + '<div class="to-menu len-menu" id="lenMenu" hidden>'
+        + [15, 25, 30, 45, 60].map((n) => '<button class="to-opt" data-min="' + n + '"' + (n === pm ? ' style="color:var(--accent);font-weight:700"' : '') + '>' + n + t("min_unit") + '</button>').join("")
+        + '<button class="to-opt" data-min="custom">' + t("tp_custom") + '</button></div></span>';
+      const subRow = document.createElement("div"); subRow.className = "timer-sub-row";
+      subRow.innerHTML = '<button id="timerReset" type="button" title="' + t("tt_reset") + '">↺ ' + t("tmr_reset") + '</button><span>·</span>'
+        + '<button id="breakBtn" type="button" title="' + t("break_t") + '">' + t("break_btn") + '</button><span>·</span>'
         + '<span class="focus-acc" id="focusAcc" title="' + t("tt_acc") + '">' + t("focus_acc", fmtDur(cur.focusSec || 0)) + '</span>';
-      const presetEl = document.createElement("div"); presetEl.className = "timer-presets";
-      const pm = state.settings.pomodoroMin || 25; const presets = [15, 25, 30, 45, 60];
-      let ph = '<span class="tp-label">' + t("tp_label") + '</span>';
-      presets.forEach((n) => { ph += '<button data-min="' + n + '"' + (n === pm ? ' class="sel"' : '') + '>' + n + '</button>'; });
-      ph += '<button data-min="custom"' + (presets.indexOf(pm) < 0 ? ' class="sel"' : '') + '>' + t("tp_custom") + '</button><span class="tp-unit">' + t("min_unit") + '</span>';
-      presetEl.innerHTML = ph;
       const foot = document.createElement("div"); foot.className = "ot-foot";
       const done = document.createElement("button"); done.className = "complete-btn"; done.innerHTML = '<span class="box"></span> ' + t("complete"); done.addEventListener("click", () => completeTodo(cur.id));
-      foot.append(done); card.append(text, buildOtSubs(cur), timer, presetEl, foot); slot.append(card);
+      foot.append(done); card.append(text, buildOtSubs(cur), timer, subRow, foot); slot.append(card);
       $id("rightHint").textContent = t("hint_active");
-      setTimeout(() => { const tb = $id("timerToggle"), tr = $id("timerReset"), bb = $id("breakBtn"); if (tb) tb.onclick = toggleTimer; if (tr) tr.onclick = () => resetTimer(); if (bb) bb.onclick = startBreak; }, 0);
+      setTimeout(() => {
+        const tb = $id("timerToggle"), tr = $id("timerReset"), bb = $id("breakBtn"), lb = $id("lenBtn"), lm = $id("lenMenu");
+        if (tb) tb.onclick = toggleTimer;
+        if (tr) tr.onclick = () => resetTimer();
+        if (bb) bb.onclick = startBreak;
+        if (lb && lm) lb.onclick = (e) => { e.stopPropagation(); lm.hidden = !lm.hidden; };
+      }, 0);
     } else if (isToday) {
       const empty = document.createElement("div"); empty.className = "empty-ot";
       empty.innerHTML = EMPTY_OT_SVG + "<div>" + t("empty_ot") + "</div>";
@@ -4661,6 +4693,8 @@
   document.addEventListener("click", (e) => {
     const m = $id("srToMenu");
     if (m && !m.hidden && !e.target.closest("#srToSel")) m.hidden = true;
+    const lm = $id("lenMenu");
+    if (lm && !lm.hidden && !e.target.closest(".len-wrap")) lm.hidden = true;
   });
   // Ctrl+Enter = 보내기 (쪽지 본문·업무 요청 제목/본문 공통)
   ["sendReqText", "srTitle", "srEditor"].forEach((id) => {
