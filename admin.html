@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>플랫폼 관제 · The One Thing</title>
+<link rel="icon" type="image/png" href="icon-192.png" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+  :root {
+    --bg:#f7f8fa; --surface:#fff; --surface2:#f1f3f6; --border:#e3e6eb; --text:#1f2430; --sub:#6b7280;
+    --accent:#3b5bdb; --soft:#e8edfb; --danger:#c0392b; --ok:#178a50;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16181d; --surface:#1e2128; --surface2:#252932; --border:#33383f; --text:#e4e7ee; --sub:#9aa1ad; --accent:#7c93f0; --soft:#2a3350; --danger:#e07060; --ok:#4bc98a; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6; letter-spacing:-.01em; }
+  .wrap { max-width:860px; margin:0 auto; padding:34px 20px 90px; }
+  .logo { color:var(--accent); font-weight:800; }
+  h1 { font-size:1.55rem; margin:10px 0 2px; }
+  .lead { color:var(--sub); font-size:.88rem; margin:0 0 18px; }
+  .topnav { display:flex; gap:10px; flex-wrap:wrap; margin:0 0 22px; }
+  .topnav a { color:var(--accent); text-decoration:none; font-weight:600; font-size:.88rem;
+    border:1px solid var(--border); border-radius:8px; padding:6px 14px; background:var(--surface); }
+  /* 요약 카드 */
+  .stats { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .stat { flex:1; min-width:140px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 18px; }
+  .stat .n { font-size:1.7rem; font-weight:800; color:var(--accent); }
+  .stat .l { font-size:.82rem; color:var(--sub); }
+  .search { width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:10px;
+    background:var(--surface); color:var(--text); font-family:inherit; font-size:.95rem; outline:none; margin-bottom:16px; }
+  .search:focus { border-color:var(--accent); }
+  /* 회사 카드 */
+  .co { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin:12px 0; }
+  .co-h { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .co-h .nm { font-weight:800; font-size:1.02rem; }
+  .co-h .meta { color:var(--sub); font-size:.8rem; }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:7px 2px;
+    border-top:1px solid var(--border); font-size:.88rem; flex-wrap:wrap; }
+  .row .who { min-width:0; }
+  .row .who small { color:var(--sub); display:block; font-size:.78rem; }
+  .chip { display:inline-block; font-size:.7rem; font-weight:700; border-radius:8px; padding:1px 8px; margin-left:6px;
+    background:var(--soft); color:var(--accent); vertical-align:middle; }
+  .acts { display:flex; gap:6px; flex:none; }
+  button { font-family:inherit; font-size:.78rem; border:1px solid var(--border); background:var(--surface2);
+    color:var(--text); border-radius:7px; padding:4px 10px; cursor:pointer; }
+  button:hover { border-color:var(--accent); color:var(--accent); }
+  button.danger:hover { border-color:var(--danger); color:var(--danger); }
+  .empty { color:var(--sub); text-align:center; padding:30px 0; }
+  #gate { text-align:center; padding:120px 20px; }
+  #content { display:none; }
+  a.back { color:var(--accent); text-decoration:none; font-weight:600; }
+  .toast { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:var(--text); color:var(--bg);
+    border-radius:10px; padding:9px 18px; font-size:.88rem; opacity:0; transition:opacity .25s; pointer-events:none; z-index:9; }
+  .toast.on { opacity:.95; }
+  .sec-h { font-weight:800; margin:26px 0 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="gate">
+    <div class="logo">◉ The One Thing</div>
+    <p id="gateMsg">권한 확인 중…</p>
+    <p><a class="back" href="index.html">← 앱으로 돌아가기</a></p>
+  </div>
+
+  <div id="content">
+    <div class="logo">◉ The One Thing</div>
+    <h1>플랫폼 관제 센터</h1>
+    <p class="lead">최고관리자 전용 · 실시간 반영 · 여기서 한 조치는 되돌릴 수 없으니 신중하게</p>
+    <div class="topnav">
+      <a href="index.html">← 앱으로</a>
+      <a href="admin-org.html">권한 흐름도</a>
+      <a href="https://console.firebase.google.com/project/onething-7f4d7/overview" target="_blank" rel="noopener">Firebase 콘솔 ↗</a>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="n" id="stWs">0</div><div class="l">워크스페이스(회사)</div></div>
+      <div class="stat"><div class="n" id="stUsers">0</div><div class="l">전체 회원</div></div>
+      <div class="stat"><div class="n" id="stSolo">0</div><div class="l">무소속 회원</div></div>
+      <div class="stat"><div class="n" id="stNew">0</div><div class="l">최근 7일 신규 가입</div></div>
+    </div>
+
+    <input class="search" id="q" type="search" placeholder="회사 이름 · 회원 이름 · 이메일 검색" autocomplete="off" />
+    <div id="list"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+  const SUPER_ADMIN_UID = "srqAaRgdmLhYeCyEFeiUA552cvA3";
+  firebase.initializeApp({
+    apiKey: "AIzaSyASo_vj9aOyAfv0F6HlOlJ7e2oPjmKqfSo",
+    authDomain: "onething-7f4d7.firebaseapp.com",
+    databaseURL: "https://onething-7f4d7-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "onething-7f4d7",
+    appId: "1:9113682878:web:b7b4571af1d5bed37defef"
+  });
+  const $id = (i) => document.getElementById(i);
+  let users = {}, wss = {}, ready = false;
+  let toastT = null;
+  function toast(m) { const el = $id("toast"); el.textContent = m; el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), 2600); }
+  function fmtD(ts) { if (!ts) return "-"; const d = new Date(ts); return d.getFullYear() + "." + (d.getMonth() + 1) + "." + d.getDate(); }
+
+  firebase.auth().onAuthStateChanged((u) => {
+    if (u && u.uid === SUPER_ADMIN_UID) {
+      $id("gate").style.display = "none"; $id("content").style.display = "block";
+      start();
+    } else {
+      $id("gateMsg").textContent = u ? "이 페이지는 최고관리자 전용입니다." : "앱에서 최고관리자 계정으로 로그인한 뒤 다시 열어주세요.";
+    }
+  });
+
+  function start() {
+    if (ready) return; ready = true;
+    const db = firebase.database();
+    db.ref("users").on("value", (s) => { users = s.val() || {}; render(); });
+    db.ref("workspaces").on("value", (s) => { wss = s.val() || {}; render(); });
+    $id("q").addEventListener("input", render);
+  }
+
+  function userRow(uid) {
+    const rec = users[uid] || {};
+    const row = document.createElement("div"); row.className = "row";
+    const who = document.createElement("div"); who.className = "who";
+    who.textContent = rec.name || "(이름 없음)";
+    if (rec.role === "owner") { const c = document.createElement("span"); c.className = "chip"; c.textContent = "오너"; who.append(c); }
+    else if (rec.role === "admin") { const c = document.createElement("span"); c.className = "chip"; c.textContent = "사내관리자"; who.append(c); }
+    if (uid === SUPER_ADMIN_UID) { const c = document.createElement("span"); c.className = "chip"; c.textContent = "최고관리자"; who.append(c); }
+    const sm = document.createElement("small"); sm.textContent = (rec.email || "이메일 없음") + " · 가입 " + fmtD(rec.createdAt);
+    who.append(sm);
+    const acts = document.createElement("div"); acts.className = "acts";
+    const rn = document.createElement("button"); rn.textContent = "이름 변경";
+    rn.addEventListener("click", () => {
+      const nv = prompt("새 이름 (" + (rec.name || "?") + " → ?)", rec.name || "");
+      if (!nv || !nv.trim()) return;
+      firebase.database().ref("users/" + uid + "/name").set(nv.trim()).then(() => toast("이름을 변경했어요")).catch((e) => toast("실패: " + e.message));
+    });
+    const rp = document.createElement("button"); rp.textContent = "비번 재설정";
+    rp.addEventListener("click", () => {
+      if (!rec.email) { toast("이메일이 없는 계정이에요"); return; }
+      if (!confirm(rec.name + " (" + rec.email + ") 에게 비밀번호 재설정 메일을 보낼까요?")) return;
+      firebase.auth().sendPasswordResetEmail(rec.email).then(() => toast("재설정 메일을 보냈어요")).catch((e) => toast("실패: " + e.message));
+    });
+    acts.append(rn, rp);
+    if (uid !== SUPER_ADMIN_UID) {
+      const del = document.createElement("button"); del.className = "danger"; del.textContent = "계정 삭제";
+      del.addEventListener("click", () => {
+        if (!confirm("정말 '" + (rec.name || uid) + "' 계정(프로필)을 삭제할까요? 되돌릴 수 없어요.")) return;
+        const ws = rec.ws || null;
+        const jobs = [firebase.database().ref("users/" + uid).remove()];
+        if (ws) jobs.push(firebase.database().ref("ws/" + ws + "/status/" + uid).remove().catch(() => {}));
+        Promise.all(jobs).then(() => toast("삭제했어요")).catch((e) => toast("실패: " + e.message));
+      });
+      acts.append(del);
+    }
+    row.append(who, acts);
+    return row;
+  }
+
+  function render() {
+    const q = ($id("q").value || "").trim().toLowerCase();
+    const uids = Object.keys(users), wids = Object.keys(wss);
+    const solo = uids.filter((u) => !(users[u] || {}).ws);
+    const weekAgo = Date.now() - 7 * 864e5;
+    $id("stWs").textContent = wids.length;
+    $id("stUsers").textContent = uids.length;
+    $id("stSolo").textContent = solo.length;
+    $id("stNew").textContent = uids.filter((u) => ((users[u] || {}).createdAt || 0) > weekAgo).length;
+    const hitU = (u) => { const r = users[u] || {}; return !q || (r.name || "").toLowerCase().includes(q) || (r.email || "").toLowerCase().includes(q); };
+
+    const list = $id("list"); list.innerHTML = "";
+    let shown = 0;
+    wids.sort((a, b) => ((wss[b] || {}).createdAt || 0) - ((wss[a] || {}).createdAt || 0)).forEach((wid) => {
+      const w = wss[wid] || {};
+      const members = uids.filter((u) => (users[u] || {}).ws === wid);
+      const mHits = members.filter(hitU);
+      if (q && !(w.name || "").toLowerCase().includes(q) && !mHits.length) return;
+      shown++;
+      const card = document.createElement("div"); card.className = "co";
+      const h = document.createElement("div"); h.className = "co-h";
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = "🏢 " + (w.name || wid);
+      const meta = document.createElement("span"); meta.className = "meta";
+      meta.textContent = "구성원 " + members.length + "명 · 개설 " + fmtD(w.createdAt) + " · 초대 코드 " + (w.code || "-");
+      const wdel = document.createElement("button"); wdel.className = "danger"; wdel.textContent = "회사 삭제";
+      wdel.addEventListener("click", () => {
+        if (!confirm("'" + (w.name || wid) + "' 워크스페이스를 삭제할까요?\n요청·프로젝트 등 팀 데이터가 모두 지워지고, 구성원 " + members.length + "명은 무소속이 됩니다. 되돌릴 수 없어요.")) return;
+        if (!confirm("정말입니까? 한 번 더 확인합니다.")) return;
+        const db = firebase.database();
+        const jobs = [db.ref("workspaces/" + wid).remove(), db.ref("ws/" + wid).remove()];
+        members.forEach((u) => jobs.push(db.ref("users/" + u).update({ ws: null, role: null })));
+        Promise.all(jobs).then(() => toast("워크스페이스를 삭제했어요")).catch((e) => toast("실패: " + e.message));
+      });
+      h.append(nm, meta, wdel); card.append(h);
+      (q ? mHits : members)
+        .sort((a, b) => ((users[a] || {}).role === "owner" ? -1 : 1) - ((users[b] || {}).role === "owner" ? -1 : 1))
+        .forEach((u) => card.append(userRow(u)));
+      list.append(card);
+    });
+
+    const sHits = solo.filter(hitU);
+    if (sHits.length) {
+      shown++;
+      const card = document.createElement("div"); card.className = "co"; card.style.borderStyle = "dashed";
+      const h = document.createElement("div"); h.className = "co-h";
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = "🙋 무소속 회원 (" + sHits.length + ")";
+      h.append(nm); card.append(h);
+      sHits.forEach((u) => card.append(userRow(u)));
+      list.append(card);
+    }
+    if (!shown) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "검색 결과가 없어요."; list.append(e); }
+  }
+</script>
+</body>
+</html>
