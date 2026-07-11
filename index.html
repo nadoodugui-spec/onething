@@ -1630,11 +1630,11 @@
     tour_next: { ko: "다음", en: "Next" },
     tour_start: { ko: "시작하기", en: "Get started" },
     tour_t1: { ko: "모든 게 급하다고 말하는 시대,<br><b>성과는 '단 하나'에서 나옵니다</b>", en: "When everything feels urgent,<br><b>results come from one thing</b>" },
-    tour_b1: { ko: "The One Thing은 가장 중요한 하나를 정하고, 끝날 때까지 지키게 하는 팀 도구예요.", en: "The One Thing helps you pick the most important thing and protect it until it's done." },
+    tour_b1: { ko: "The One Thing은 가장 중요한 하나를 정하고,<br>끝날 때까지 지키게 하는 팀 도구예요.", en: "The One Thing helps you pick the most important thing<br>and protect it until it's done." },
     tour_t2: { ko: "할 일을 모으고,<br><b>단 하나를 ◉로 보내세요</b>", en: "Collect to-dos,<br><b>send one with ◉</b>" },
     tour_b2: { ko: "그 하나가 화면의 주인공이 되고, 나머지 할 일은 끝날 때까지 잠깁니다. 완료하면 도미노가 하나 넘어가요.", en: "That one becomes the star of your screen — the rest locks until it's done." },
     tour_t3: { ko: "동료의 집중은<br><b>팀이 함께 지킵니다</b>", en: "Focus is<br><b>protected by the team</b>" },
-    tour_b3: { ko: "쪽지·업무 요청으로 일을 주고받고, 상대가 '원씽 중'이면 알림은 조용히 기다립니다. 급하지 않은 일은 기다려주세요.", en: "Send memos and work requests — while someone is focusing, alerts wait quietly." },
+    tour_b3: { ko: "쪽지·업무 요청으로 일을 주고받고,<br>상대가 '원씽 중'이면 알림은 조용히 기다립니다.<br>급하지 않은 일은 기다려주세요.", en: "Send memos and work requests —<br>while someone is focusing, alerts wait quietly." },
     // 할 일 폴더 / 관리자
     grp_add: { ko: "＋ List", en: "＋ List" },
     grp_add_t: { ko: "새 List(독립된 할 일 목록) 만들기", en: "Create a new list" },
@@ -4602,7 +4602,7 @@
     $id("tourStep").textContent = (tourIdx + 1) + " / " + TOUR.length;
     $id("tourTitle").innerHTML = t(TOUR[tourIdx].title);
     $id("tourBody").innerHTML = t(TOUR[tourIdx].body);
-    $id("tourPrev").style.visibility = tourIdx === 0 ? "hidden" : "visible";
+    $id("tourPrev").style.display = tourIdx === 0 ? "none" : "";   // 1페이지에선 '다음'이 중앙에
     $id("tourNext").textContent = tourIdx === TOUR.length - 1 ? t("tour_start") : t("tour_next");
   }
   function closeTour() {
