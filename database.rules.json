@@ -2,21 +2,30 @@
   "rules": {
     ".read": "auth != null",
     ".write": "auth != null",
-    "status": {
-      "$uid": {
-        ".validate": "newData.hasChildren(['state', 'ts']) && newData.child('state').val().matches(/^(focus|work|away|vacation)$/)"
-      }
-    },
-    "requests": {
-      "$rid": {
-        "kind": { ".validate": "newData.isString() && newData.val().matches(/^(memo|task)$/)" },
-        "title": { ".validate": "newData.isString() && newData.val().length <= 200" },
-        "html": { ".validate": "newData.isString() && newData.val().length <= 200000" },
-        "attachments": {
-          "$i": {
-            "data": { ".validate": "newData.isString() && newData.val().length <= 1500000" }
+    "ws": {
+      "$ws": {
+        "status": {
+          "$uid": {
+            ".validate": "newData.hasChildren(['state', 'ts']) && newData.child('state').val().matches(/^(focus|work|away|vacation)$/)"
+          }
+        },
+        "requests": {
+          "$rid": {
+            "kind": { ".validate": "newData.isString() && newData.val().matches(/^(memo|task)$/)" },
+            "title": { ".validate": "newData.isString() && newData.val().length <= 200" },
+            "html": { ".validate": "newData.isString() && newData.val().length <= 200000" },
+            "attachments": {
+              "$i": {
+                "data": { ".validate": "newData.isString() && newData.val().length <= 1500000" }
+              }
+            }
           }
         }
+      }
+    },
+    "workspaces": {
+      "$ws": {
+        ".validate": "newData.hasChildren(['name', 'owner'])"
       }
     }
   }
