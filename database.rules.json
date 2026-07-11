@@ -1,9 +1,28 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
+    "users": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && ($uid === auth.uid || ((root.child('users').child(auth.uid).child('role').val() === 'owner' || root.child('users').child(auth.uid).child('role').val() === 'admin') && root.child('users').child(auth.uid).child('ws').val() === data.child('ws').val()))"
+      }
+    },
+    "notes": {
+      "$nid": {
+        ".read": "auth != null && $nid === 'user_' + auth.uid",
+        ".write": "auth != null && $nid === 'user_' + auth.uid"
+      }
+    },
+    "workspaces": {
+      ".read": "auth != null",
+      "$ws": {
+        ".write": "auth != null && ((!data.exists() && newData.child('owner').val() === auth.uid) || data.child('owner').val() === auth.uid || ((root.child('users').child(auth.uid).child('role').val() === 'owner' || root.child('users').child(auth.uid).child('role').val() === 'admin') && root.child('users').child(auth.uid).child('ws').val() === $ws))",
+        ".validate": "newData.hasChildren(['name', 'owner'])"
+      }
+    },
     "ws": {
       "$ws": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('ws').val() === $ws",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('ws').val() === $ws",
         "status": {
           "$uid": {
             ".validate": "newData.hasChildren(['state', 'ts']) && newData.child('state').val().matches(/^(focus|work|away|vacation)$/)"
@@ -21,11 +40,6 @@
             }
           }
         }
-      }
-    },
-    "workspaces": {
-      "$ws": {
-        ".validate": "newData.hasChildren(['name', 'owner'])"
       }
     }
   }

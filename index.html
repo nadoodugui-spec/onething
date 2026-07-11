@@ -1006,6 +1006,10 @@
     <div class="modal-box">
       <div class="modal-head"><span data-i18n="um_head">👤 사용자</span><button class="modal-close" id="userClose">✕</button></div>
       <p class="modal-desc" id="userWho"></p>
+      <div class="mrow" id="umVerify" hidden style="background:rgba(242,193,78,.14);border-radius:8px;padding:8px 10px">
+        <span class="mlabel" style="color:var(--warn)" data-i18n="um_verify">이메일 인증이 아직 완료되지 않았어요</span>
+        <button id="verifyResend" class="mbtn ghost" data-i18n="um_verify_btn">인증 메일 재발송</button>
+      </div>
       <div class="mrow">
         <button id="renameBtn" class="mbtn ghost" data-i18n="um_rename">이름 변경</button>
         <button id="switchUserBtn" class="mbtn ghost" data-i18n="um_switch">사용자 바꾸기 / 로그아웃</button>
@@ -1028,6 +1032,10 @@
       <div id="umAdmin" hidden>
         <div class="section-h" data-i18n="um_members">구성원 관리 (관리자)</div>
         <ul class="mlist" id="umMemberList"></ul>
+      </div>
+      <div id="umAudit" hidden>
+        <div class="section-h" data-i18n="audit_h">최근 관리 기록</div>
+        <div id="umAuditList"></div>
       </div>
     </div>
   </div>
@@ -1405,7 +1413,7 @@
     ro_none: { ko: "이 날엔 끝낸 원씽이 없어요", en: "No One Things finished this day" },
     hint_today: { ko: "‘오늘’ 버튼으로 돌아오면 원씽을 고를 수 있어요.", en: "Tap 'Today' to pick a One Thing." },
     // stats
-    hero0: { ko: "아직 시작 전 — 오늘 첫 원씽을 완료해 보세요", en: "Not started yet — finish your first One Thing today" },
+    hero0: { ko: "아직 시작 전 — 오늘 첫 원씽을 완료해 보세요", en: "Not started yet — topple your first domino today" },
     hero_fire: { ko: "{0}일 연속 실천 중 — 대단한 흐름이에요", en: "{0}-day streak — great momentum" },
     hero_going: { ko: "{0}일째 실천 중 — 이 흐름을 이어가요", en: "Day {0} going — keep the streak" },
     hero_restart: { ko: "다시 시작하기 좋은 날 — 오늘 하나만 해볼까요?", en: "A good day to restart — just one today?" },
@@ -1521,11 +1529,28 @@
     kick_btn: { ko: "내보내기", en: "Remove from team" },
     kick_confirm: { ko: "'{0}'님을 워크스페이스에서 내보낼까요? 계정은 유지되고, 미완료 요청은 나에게 전달됩니다.", en: "Remove '{0}' from the workspace? Their account stays; pending requests come to you." },
     kick_done: { ko: "{0}님을 내보냈어요 — 미완료 요청은 나에게 전달됐습니다", en: "{0} removed — pending requests forwarded to you" },
+    undo_btn: { ko: "실행 취소", en: "Undo" },
+    undo_deleted: { ko: "삭제했어요", en: "Deleted" },
+    rq_edit: { ko: "수정", en: "Edit" },
+    rq_recall: { ko: "회수", en: "Recall" },
+    rq_recall_confirm: { ko: "이 요청을 회수할까요? 상대의 받은함에서 사라집니다.", en: "Recall this request? It disappears from their inbox." },
+    rq_recalled: { ko: "요청을 회수했어요", en: "Request recalled" },
+    rq_edited: { ko: "(수정됨)", en: "(edited)" },
+    rq_edited_done: { ko: "요청을 수정했어요", en: "Request updated" },
+    au_verify_sent: { ko: "인증 메일을 보냈어요 — 받은편지함을 확인하세요", en: "Verification email sent — check your inbox" },
+    um_verify: { ko: "이메일 인증이 아직 완료되지 않았어요", en: "Your email isn't verified yet" },
+    um_verify_btn: { ko: "인증 메일 재발송", en: "Resend verification" },
+    audit_h: { ko: "최근 관리 기록", en: "Recent admin activity" },
+    st_tab_me: { ko: "나", en: "Me" },
+    st_tab_team: { ko: "팀 (관리자)", en: "Team (admin)" },
+    kb_to_doing: { ko: "→ 진행 중", en: "→ In progress" },
+    kb_to_done: { ko: "→ 완료", en: "→ Done" },
+    kb_to_todo: { ko: "← 할 일", en: "← To do" },
     rt_kicker: { ko: "오늘의 시작", en: "START YOUR DAY" },
     rt_q: { ko: "이걸 끝내면, 나머지가 쉬워지는<br><b>단 하나</b>는 무엇인가요?", en: "What's the <b>one thing</b> that makes<br>everything else easier?" },
     rt_sub: { ko: "여러 개를 잘하는 사람보다, 하나를 끝내는 사람이 이깁니다.", en: "The one who finishes one thing beats the one who juggles many." },
-    rt_go: { ko: "오늘의 단 하나 정하기", en: "Pick today's one thing" },
-    rt_skip: { ko: "오늘은 그냥 둘러볼게요 →", en: "Just browsing today →" },
+    rt_go: { ko: "오늘의 단 하나 정하기", en: "Set today's One Thing" },
+    rt_skip: { ko: "오늘은 그냥 둘러볼게요 →", en: "Just looking around today →" },
     lg_or: { ko: "또는 새로 등록", en: "Or register" },
     lg_name_ph: { ko: "이름", en: "Name" },
     lg_pin_ph: { ko: "숫자 4자리", en: "4-digit PIN" },
@@ -1596,7 +1621,7 @@
     rq_fwd_done: { ko: "{0}님에게 전달했어요", en: "Forwarded to {0}" },
     rq_fwd_by: { ko: "{0}님이 전달", en: "Forwarded by {0}" },
     rq_search_ph: { ko: "요청 검색(내용·이름)…", en: "Search requests…" },
-    rq_due_sum: { ko: "오늘 마감 {0}건 · 지난 마감 {1}건이 있어요", en: "{0} due today · {1} overdue" },
+    rq_due_sum: { ko: "오늘 마감 {0}건 · 지난 마감 {1}건이 있어요", en: "{0} due today · {1} overdue — check your inbox" },
     rq_remind: { ko: "리마인드", en: "Remind" },
     rq_reminded: { ko: "리마인드를 보냈어요", en: "Reminder sent" },
     rq_nudged: { ko: "{0}님이 요청을 리마인드했어요", en: "{0} sent a reminder" },
@@ -1612,8 +1637,8 @@
     prj_name_prompt: { ko: "Project 이름을 입력하세요", en: "Project name" },
     prj_del_t: { ko: "Project 삭제(팀 전체에서 삭제됨)", en: "Delete project (for everyone)" },
     prj_del_confirm: { ko: "'{0}' Project를 삭제할까요? 팀 전체에서 사라지며 되돌릴 수 없어요.", en: "Delete project '{0}'? It disappears for everyone." },
-    prj_empty: { ko: "팀과 함께 쓰는 목록이에요 — 첫 할 일을 적어보세요", en: "A shared list — add the first item" },
-    prj_todo_del: { ko: "이 항목을 삭제할까요? (팀 전체에서 삭제)", en: "Delete this item for everyone?" },
+    prj_empty: { ko: "팀과 함께 쓰는 목록이에요 — 첫 할 일을 적어보세요", en: "A board your team shares — add the first card" },
+    prj_todo_del: { ko: "이 항목을 삭제할까요? (팀 전체에서 삭제)", en: "Delete this card for the whole team?" },
     grp_ctx_t: { ko: "우클릭: 이름 변경 · 드래그: 순서 이동", en: "Right-click: rename · Drag: reorder" },
     prj_owner_only: { ko: "프로젝트를 만든 사람(또는 관리자)만 바꿀 수 있어요", en: "Only the owner (or admin) can change this" },
     prj_members: { ko: "멤버", en: "Members" },
@@ -1666,7 +1691,7 @@
     st_focus_hint: { ko: "지금 '단 하나'에 집중하는 중이에요 — 급하지 않다면 잠시 지켜주세요", en: "Focusing on their one thing — if it can wait, let it wait" },
     st_focus_req: { ko: "원씽을 먼저 정하면 '원씽 중'이 돼요", en: "Pick your One Thing first to go 'Focusing'" },
     st_vacation: { ko: "휴가 중", en: "On vacation" },
-    st_vacation_d: { ko: "복귀일과 대리인을 알려요", en: "Show return date and deputy" },
+    st_vacation_d: { ko: "복귀일과 대리인을 알려요", en: "Shares your return date and deputy with the team" },
     vac_head: { ko: "휴가 설정", en: "Vacation" },
     vac_until: { ko: "복귀일", en: "Return date" },
     vac_deputy: { ko: "대리인(선택)", en: "Deputy (optional)" },
@@ -1739,7 +1764,7 @@
     br_req: { ko: "받은 요청 · 마감", en: "Request · due" },
     br_todo: { ko: "내 할 일", en: "My to-do" },
     br_prj: { ko: "프로젝트 · {0}", en: "Project · {0}" },
-    domino_note: { ko: "작은 하나가 다음 것을 넘어뜨립니다", en: "each one topples the next" },
+    domino_note: { ko: "작은 하나가 다음 것을 넘어뜨립니다", en: "Each one topples the next" },
     hm_h: { ko: "최근 12주 실천", en: "Last 12 weeks" },
     card_desc: { ko: "설명", en: "Description" },
     card_desc_ph: { ko: "이 카드에 대한 배경·기준을 적어두세요…", en: "Add context or acceptance criteria…" },
@@ -1876,6 +1901,19 @@
   function toast(msg) {
     const el = $id("toast"); el.textContent = msg; el.classList.add("show");
     clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+  }
+  // 실행 취소 가능한 토스트 (6초)
+  let undoFn = null;
+  function toastUndo(msg, fn) {
+    const el = $id("toast"); el.textContent = msg + " ";
+    const b = document.createElement("button");
+    b.textContent = t("undo_btn");
+    b.style.cssText = "margin-left:8px;border:none;background:transparent;color:#a9c0ff;font-weight:700;cursor:pointer;font-family:inherit;font-size:inherit;text-decoration:underline";
+    b.addEventListener("click", () => { if (undoFn) { const f = undoFn; undoFn = null; f(); } el.classList.remove("show"); });
+    el.appendChild(b); el.classList.add("show");
+    undoFn = fn;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.classList.remove("show"); undoFn = null; }, 6000);
   }
 
   // ---------- actions ----------
@@ -2300,10 +2338,15 @@
     const p = projectsCache[pid]; if (!p || !msgDb) return;
     if (!(isAdmin() || p.owner === currentUser.id)) return;
     if (!confirm(t("prj_del_confirm", p.name))) return;
+    const pCopy = Object.assign({}, p);
+    const tCopy = Object.assign({}, projectTodosCache[pid] || {});
     try { wsRef("projects/" + pid).remove(); wsRef("projectTodos/" + pid).remove(); } catch (_) {}
     delete projectsCache[pid];
     if (currentProject === pid) currentProject = null;
     render();
+    toastUndo(t("undo_deleted"), () => {
+      try { wsRef("projects/" + pid).set(pCopy); if (Object.keys(tCopy).length) wsRef("projectTodos/" + pid).set(tCopy); } catch (_) {}
+    });
   }
   // ----- 프로젝트 칸반 보드: 할 일 → 진행 중 → 완료 -----
   let prjDragId = null;
@@ -2413,7 +2456,22 @@
     } else {
       acts.append(reqBtn(t("kb_reopen"), () => kbUpdate(pid, td.id, { status: "todo", done: false, doneBy: null, doneAt: null })));
     }
-    acts.append(reqBtn(t("rq_delete"), () => { if (confirm(t("prj_todo_del"))) { try { wsRef("projectTodos/" + pid + "/" + td.id).remove(); } catch (_) {} } }));
+    // 열 이동 버튼 (모바일에선 드래그가 안 되므로 필수)
+    if (st === "todo") acts.append(reqBtn(t("kb_to_doing"), () => {
+      const patch = { status: "doing", done: false };
+      if (!td.assignee && currentUser) { patch.assignee = currentUser.id; patch.assigneeName = currentUser.name; }
+      kbUpdate(pid, td.id, patch);
+    }));
+    if (st === "doing") {
+      acts.append(reqBtn(t("kb_to_done"), () => kbUpdate(pid, td.id, { status: "done", done: true, doneBy: currentUser ? currentUser.name : "", doneAt: Date.now() })));
+      acts.append(reqBtn(t("kb_to_todo"), () => kbUpdate(pid, td.id, { status: "todo", done: false })));
+    }
+    acts.append(reqBtn(t("rq_delete"), () => {
+      if (!confirm(t("prj_todo_del"))) return;
+      const copy = Object.assign({}, td); delete copy.id;
+      try { wsRef("projectTodos/" + pid + "/" + td.id).remove(); } catch (_) {}
+      toastUndo(t("undo_deleted"), () => { try { wsRef("projectTodos/" + pid + "/" + td.id).set(copy); } catch (_) {} });
+    }));
     card.append(acts);
     card.dataset.tid = td.id;
     // 카드 클릭 → 상세(설명·댓글)
@@ -2942,9 +3000,15 @@
     html += '<div class="section-h">' + t("badges_h") + '</div><div class="badge-row">'
       + badges.map((b) => '<span class="badge-chip' + (b.on ? "" : " locked") + '">' + (b.on ? CHECK_SVG : LOCK_SVG) + " " + b.name + '</span>').join("") + '</div>';
 
-    // 관리자용 팀 현황
+    // 일일 요약 쪽지 보내기
+    if (currentUser && cloudConfigured()) {
+      html += '<div class="mrow" style="margin-top:16px;justify-content:flex-end"><button id="dailySumBtn" class="mbtn ghost">' + t("ds_btn") + '</button></div>';
+    }
+
+    // 관리자용 팀 현황 — 별도 탭
+    let teamHtml = "";
     if (isAdmin()) {
-      html += '<div class="section-h">' + t("adm_h") + '</div>';
+      teamHtml += '<div class="section-h" style="margin-top:4px">' + t("adm_h") + '</div>';
       teamIds().forEach((uid2) => {
         const name = (usersCache[uid2] || {}).name || "?";
         const st = ((statusCache[uid2] || {}).state) || "away";
@@ -2954,17 +3018,24 @@
           if (r.to === uid2 && r.status === "done" && (r.doneAt || 0) >= wsMs) dn++;
           if (r.from === uid2 && (r.ts || 0) >= wsMs) sn2++;
         });
-        html += '<div class="sp-feed-item"><span><span class="st-dot st-' + st + '"></span> <b>' + esc(name) + '</b> · ' + t("st_" + st) + '</span>'
+        teamHtml += '<div class="sp-feed-item"><span><span class="st-dot st-' + st + '"></span> <b>' + esc(name) + '</b> · ' + t("st_" + st) + '</span>'
           + '<span>' + t("adm_row", dn, sn2) + '</span></div>';
       });
     }
 
-    // 일일 요약 쪽지 보내기
-    if (currentUser && cloudConfigured()) {
-      html += '<div class="mrow" style="margin-top:16px;justify-content:flex-end"><button id="dailySumBtn" class="mbtn ghost">' + t("ds_btn") + '</button></div>';
-    }
-
-    $id("statsBody").innerHTML = html;
+    if (teamHtml) {
+      $id("statsBody").innerHTML =
+        '<div class="pop-tabs" style="margin:0 0 12px"><button class="pop-tab active" id="stTabMe" type="button">' + t("st_tab_me") + '</button>'
+        + '<button class="pop-tab" id="stTabTeam" type="button">' + t("st_tab_team") + '</button></div>'
+        + '<div id="stPaneMe">' + html + '</div><div id="stPaneTeam" hidden>' + teamHtml + '</div>';
+      const tm = $id("stTabMe"), tt = $id("stTabTeam");
+      const sw = (me) => {
+        tm.classList.toggle("active", me); tt.classList.toggle("active", !me);
+        $id("stPaneMe").hidden = !me; $id("stPaneTeam").hidden = me;
+      };
+      tm.addEventListener("click", () => sw(true));
+      tt.addEventListener("click", () => sw(false));
+    } else $id("statsBody").innerHTML = html;
     const dsb = $id("dailySumBtn");
     if (dsb) dsb.addEventListener("click", () => {
       $id("statsModal").hidden = true;
@@ -3066,7 +3137,12 @@
       }, () => setSyncStatus("error"));
     } catch (e) { setSyncStatus("error"); }
   }
-  function pushCloud() { if (!cloudReady || !syncRef || applyingRemote) return; const ts = Date.now(); lastTs = ts; try { syncRef.set({ data: state, ts: ts, origin: clientId }); } catch (_) {} }
+  function pushCloud() {
+    if (!cloudReady || !syncRef || applyingRemote) return;
+    if (document.hidden) return;   // 백그라운드 탭이 최신 데이터를 덮어쓰지 않도록
+    const ts = Date.now(); lastTs = ts;
+    try { syncRef.set({ data: state, ts: ts, origin: clientId }); } catch (_) {}
+  }
   function setSyncStatus(kind, code) {
     const chip = $id("syncChip"), stateEl = $id("syncState"); if (!chip) return; chip.classList.remove("on", "warn", "err");
     let c, m, cls;
@@ -3533,6 +3609,8 @@
   function renderUmWs() {
     const info = $id("umWsInfo"), join = $id("umWsJoin");
     if (!info || !join) return;
+    const vb = $id("umVerify");
+    if (vb) vb.hidden = !(authUser && authUser.providerData.some((pd) => pd.providerId === "password") && !authUser.emailVerified);
     if (myWsId) {
       join.hidden = true;
       let txt = t("ws_current", (wsMeta && wsMeta.name) || myWsId);
@@ -3545,8 +3623,31 @@
       join.hidden = false;
     }
   }
+  // 관리자 행위 기록
+  function logAdmin(action, target) {
+    if (!msgDb || !myWsId || !currentUser) return;
+    try { wsRef("audit/" + uid()).set({ ts: Date.now(), by: currentUser.name, action: action, target: target || "" }); } catch (_) {}
+  }
+  function renderAudit() {
+    const box = $id("umAudit"), list = $id("umAuditList");
+    if (!box || !list) return;
+    if (!isAdmin() || !myWsId) { box.hidden = true; return; }
+    wsRef("audit").limitToLast(5).once("value").then((s) => {
+      const d = s.val() || {};
+      const items = Object.keys(d).map((k) => d[k]).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      if (!items.length) { box.hidden = true; return; }
+      box.hidden = false; list.innerHTML = "";
+      items.forEach((it) => {
+        const row = document.createElement("div"); row.className = "sp-feed-item";
+        const tx = document.createElement("span"); tx.textContent = it.by + " — " + it.action + (it.target ? " (" + it.target + ")" : "");
+        const tm = document.createElement("span"); tm.textContent = fmtAgo(it.ts);
+        row.append(tx, tm); list.append(row);
+      });
+    }).catch(() => {});
+  }
   function renderMembers() {
     const box = $id("umAdmin"), ul = $id("umMemberList"); if (!box || !ul) return;
+    renderAudit();
     if (!isAdmin()) { box.hidden = true; return; }
     box.hidden = false; ul.innerHTML = "";
     teamIds().forEach((id) => {
@@ -3568,7 +3669,7 @@
         const pr = document.createElement("button");
         pr.textContent = u.role === "admin" ? t("role_demote") : t("role_promote");
         pr.addEventListener("click", () => {
-          try { msgDb.ref("users/" + id + "/role").set(u.role === "admin" ? "member" : "admin"); } catch (_) {}
+          try { msgDb.ref("users/" + id + "/role").set(u.role === "admin" ? "member" : "admin"); logAdmin(u.role === "admin" ? "관리자 해제" : "관리자 승격", u.name || "?"); } catch (_) {}
           setTimeout(renderMembers, 300);
         });
         li.append(pr);
@@ -3588,9 +3689,11 @@
           });
           if (Object.keys(ups).length) wsRef("requests").update(ups);
           wsRef("status/" + id).remove();
+          const oldWs = u.ws || null, oldRole = u.role || null;
           msgDb.ref("users/" + id).update({ ws: null, role: null });
+          logAdmin("내보내기", u.name || "?");
+          toastUndo(t("kick_done", u.name || "?"), () => { try { msgDb.ref("users/" + id).update({ ws: oldWs, role: oldRole }); } catch (_) {} });
         } catch (_) {}
-        toast(t("kick_done", u.name || "?"));
         setTimeout(renderMembers, 300);
       });
       const del = document.createElement("button"); del.textContent = t("um_del");
@@ -3608,6 +3711,7 @@
       wsRef("status/" + id).remove();
       delete usersCache[id];
     } catch (_) {}
+    logAdmin("구성원 삭제", (u || {}).name || "?");
     renderMembers(); renderTeamBoard();
     toast(t("um_deleted"));
   }
@@ -3640,6 +3744,7 @@
         if (pw !== $id("auPw2").value) { msg.textContent = t("au_e_pw2"); return; }
         const cred = await auth.createUserWithEmailAndPassword(email, pw);
         try { await cred.user.updateProfile({ displayName: name }); } catch (_) {}
+        try { await cred.user.sendEmailVerification(); toast(t("au_verify_sent")); } catch (_) {}
         // 프로필은 로그인 후 users 스냅샷 기준으로 maybeProfileSetup에서 생성(이름 미리 채움)
       } else {
         await auth.signInWithEmailAndPassword(email, pw);
@@ -3814,8 +3919,22 @@
     lbl.textContent = txt;
     box.appendChild(lbl);
   }
+  let editReqId = null;   // 보낸 요청 수정 모드
+  function openEditRequest(r) {
+    openSendReq(reqKindOf(r));
+    editReqId = r.id;
+    composeTo = r.to; renderToChips(); updateToStatus();
+    if (reqKindOf(r) === "memo") $id("sendReqText").value = r.text || "";
+    else {
+      $id("srTitle").value = r.title || "";
+      $id("srEditor").innerHTML = sanitizeHtml(r.html || "");
+      $id("srDue").value = r.due || "";
+      $id("srRepeat").value = r.repeat || "";
+    }
+  }
   function openSendReq(kind) {
     if (!currentUser) { showLoginGate(); return; }
+    editReqId = null;
     composeTo = null; srToQuery = "";
     const search = $id("srToSearch"); if (search) search.value = "";
     const menu = $id("srToMenu"); if (menu) menu.hidden = true;
@@ -3853,6 +3972,16 @@
       const due = $id("srDue").value; if (due) rec.due = due;
       const rpt = $id("srRepeat").value; if (rpt) rec.repeat = rpt;
       if (pendingAtts.length) rec.attachments = pendingAtts;
+    }
+    if (editReqId && requestsCache[editReqId]) {
+      // 수정 모드: 같은 요청을 갱신 (읽기 전만 가능)
+      const patch = { to: rec.to, toName: rec.toName, text: rec.text || null, title: rec.title || null,
+        html: rec.html || null, due: rec.due || null, repeat: rec.repeat || null,
+        attachments: rec.attachments || null, edited: Date.now() };
+      try { wsRef("requests/" + editReqId).update(patch); } catch (_) {}
+      editReqId = null;
+      $id("sendReqModal").hidden = true; toast(t("rq_edited_done"));
+      return;
     }
     wsRef("requests/" + uid()).set(rec);
     $id("sendReqModal").hidden = true; toast(t("sr_sent"));
@@ -3969,6 +4098,7 @@
     who.textContent = kind === "inbox" ? (r.fromName || "?") : (t("rq_to_prefix") + " " + (r.toName || "?"));
     const meta = document.createElement("span"); meta.className = "rq-meta";
     let metaTxt = fmtReqTime(r.ts);
+    if (r.edited) metaTxt += " · " + t("rq_edited");
     if (st === "read" && r.readAt) metaTxt += " · " + t("rq_status_read") + " " + fmtReqTime(r.readAt);
     if (st === "done" && r.doneAt) metaTxt += " · " + fmtReqTime(r.doneAt);
     meta.textContent = metaTxt + " ";
@@ -4072,6 +4202,15 @@
       acts.appendChild(reqBtn(t("rq_delete"), () => hideRequest(r.id)));
     } else {
       acts.appendChild(reqBtn(t("rq_reply"), () => doReply(r.id)));
+      if (st === "sent") {   // 상대가 읽기 전: 수정·회수 가능
+        acts.appendChild(reqBtn(t("rq_edit"), () => openEditRequest(r)));
+        acts.appendChild(reqBtn(t("rq_recall"), () => {
+          if (!confirm(t("rq_recall_confirm"))) return;
+          const copy = Object.assign({}, r); delete copy.id;
+          try { wsRef("requests/" + r.id).remove(); } catch (_) {}
+          toastUndo(t("rq_recalled"), () => { try { wsRef("requests/" + r.id).set(copy); } catch (_) {} });
+        }));
+      }
       if (st !== "done") {
         acts.appendChild(reqBtn(t("rq_remind"), () => {   // 재촉 — 상대에게 알림 한 번 더
           try { wsRef("requests/" + r.id + "/nudge").set({ ts: Date.now(), by: currentUser.name }); } catch (_) {}
@@ -4614,6 +4753,9 @@
   $id("pfName").addEventListener("keydown", (e) => { if (e.key === "Enter") createProfile(); });
   $id("userClose").addEventListener("click", () => { $id("userModal").hidden = true; });
   $id("switchUserBtn").addEventListener("click", () => { $id("userModal").hidden = true; logoutUser(); showLoginGate(); });
+  $id("verifyResend").addEventListener("click", async () => {
+    try { await firebase.auth().currentUser.sendEmailVerification(); toast(t("au_verify_sent")); } catch (e) { toast(mapAuthErr(e)); }
+  });
   $id("renameBtn").addEventListener("click", () => {
     if (!currentUser || !msgDb) return;
     const name = (prompt(t("um_rename_prompt"), currentUser.name) || "").trim();
@@ -4639,6 +4781,7 @@
     try {
       await msgDb.ref("workspaces/" + myWsId + "/code").set(code);
       if (wsMeta) wsMeta.code = code;
+      logAdmin("초대 코드 재발급", "");
       renderUmWs(); toast(t("ws_regen_done", code));
     } catch (_) { toast(t("ws_err")); }
   });
@@ -4903,9 +5046,11 @@
     $id("tourNext").textContent = tourIdx === TOUR.length - 1 ? t("tour_start") : t("tour_next");
   }
   function closeTour() {
-    try { localStorage.setItem("onething-tour", "1"); } catch (_) {}
+    try {
+      localStorage.setItem("onething-tour", "1");
+      localStorage.setItem("onething-ritual", todayStr());   // 첫날은 팝업 하나만 — 브리핑은 내일부터
+    } catch (_) {}
     $id("tourModal").hidden = true;
-    setTimeout(maybeShowRitual, 300);
   }
   function maybeShowTour() {
     try {
