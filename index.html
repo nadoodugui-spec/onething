@@ -963,7 +963,10 @@
     <div class="modal-box">
       <div class="modal-head"><span data-i18n="um_head">👤 사용자</span><button class="modal-close" id="userClose">✕</button></div>
       <p class="modal-desc" id="userWho"></p>
-      <div class="mrow"><button id="switchUserBtn" class="mbtn ghost" data-i18n="um_switch">사용자 바꾸기 / 로그아웃</button></div>
+      <div class="mrow">
+        <button id="renameBtn" class="mbtn ghost" data-i18n="um_rename">이름 변경</button>
+        <button id="switchUserBtn" class="mbtn ghost" data-i18n="um_switch">사용자 바꾸기 / 로그아웃</button>
+      </div>
       <div class="section-h" data-i18n="ws_h">워크스페이스</div>
       <p class="modal-desc" id="umWsInfo" style="margin:4px 0 8px;white-space:pre-line"></p>
       <div id="umWsJoin" hidden>
@@ -1440,6 +1443,9 @@
     um_head: { ko: "사용자", en: "User" },
     um_who: { ko: "현재 로그인: {0}", en: "Logged in as {0}" },
     um_switch: { ko: "사용자 바꾸기 / 로그아웃", en: "Switch user / Log out" },
+    um_rename: { ko: "이름 변경", en: "Rename" },
+    um_rename_prompt: { ko: "새 이름을 입력하세요", en: "Enter a new name" },
+    um_renamed: { ko: "이름을 바꿨어요 — 이전 기록에는 옛 이름이 남을 수 있어요", en: "Renamed — old records may keep the previous name" },
     sr_head: { ko: "요청 보내기", en: "Send request" },
     sr_to: { ko: "받는 사람", en: "To" },
     sr_text_ph: { ko: "요청 내용을 적어보세요…", en: "Write your request…" },
@@ -4469,6 +4475,22 @@
   $id("pinModal").addEventListener("click", (e) => { if (e.target.id === "pinModal") closePinModal(); });
   $id("userClose").addEventListener("click", () => { $id("userModal").hidden = true; });
   $id("switchUserBtn").addEventListener("click", () => { $id("userModal").hidden = true; logoutUser(); showLoginGate(); });
+  $id("renameBtn").addEventListener("click", () => {
+    if (!currentUser || !msgDb) return;
+    const name = (prompt(t("um_rename_prompt"), currentUser.name) || "").trim();
+    if (!name || name === currentUser.name) return;
+    if (findUserByName(name)) { toast(t("rq_dup_name")); return; }
+    try {
+      msgDb.ref("users/" + currentUser.id + "/name").set(name);
+      currentUser.name = name;
+      if (usersCache[currentUser.id]) usersCache[currentUser.id].name = name;
+      localStorage.setItem(USER_KEY, JSON.stringify({ id: currentUser.id, name: name }));
+      const n = $id("userChipName"); if (n) n.textContent = name;
+      $id("userWho").textContent = t("um_who", name);
+      renderTeamBoard();
+      toast(t("um_renamed"));
+    } catch (_) { toast(t("ws_err")); }
+  });
   $id("wsJoinBtn").addEventListener("click", () => joinWs($id("wsCodeInput").value));
   $id("wsCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") joinWs($id("wsCodeInput").value); });
   $id("wsCreateBtn").addEventListener("click", () => createWs($id("wsNameInput").value));
