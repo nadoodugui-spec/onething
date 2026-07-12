@@ -18,8 +18,9 @@
 <link rel="stylesheet" href="styles.css?v=8" />
 </head>
 <body data-theme="light" data-lang="ko">
-<script>/* 잠금 깜빡임 계측: 첫 6초간 매 프레임의 잠금·내용 상태 기록 (진단용, 성능 영향 없음) */
-(function(){var L=[];window.__lockLog=L;function f(){var nb=document.querySelector(".notebook");var inner=document.querySelector(".page.left .page-inner");L.push({t:Math.round(performance.now()),locked:nb?nb.classList.contains("locked"):null,items:inner?inner.querySelectorAll("li").length:0});if(performance.now()<6000)requestAnimationFrame(f);}requestAnimationFrame(f);})();
+<script>/* 잠금 깜빡임 계측(진단용): DOM 변화 시점마다 잠금·내용 상태 기록 — 백그라운드에서도 동작 */
+(function(){var L=[];window.__lockLog=L;function snap(tag){var nb=document.querySelector(".notebook");var inner=document.querySelector(".page.left .page-inner");L.push({t:Math.round(performance.now()),tag:tag,locked:nb?nb.classList.contains("locked"):null,items:inner?inner.querySelectorAll("li").length:0});}
+document.addEventListener("DOMContentLoaded",function(){snap("ready");var mo=new MutationObserver(function(){if(L.length<400)snap("mut");});mo.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class"]});setTimeout(function(){mo.disconnect();},8000);});})();
 </script>
 
   <div class="login-gate" id="loginGate" hidden>
