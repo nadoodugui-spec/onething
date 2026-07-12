@@ -2296,7 +2296,7 @@
       auth.onAuthStateChanged((user) => {
         if (user && user.isAnonymous) { try { auth.signOut(); } catch (_) {} return; }   // 구버전 익명 세션 정리
         try { if (user) localStorage.setItem("onething-has-session", "1"); else localStorage.removeItem("onething-has-session"); } catch (_) {}
-        setTimeout(() => document.body.classList.remove("auth-wait"), 60);   // 세션 판정 완료 — 노트 표시
+        if (!user) document.body.classList.remove("auth-wait");   // 로그아웃 확정 시에만 여기서 해제 — 로그인이면 '내 데이터 로드 완료' 시점(resolveCurrentUser)에 해제
         authUser = user || null;
         if (authUser) { authReady = true; startCloud(); resolveCurrentUser(); maybeProfileSetup(); }
         else { currentUser = null; myWsId = null; updateLoginGate(); showLoginGate(); }
@@ -2337,6 +2337,7 @@
       lastResolvedUid = uidNow;
       if (uidNow) { switchNotebook(); setTimeout(maybeJoinInvite, 900); }   // ★ 로그인 확정 시 노트 연결 + 초대 링크 자동 참여
     }
+    if (currentUser) document.body.classList.remove("auth-wait");   // 내 데이터가 그려진 뒤에야 노트 표시 (옛 로컬 데이터 깜빡임 차단)
     updateLoginGate();
   }
   // 로그인은 됐는데 프로필(users/{uid})이 없으면 → 이름 설정 + (선택) 기존 계정 연결
