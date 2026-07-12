@@ -493,6 +493,13 @@
     sp_pin_off_t: { ko: "고정 안 됨 — 사람을 클릭해 요청을 보내면 패널이 닫혀요 (클릭해 고정)", en: "Unpinned — closes when you message someone (click to pin)" },
     sp_pinned: { ko: "사이드바 고정 — 요청을 보내도 열려 있어요", en: "Sidebar pinned — stays open" },
     sp_unpinned: { ko: "고정 해제 — 요청을 보내면 자동으로 닫혀요", en: "Unpinned — closes after you message someone" },
+    sp_share: { ko: "초대 공유하기", en: "Share invite" },
+    sp_share_copy: { ko: "초대 링크 복사", en: "Copy invite link" },
+    sp_share_msg: { ko: "$1님이 The One Thing \"$2\" 팀에 초대했어요. 아래 링크를 열고 가입하면 바로 합류됩니다 → $3", en: "$1 invited you to \"$2\" on The One Thing. Open the link and sign up to join → $3" },
+    iv_banner: { ko: "🎉 팀에 초대받았어요 — 가입하거나 로그인하면 바로 참여됩니다", en: "🎉 You've been invited — sign up or log in to join" },
+    iv_join_q: { ko: "\"$1\" 팀에 참여할까요?", en: "Join the team \"$1\"?" },
+    iv_switch_q: { ko: "지금 소속된 팀에서 나와 \"$1\"(으)로 옮깁니다. 계속할까요?", en: "You will leave your current team and move to \"$1\". Continue?" },
+    iv_joined: { ko: "\"$1\" 팀에 합류했어요! 🎉", en: "You joined \"$1\"! 🎉" },
     sp_alone: { ko: "아직 혼자예요", en: "It's just you so far" },
     sp_alone_d: { ko: "이 초대 코드를 동료에게 보내면, 서로의 원씽과 요청이 여기에 나타나요.", en: "Share this invite code — teammates will appear here." },
     sp_alone_member: { ko: "관리자에게 동료 초대를 요청해보세요.", en: "Ask your admin to invite teammates." },
@@ -2096,10 +2103,9 @@
       if (isAdmin() && wsMeta && wsMeta.code) {
         const codeRow = document.createElement("div"); codeRow.className = "sp-invite-code";
         const cd = document.createElement("b"); cd.textContent = wsMeta.code;
-        const cp = document.createElement("button"); cp.type = "button"; cp.textContent = t("sp_copy");
-        cp.addEventListener("click", () => {
-          try { navigator.clipboard.writeText(t("sp_invite_msg", wsMeta.code)); toast(t("sp_copied")); } catch (_) {}
-        });
+        const cp = document.createElement("button"); cp.type = "button";
+        cp.textContent = navigator.share ? t("sp_share") : t("sp_share_copy");
+        cp.addEventListener("click", shareInvite);
         codeRow.append(cd, cp); cta.appendChild(codeRow);
         const d = document.createElement("div"); d.className = "sp-invite-d"; d.textContent = t("sp_alone_d");
         cta.appendChild(d);
@@ -2316,7 +2322,7 @@
     const uidNow = currentUser ? currentUser.id : null;
     if (uidNow !== lastResolvedUid) {
       lastResolvedUid = uidNow;
-      if (uidNow) switchNotebook();   // ★ 로그인 확정 시 개인 노트 로드 + 클라우드 동기화 연결
+      if (uidNow) { switchNotebook(); setTimeout(maybeJoinInvite, 900); }   // ★ 로그인 확정 시 노트 연결 + 초대 링크 자동 참여
     }
     updateLoginGate();
   }
@@ -2350,6 +2356,51 @@
       alert(t("ws_created", name, code));
       location.reload();
     } catch (_) { toast(t("ws_err")); }
+  }
+  // ── 초대 링크 공유 (A안): OS 공유 시트(카톡·문자 등) 또는 클립보드 ──
+  function inviteLink(code) { return location.origin + location.pathname + "?invite=" + code; }
+  async function shareInvite() {
+    if (!wsMeta || !wsMeta.code || !currentUser) return;
+    const msg = t("sp_share_msg", currentUser.name, wsMeta.name || "", inviteLink(wsMeta.code));
+    if (navigator.share) {
+      try { await navigator.share({ text: msg }); return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    try { await navigator.clipboard.writeText(msg); toast(t("sp_copied")); } catch (_) {}
+  }
+  // 초대 링크(?invite=코드)로 들어온 경우: 로그인 후 자동 참여
+  let pendingInvite = null;
+  try {
+    const im = location.search.match(/[?&]invite=([A-Za-z0-9]{4,10})/);
+    if (im) {
+      pendingInvite = im[1].toUpperCase();
+      localStorage.setItem("onething-pending-invite", pendingInvite);
+      history.replaceState(null, "", location.pathname);   // 주소창에서 코드 감춤
+    } else pendingInvite = localStorage.getItem("onething-pending-invite") || null;
+  } catch (_) {}
+  function clearInvite() {
+    pendingInvite = null;
+    try { localStorage.removeItem("onething-pending-invite"); } catch (_) {}
+    const ib = $id("inviteBanner"); if (ib) ib.hidden = true;
+  }
+  let inviteJoining = false;
+  async function maybeJoinInvite() {
+    if (!pendingInvite || !currentUser || !msgDb || inviteJoining) return;
+    inviteJoining = true;
+    try {
+      const snap = await msgDb.ref("workspaces").once("value");
+      const all = snap.val() || {};
+      const wsId = Object.keys(all).find((k2) => ((all[k2] || {}).code || "") === pendingInvite);
+      if (!wsId) { clearInvite(); toast(t("ws_bad_code")); return; }
+      if (myWsId === wsId) { clearInvite(); return; }
+      const nm = (all[wsId] || {}).name || wsId;
+      if (!confirm(t("iv_join_q", nm))) { clearInvite(); return; }
+      if (myWsId && !confirm(t("iv_switch_q", nm))) { clearInvite(); return; }
+      await msgDb.ref("users/" + currentUser.id).update({ ws: wsId, role: "member" });
+      clearInvite();
+      alert(t("iv_joined", nm));
+      location.reload();
+    } catch (_) {} finally { inviteJoining = false; }
   }
   async function joinWs(code) {
     if (!msgDb || !currentUser) { toast(t("rq_offline")); return; }
@@ -2393,6 +2444,8 @@
       if (isAdmin() && wsMeta && wsMeta.code) txt += "\n" + t("ws_code", wsMeta.code);
       info.textContent = txt;
       const rb = $id("wsRegenBtn"); if (rb) rb.hidden = !isAdmin();
+      const sb2 = $id("wsShareBtn");
+      if (sb2) { sb2.hidden = !(isAdmin() && wsMeta && wsMeta.code); sb2.textContent = navigator.share ? t("sp_share") : t("sp_share_copy"); }
     } else {
       const rb = $id("wsRegenBtn"); if (rb) rb.hidden = true;
       info.textContent = t("ws_none");
@@ -3752,6 +3805,7 @@
   $id("wsJoinBtn").addEventListener("click", () => joinWs($id("wsCodeInput").value));
   $id("wsCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") joinWs($id("wsCodeInput").value); });
   $id("wsCreateBtn").addEventListener("click", () => createWs($id("wsNameInput").value));
+  $id("wsShareBtn").addEventListener("click", shareInvite);
   $id("wsRegenBtn").addEventListener("click", async () => {
     if (!isAdmin() || !msgDb || !myWsId) return;
     if (!confirm(t("ws_regen_confirm"))) return;
@@ -4004,6 +4058,7 @@
   if (activeTodo()) timerRemaining = pomoSec();
   setupPWA();
   applyTheme();
+  { const ib = $id("inviteBanner"); if (ib) ib.hidden = !pendingInvite; }
   // 잠금 해제 방식 1회 초기화: 예전 '버튼 한 번' 저장값을 새 기본(3초 길게 누르기)으로 — 원하면 설정에서 다시 선택 가능
   try {
     if (!localStorage.getItem("onething-ul-reset")) {
