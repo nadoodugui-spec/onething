@@ -272,10 +272,10 @@
     pf_open: { ko: "간단 현황", en: "Quick view" },
     pf_head: { ko: "🛠 플랫폼 전체 현황", en: "🛠 Platform overview" },
     pf_search_ph: { ko: "회사·회원 이름/이메일 검색", en: "Search companies or members" },
-    pf_sum: { ko: "워크스페이스(회사) $1곳 · 전체 회원 $2명 · 무소속 $3명", en: "$1 workspaces · $2 members total · $3 unaffiliated" },
+    pf_sum: { ko: "워크스페이스(회사) {0}곳 · 전체 회원 {1}명 · 무소속 {2}명", en: "{0} workspaces · {1} members total · {2} unaffiliated" },
     pf_owner: { ko: "오너", en: "Owner" },
     pf_admin: { ko: "관리자", en: "Admin" },
-    pf_members_n: { ko: "구성원 $1명", en: "$1 members" },
+    pf_members_n: { ko: "구성원 {0}명", en: "{0} members" },
     pf_solo_h: { ko: "무소속 회원", en: "Unaffiliated members" },
     pf_empty: { ko: "검색 결과가 없어요", en: "No results" },
     pf_org: { ko: "권한 흐름도", en: "Permission chart" },
@@ -495,18 +495,18 @@
     sp_unpinned: { ko: "고정 해제 — 요청을 보내면 자동으로 닫혀요", en: "Unpinned — closes after you message someone" },
     sp_share: { ko: "초대 공유하기", en: "Share invite" },
     sp_share_copy: { ko: "초대 링크 복사", en: "Copy invite link" },
-    sp_share_msg: { ko: "$1님이 The One Thing \"$2\" 팀에 초대했어요. 아래 링크를 열고 가입하면 바로 합류됩니다 → $3", en: "$1 invited you to \"$2\" on The One Thing. Open the link and sign up to join → $3" },
+    sp_share_msg: { ko: "{0}님이 The One Thing \"{1}\" 팀에 초대했어요. 아래 링크를 열고 가입하면 바로 합류됩니다 → {2}", en: "{0} invited you to \"{1}\" on The One Thing. Open the link and sign up to join → {2}" },
     iv_banner: { ko: "🎉 팀에 초대받았어요 — 가입하거나 로그인하면 바로 참여됩니다", en: "🎉 You've been invited — sign up or log in to join" },
-    iv_join_q: { ko: "\"$1\" 팀에 참여할까요?", en: "Join the team \"$1\"?" },
-    iv_switch_q: { ko: "지금 소속된 팀에서 나와 \"$1\"(으)로 옮깁니다. 계속할까요?", en: "You will leave your current team and move to \"$1\". Continue?" },
-    iv_joined: { ko: "\"$1\" 팀에 합류했어요! 🎉", en: "You joined \"$1\"! 🎉" },
+    iv_join_q: { ko: "\"{0}\" 팀에 참여할까요?", en: "Join the team \"{0}\"?" },
+    iv_switch_q: { ko: "지금 소속된 팀에서 나와 \"{0}\"(으)로 옮깁니다. 계속할까요?", en: "You will leave your current team and move to \"{0}\". Continue?" },
+    iv_joined: { ko: "\"{0}\" 팀에 합류했어요! 🎉", en: "You joined \"{0}\"! 🎉" },
     sp_need_ot: { ko: "먼저 오늘의 원씽을 정해주세요 — 할 일에서 ◉를 누르면 원씽 중이 돼요", en: "Set your One Thing first — press ◉ on a task" },
     sp_alone: { ko: "아직 혼자예요", en: "It's just you so far" },
     sp_alone_d: { ko: "이 초대 코드를 동료에게 보내면, 서로의 원씽과 요청이 여기에 나타나요.", en: "Share this invite code — teammates will appear here." },
     sp_alone_member: { ko: "관리자에게 동료 초대를 요청해보세요.", en: "Ask your admin to invite teammates." },
     sp_copy: { ko: "복사", en: "Copy" },
     sp_copied: { ko: "초대 안내를 복사했어요 — 동료에게 붙여넣기 하세요", en: "Invite message copied — paste it to a teammate" },
-    sp_invite_msg: { ko: "The One Thing에서 함께 일해요! 1) https://nadoodugui-spec.github.io/onething/ 접속해 가입 2) 사용자 메뉴에서 초대 코드 입력: $1", en: "Join me on The One Thing! 1) Sign up at https://nadoodugui-spec.github.io/onething/ 2) Enter invite code: $1" },
+    sp_invite_msg: { ko: "The One Thing에서 함께 일해요! 1) https://nadoodugui-spec.github.io/onething/ 접속해 가입 2) 사용자 메뉴에서 초대 코드 입력: {0}", en: "Join me on The One Thing! 1) Sign up at https://nadoodugui-spec.github.io/onething/ 2) Enter invite code: {0}" },
     sp_feed_h: { ko: "최근 활동", en: "Recent activity" },
     fd_del: { ko: "이 활동 지우기(내 화면에서만)", en: "Dismiss (only for me)" },
     set_teamfeed: { ko: "팀 최근 활동 표시(사이드바)", en: "Show team activity (sidebar)" },
@@ -2108,7 +2108,7 @@
         const codeRow = document.createElement("div"); codeRow.className = "sp-invite-code";
         const cd = document.createElement("b"); cd.textContent = wsMeta.code;
         const cp = document.createElement("button"); cp.type = "button";
-        cp.textContent = navigator.share ? t("sp_share") : t("sp_share_copy");
+        cp.textContent = canShareSheet() ? t("sp_share") : t("sp_share_copy");
         cp.addEventListener("click", shareInvite);
         codeRow.append(cd, cp); cta.appendChild(codeRow);
         const d = document.createElement("div"); d.className = "sp-invite-d"; d.textContent = t("sp_alone_d");
@@ -2363,10 +2363,12 @@
   }
   // ── 초대 링크 공유 (A안): OS 공유 시트(카톡·문자 등) 또는 클립보드 ──
   function inviteLink(code) { return location.origin + location.pathname + "?invite=" + code; }
+  // 공유 시트는 터치 기기(폰·태블릿)에서만 — PC에선 복사가 더 빠르고 확실
+  function canShareSheet() { try { return !!navigator.share && matchMedia("(pointer: coarse)").matches; } catch (_) { return false; } }
   async function shareInvite() {
     if (!wsMeta || !wsMeta.code || !currentUser) return;
     const msg = t("sp_share_msg", currentUser.name, wsMeta.name || "", inviteLink(wsMeta.code));
-    if (navigator.share) {
+    if (canShareSheet()) {
       try { await navigator.share({ text: msg }); return; }
       catch (e) { if (e && e.name === "AbortError") return; }
     }
@@ -2449,7 +2451,7 @@
       info.textContent = txt;
       const rb = $id("wsRegenBtn"); if (rb) rb.hidden = !isAdmin();
       const sb2 = $id("wsShareBtn");
-      if (sb2) { sb2.hidden = !(isAdmin() && wsMeta && wsMeta.code); sb2.textContent = navigator.share ? t("sp_share") : t("sp_share_copy"); }
+      if (sb2) { sb2.hidden = !(isAdmin() && wsMeta && wsMeta.code); sb2.textContent = canShareSheet() ? t("sp_share") : t("sp_share_copy"); }
     } else {
       const rb = $id("wsRegenBtn"); if (rb) rb.hidden = true;
       info.textContent = t("ws_none");
