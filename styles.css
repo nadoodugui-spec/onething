@@ -387,7 +387,10 @@
   .um-tile .um-ic { width: 21px; height: 21px; color: var(--text-soft); flex: none; }
   .um-tile:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
   .um-tile:hover .um-ic { color: var(--accent); }
-  body[data-theme="dark"] .um-tile { background: var(--surface-2); }   /* hidden 속성이 .mrow의 flex에 덮이지 않게 — 인증 배너 미소멸 버그의 원인 */
+  body[data-theme="dark"] .um-tile { background: var(--surface-2); }
+  .lang-chip { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-soft);
+    border-radius: 14px; padding: 3px 12px; font-family: var(--font-body); font-size: .78rem; cursor: pointer; }
+  .lang-chip:hover { border-color: var(--accent); color: var(--accent); }   /* hidden 속성이 .mrow의 flex에 덮이지 않게 — 인증 배너 미소멸 버그의 원인 */
   .mlabel { font-size: .95rem; color: var(--ink-soft); }
   .seg { display: flex; gap: 6px; flex-wrap: wrap; }
   .seg button { border: none; cursor: pointer; background: rgba(0,0,0,.08); color: var(--ink); border-radius: 14px; padding: 6px 12px; font-family: var(--font-body); font-size: .95rem; }
