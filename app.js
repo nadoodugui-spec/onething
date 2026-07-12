@@ -26,6 +26,8 @@
     // toolbar / static
     sync_title: { ko: "기기 간 동기화", en: "Sync across devices" },
     search_ph: { ko: "할 일 검색…", en: "Search to-dos…" },
+    t_help: { ko: "도움말", en: "Help" },
+    guide_menu: { ko: "이용 가이드", en: "User guide" },
     t_stats: { ko: "통계", en: "Stats" },
     t_trash: { ko: "휴지통", en: "Trash" },
     t_backup: { ko: "백업", en: "Backup" },
@@ -3787,6 +3789,13 @@
   });
   $id("pfStart").addEventListener("click", createProfile);
   $id("pfName").addEventListener("keydown", (e) => { if (e.key === "Enter") createProfile(); });
+  // 사용자 메뉴 안의 도구들 (툴바에서 이동 — A안 정리)
+  function umRun(fn) { $id("userModal").hidden = true; fn(); }
+  $id("umStats").addEventListener("click", () => umRun(openStats));
+  $id("umSettings").addEventListener("click", () => umRun(openSettings));
+  $id("umTrash").addEventListener("click", () => umRun(openTrash));
+  $id("umLang").addEventListener("click", () => umRun(toggleLang));
+  $id("umHelp").addEventListener("click", () => umRun(() => { $id("helpModal").hidden = false; }));
   $id("userClose").addEventListener("click", () => { $id("userModal").hidden = true; });
   $id("switchUserBtn").addEventListener("click", () => { $id("userModal").hidden = true; logoutUser(); showLoginGate(); });
   $id("verifyResend").addEventListener("click", async () => {
