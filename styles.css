@@ -678,7 +678,16 @@
   .sp-bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 5px; overflow: hidden; }
   .sp-bar-fill { height: 100%; background: #8b5cf6; border-radius: 2px; }
   .sp-acts { position: absolute; right: 6px; top: 7px; display: none; gap: 4px; }
-  .sp-member:hover .sp-acts { display: inline-flex; }
+  .sp-member:hover .sp-acts, .sp-member.open .sp-acts { display: inline-flex; }
+  .sp-member.open { background: var(--surface-2); }
+  .sp-invite { border: 1px dashed var(--accent); border-radius: 12px; padding: 16px 14px; text-align: center; margin: 8px 0; }
+  .sp-invite-h { font-weight: 700; margin-bottom: 8px; }
+  .sp-invite-code { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 6px 0 10px; }
+  .sp-invite-code b { font-size: 1.3rem; letter-spacing: .12em; color: var(--accent); }
+  .sp-invite-code button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 5px 14px; cursor: pointer; font-family: var(--font-body); }
+  .sp-invite-code button:hover { border-color: var(--accent); color: var(--accent); }
+  .sp-invite-d { font-size: .82rem; color: var(--text-soft); line-height: 1.6; }
+  .sp-search[hidden] { display: none; }
   .sp-acts button { border: 1px solid var(--border); background: var(--surface); color: var(--text-soft); border-radius: 6px;
     padding: 2px 8px; font-family: var(--font-body); font-size: .74rem; font-weight: 600; cursor: pointer; }
   .sp-acts button:hover { color: var(--accent); border-color: var(--accent); }
@@ -733,7 +742,26 @@
     li.todo { line-height: 30px; min-height: 32px; }
     .list, .later-wrap, .done-wrap { padding-left: 4px; }
     /* 팀 사이드바: 떠 있는 왼쪽 탭 제거 → 상단 툴바의 '팀 현황' 버튼으로 진입 */
-    .side-panel { width: 88vw; }
+    /* 팀 현황 = 바텀 시트 (아래에서 올라오는 카드, 엄지 조작) */
+    .side-panel { left: 0; right: 0; top: auto; bottom: 0; width: 100%; max-width: 100%; max-height: 74vh;
+      border-radius: 18px 18px 0 0; border-top: 1px solid var(--border); box-shadow: 0 -14px 44px rgba(0,0,0,.28);
+      display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain;
+      padding: 8px 16px calc(18px + env(safe-area-inset-bottom)); }
+    .side-panel::before { content: ""; display: block; flex: none; width: 44px; height: 5px; border-radius: 3px;
+      background: var(--border); margin: 2px auto 8px; }
+    .side-panel[hidden] { display: none; }
+    .side-panel .sp-head { order: 0; } .side-panel .sp-summary { order: 1; }
+    .side-panel .sp-search { order: 2; } .side-panel #spList { order: 3; }
+    .side-panel #spFeed { order: 4; }
+    /* 내 상태는 맨 아래 한 줄 칩으로 축소 (상태 전환은 툴바에도 있음) */
+    .side-panel #spMe { order: 5; margin-top: 10px; }
+    .side-panel .sp-me { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 0; }
+    .side-panel .sp-me-top { flex: 1; min-width: 0; }
+    .side-panel .sp-me-seg { margin-top: 0; flex: none; }
+    .side-panel .sp-me-seg button { padding: 6px 10px; font-size: .8rem; }
+    /* 터치: 액션 버튼 크게 */
+    .sp-acts button { padding: 7px 12px; font-size: .85rem; }
+    .sp-member { padding: 10px 8px; }
     .side-tab { display: none !important; }
     #tbTeamBtn { display: inline-flex; }
     #tbTeamBtn > span[data-i18n] { display: none; }   /* 아이콘+배지만 */

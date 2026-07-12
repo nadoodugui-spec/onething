@@ -493,6 +493,12 @@
     sp_pin_off_t: { ko: "고정 안 됨 — 사람을 클릭해 요청을 보내면 패널이 닫혀요 (클릭해 고정)", en: "Unpinned — closes when you message someone (click to pin)" },
     sp_pinned: { ko: "사이드바 고정 — 요청을 보내도 열려 있어요", en: "Sidebar pinned — stays open" },
     sp_unpinned: { ko: "고정 해제 — 요청을 보내면 자동으로 닫혀요", en: "Unpinned — closes after you message someone" },
+    sp_alone: { ko: "아직 혼자예요", en: "It's just you so far" },
+    sp_alone_d: { ko: "이 초대 코드를 동료에게 보내면, 서로의 원씽과 요청이 여기에 나타나요.", en: "Share this invite code — teammates will appear here." },
+    sp_alone_member: { ko: "관리자에게 동료 초대를 요청해보세요.", en: "Ask your admin to invite teammates." },
+    sp_copy: { ko: "복사", en: "Copy" },
+    sp_copied: { ko: "초대 안내를 복사했어요 — 동료에게 붙여넣기 하세요", en: "Invite message copied — paste it to a teammate" },
+    sp_invite_msg: { ko: "The One Thing에서 함께 일해요! 1) https://nadoodugui-spec.github.io/onething/ 접속해 가입 2) 사용자 메뉴에서 초대 코드 입력: $1", en: "Join me on The One Thing! 1) Sign up at https://nadoodugui-spec.github.io/onething/ 2) Enter invite code: $1" },
     sp_feed_h: { ko: "최근 활동", en: "Recent activity" },
     fd_del: { ko: "이 활동 지우기(내 화면에서만)", en: "Dismiss (only for me)" },
     set_teamfeed: { ko: "팀 최근 활동 표시(사이드바)", en: "Show team activity (sidebar)" },
@@ -2081,6 +2087,28 @@
     }
     // 구성원 목록 (나 제외, 상태별 그룹)
     list.innerHTML = "";
+    const others = ids.filter((id) => id !== currentUser.id);
+    const se = $id("spSearch"); if (se) se.hidden = others.length < 8;   // 검색은 8명 이상일 때만
+    if (!others.length) {   // 아직 혼자 — 빈 화면 대신 초대 안내
+      const cta = document.createElement("div"); cta.className = "sp-invite";
+      const h4 = document.createElement("div"); h4.className = "sp-invite-h"; h4.textContent = t("sp_alone");
+      cta.appendChild(h4);
+      if (isAdmin() && wsMeta && wsMeta.code) {
+        const codeRow = document.createElement("div"); codeRow.className = "sp-invite-code";
+        const cd = document.createElement("b"); cd.textContent = wsMeta.code;
+        const cp = document.createElement("button"); cp.type = "button"; cp.textContent = t("sp_copy");
+        cp.addEventListener("click", () => {
+          try { navigator.clipboard.writeText(t("sp_invite_msg", wsMeta.code)); toast(t("sp_copied")); } catch (_) {}
+        });
+        codeRow.append(cd, cp); cta.appendChild(codeRow);
+        const d = document.createElement("div"); d.className = "sp-invite-d"; d.textContent = t("sp_alone_d");
+        cta.appendChild(d);
+      } else {
+        const d = document.createElement("div"); d.className = "sp-invite-d"; d.textContent = t("sp_alone_member");
+        cta.appendChild(d);
+      }
+      list.appendChild(cta);
+    }
     const q = spQuery.trim().toLowerCase();
     const match = (id) => !q || (((usersCache[id] || {}).name || "").toLowerCase().includes(q));
     ["focus", "work", "away", "vacation"].forEach((st) => {
@@ -2123,11 +2151,15 @@
           acts.appendChild(b);
         });
         row.appendChild(acts);
-        row.addEventListener("click", () => openCompose(composeKind, id));
+        row.addEventListener("click", () => {   // 탭하면 [쪽지][업무 요청] 펼침 (터치 환경 대응)
+          const was = row.classList.contains("open");
+          list.querySelectorAll(".sp-member.open").forEach((r2) => r2.classList.remove("open"));
+          if (!was) row.classList.add("open");
+        });
         list.appendChild(row);
       });
     });
-    if (!list.children.length) { const e = document.createElement("div"); e.className = "sp-empty"; e.textContent = t("no_results"); list.appendChild(e); }
+    if (others.length && !list.querySelector(".sp-member")) { const e = document.createElement("div"); e.className = "sp-empty"; e.textContent = t("no_results"); list.appendChild(e); }
     // 최근 활동 (설정에서 켠 경우만 — 기본 꺼짐)
     const feed = $id("spFeed");
     if (feed) {
@@ -3616,12 +3648,24 @@
   $id("sideTab").addEventListener("click", () => {
     $id("sidePanel").hidden = false;
     updateBodyShift();
-    renderTeamBoard(); setTimeout(() => $id("spSearch").focus(), 30);
+    renderTeamBoard();
+    if (matchMedia("(min-width: 900px)").matches) setTimeout(() => { const se2 = $id("spSearch"); if (se2 && !se2.hidden) se2.focus(); }, 30);
   });
   $id("spClose").addEventListener("click", () => {
     if (spPinned) { spPinned = false; try { localStorage.setItem("onething-sp-pin", "0"); } catch (_) {} }
     $id("sidePanel").hidden = true; applySidePin();
   });
+  (function spSwipeClose() {   // 모바일 바텀 시트: 헤더를 아래로 쓸면 닫기
+    const p = $id("sidePanel"); if (!p) return;
+    const head = p.querySelector(".sp-head"); if (!head) return;
+    let y0 = null;
+    head.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; }, { passive: true });
+    head.addEventListener("touchmove", (e) => {
+      if (y0 === null) return;
+      if (e.touches[0].clientY - y0 > 55) { y0 = null; p.hidden = true; applySidePin(); }
+    }, { passive: true });
+    head.addEventListener("touchend", () => { y0 = null; }, { passive: true });
+  })();
   $id("spPin").addEventListener("click", () => {
     spPinned = !spPinned;
     try { localStorage.setItem("onething-sp-pin", spPinned ? "1" : "0"); } catch (_) {}
