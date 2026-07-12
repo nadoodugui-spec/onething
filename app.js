@@ -218,6 +218,7 @@
     lg_hero: { ko: "모든 게 급하다고 말하는 시대,<br><b>성과는 언제나 '단 하나'에서 나옵니다.</b>", en: "In a world where everything feels urgent,<br><b>results always come from one thing.</b>" },
     lg_story: { ko: "우리의 이야기 →", en: "Our story →" },
     lg_guide: { ko: "이용 가이드 →", en: "User guide →" },
+    lg_legal: { ko: "가입하면 <a href='terms.html' target='_blank' rel='noopener' style='color:inherit;text-decoration:underline'>이용약관</a>과 <a href='privacy.html' target='_blank' rel='noopener' style='color:inherit;text-decoration:underline'>개인정보처리방침</a>에 동의하는 것입니다", en: "By signing up you agree to the <a href='terms.html' target='_blank' rel='noopener' style='color:inherit;text-decoration:underline'>Terms</a> and <a href='privacy.html' target='_blank' rel='noopener' style='color:inherit;text-decoration:underline'>Privacy Policy</a>" },
     guide_corner: { ko: "? 이용 가이드", en: "? Guide" },
     au_google: { ko: "Google로 계속하기", en: "Continue with Google" },
     au_or: { ko: "또는 이메일로", en: "or with email" },
@@ -3530,17 +3531,28 @@
     Object.keys(requestsCache).forEach((id) => {
       const r = requestsCache[id];
       if (!r || r.from !== currentUser.id || !r.repeat || r.recalled) return;
-      const iv = r.repeat === "daily" ? 864e5 : r.repeat === "weekly" ? 7 * 864e5 : 30 * 864e5;
-      if (now - (r.ts || 0) < iv) return;
-      const nid = uid();
-      const copy = { from: r.from, fromName: r.fromName, to: r.to, toName: r.toName, kind: r.kind || "memo",
-        ts: now, status: "sent", replies: [], hiddenFor: [], repeat: r.repeat };
-      if (r.title) copy.title = r.title;
-      if (r.html) copy.html = r.html;
-      if (r.text) copy.text = r.text;
-      if (r.attachments) copy.attachments = r.attachments;
-      if (r.due) copy.due = todayStr();
-      try { wsRef("requests/" + nid).set(copy); wsRef("requests/" + id + "/repeat").set(null); } catch (_) {}
+      let dueAt;
+      if (r.repeat === "monthly") { const d = new Date(r.ts || 0); d.setMonth(d.getMonth() + 1); dueAt = d.getTime(); }
+      else dueAt = (r.ts || 0) + (r.repeat === "daily" ? 864e5 : 7 * 864e5);
+      if (now < dueAt) return;
+      // 트랜잭션으로 반복 표식을 선점 — 같은 계정이 두 기기로 접속해도 한 번만 재발송
+      try {
+        wsRef("requests/" + id + "/repeat").transaction((cur) => {
+          if (!cur) return;   // 이미 다른 기기가 처리함
+          return null;
+        }).then((res) => {
+          if (!res || !res.committed) return;   // 다른 기기가 이미 처리
+          const nid = uid();
+          const copy = { from: r.from, fromName: r.fromName, to: r.to, toName: r.toName, kind: r.kind || "memo",
+            ts: now, status: "sent", replies: [], hiddenFor: [], repeat: r.repeat };
+          if (r.title) copy.title = r.title;
+          if (r.html) copy.html = r.html;
+          if (r.text) copy.text = r.text;
+          if (r.attachments) copy.attachments = r.attachments;
+          if (r.due) copy.due = todayStr();
+          wsRef("requests/" + nid).set(copy);
+        }).catch(() => {});
+      } catch (_) {}
     });
   }
   function snapshotTos(ids) {
