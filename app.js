@@ -295,6 +295,9 @@
     wd_confirm1: { ko: "정말 탈퇴할까요? 할 일·원씽 기록·문의 내역이 모두 삭제되고 되돌릴 수 없어요.", en: "Really delete your account? All your data will be permanently removed." },
     wd_confirm2: { ko: "마지막 확인입니다. 탈퇴하려면 확인을 누르세요.", en: "Final confirmation. Press OK to delete." },
     wd_done: { ko: "탈퇴가 완료됐어요. 그동안 함께해서 감사했습니다.", en: "Your account has been deleted. Thank you." },
+    vf_sent_spam: { ko: "인증 메일을 보냈어요 — 안 보이면 스팸함(프로모션함)을 꼭 확인하세요", en: "Verification email sent — check your spam folder if missing" },
+    vf_throttle: { ko: "요청이 너무 잦아요. 15분쯤 뒤에 다시 시도해주세요 (이전 메일이 스팸함에 있을 수 있어요)", en: "Too many requests — try again in ~15 minutes (check spam for earlier emails)" },
+    vf_already: { ko: "이미 인증된 계정이에요 ✓", en: "Already verified ✓" },
     wd_relogin: { ko: "보안을 위해 최근 로그인이 필요해요. 로그아웃 후 다시 로그인한 뒤 탈퇴를 진행해주세요.", en: "For security, please log in again, then retry deletion." },
     fo_head: { ko: "◉ 첫 원씽 정하기", en: "◉ Your first One Thing" },
     fo_q: { ko: "<b>\"이걸 끝내면 나머지가 쉬워지는 일은 무엇인가요?\"</b>", en: "<b>\"What's the one thing that makes everything else easier?\"</b>" },
@@ -3668,7 +3671,16 @@
   $id("userClose").addEventListener("click", () => { $id("userModal").hidden = true; });
   $id("switchUserBtn").addEventListener("click", () => { $id("userModal").hidden = true; logoutUser(); showLoginGate(); });
   $id("verifyResend").addEventListener("click", async () => {
-    try { await firebase.auth().currentUser.sendEmailVerification(); toast(t("au_verify_sent")); } catch (e) { toast(mapAuthErr(e)); }
+    const u = firebase.auth().currentUser; if (!u) return;
+    try {
+      await u.reload();   // 이미 인증됐는데 화면만 낡은 경우 — 배너만 정리
+      if (u.emailVerified) { $id("umVerify").hidden = true; toast(t("vf_already")); return; }
+      await u.sendEmailVerification();
+      toast(t("vf_sent_spam"));
+    } catch (e) {
+      if (e && e.code === "auth/too-many-requests") toast(t("vf_throttle"));
+      else toast(mapAuthErr(e));
+    }
   });
   $id("renameBtn").addEventListener("click", () => {
     if (!currentUser || !msgDb) return;
