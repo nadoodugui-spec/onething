@@ -17,6 +17,10 @@
   };
 
   const $ = (s) => document.querySelector(s);
+  // 한글 입력 조합 중 Enter가 저장/전송을 오발동하지 않게 전역 차단 (IME keyCode 229)
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.isComposing || e.keyCode === 229)) e.stopImmediatePropagation();
+  }, true);
   const $id = (id) => document.getElementById(id);
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
@@ -749,7 +753,8 @@
       state.todos.push({ id: uid(), text: t.text, color: t.color, priority: t.priority || "normal", due: null,
         subtasks: (t.subtasks || []).map((s) => ({ id: uid(), text: s.text, done: false })),
         repeat: t.repeat, later: false, status: "todo", activatedAt: null, focusSec: 0,
-        createdAt: Date.now(), completedAt: null });
+        createdAt: Date.now(), completedAt: null,
+        group: t.group !== undefined ? t.group : null });   // 폴더(List) 소속 유지
     }
     t.status = "done"; t.completedAt = Date.now();
     // 요청에서 온 할 일이면 보낸 사람에게 '완료됨' 자동 전달
@@ -766,7 +771,7 @@
   function restoreTodo(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.status = "todo"; t.completedAt = null; save(); render(); }
   function deleteTodo(id) {
     const i = state.todos.findIndex((x) => x.id === id); if (i < 0) return;
-    const t = state.todos[i]; if (t.status === "active") pauseTimer();
+    const t = state.todos[i]; if (t.status === "active") { clearOnethingMark(t); pauseTimer(); }
     state.trash.unshift(Object.assign({}, t, { deletedAt: Date.now() }));
     state.todos.splice(i, 1); save(); render();
   }
@@ -779,7 +784,12 @@
   }
   function setDue(id, v) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.due = v || null; save(); render(); }
   function cycleRepeat(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.repeat = t.repeat === null ? "daily" : t.repeat === "daily" ? "weekly" : null; save(); render(); }
-  function toggleLater(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; if (t.status === "active") { t.status = "todo"; pauseTimer(); } t.later = !t.later; save(); render(); }
+  function clearOnethingMark(td) {   // 요청에서 온 할 일이 원씽에서 내려가면 발신자 표시 원복
+    if (td && td.reqId && msgDb && requestsCache[td.reqId] && requestsCache[td.reqId].status === "onething") {
+      try { wsRef("requests/" + td.reqId + "/status").set("read"); } catch (_) {}
+    }
+  }
+  function toggleLater(id) { const t = state.todos.find((x) => x.id === id); if (!t) return; if (t.status === "active") { clearOnethingMark(t); t.status = "todo"; pauseTimer(); } t.later = !t.later; save(); render(); }
   function addSub(id, text) { text = (text || "").trim(); if (!text) return; const t = state.todos.find((x) => x.id === id); if (!t) return; t.subtasks.push({ id: uid(), text, done: false }); save(); render(); }
   function toggleSub(id, sid) { const t = state.todos.find((x) => x.id === id); if (!t) return; const s = t.subtasks.find((x) => x.id === sid); if (s) s.done = !s.done; save(); render(); }
   function delSub(id, sid) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.subtasks = t.subtasks.filter((x) => x.id !== sid); save(); render(); }
@@ -816,8 +826,12 @@
     if (breakIv) clearInterval(breakIv);
     breakRemaining = 300;
     const d0 = $id("timeDisp"); if (d0) d0.textContent = fmtMMSS(breakRemaining);
+    let breakLastAt = Date.now();
     breakIv = setInterval(() => {
-      breakRemaining--;
+      const bnow = Date.now();
+      const belapsed = Math.max(1, Math.round((bnow - breakLastAt) / 1000));
+      breakLastAt = bnow;
+      breakRemaining -= belapsed;
       const d = $id("timeDisp"); if (d) d.textContent = fmtMMSS(breakRemaining);
       if (breakRemaining <= 0) { clearInterval(breakIv); breakIv = null; beep(); toast(t("break_done")); resetTimer(); }
     }, 1000);
@@ -832,10 +846,16 @@
     currentFocusUntil = Date.now() + timerRemaining * 1000;
     setMyStatus("focus", { auto: true, until: currentFocusUntil });
     if (timerIv) clearInterval(timerIv);
+    let lastTickAt = Date.now();   // 벽시계 기준 — 백그라운드에서 틱이 느려져도 실제 시간으로 보정
     timerIv = setInterval(() => {
       if (!timerRunning) return; const act = activeTodo(); if (!act) { pauseTimer(); return; }
-      timerRemaining--; act.focusSec = (act.focusSec || 0) + 1;
-      if (act.focusSec % 15 === 0) { try { localStorage.setItem(notebookKey(), JSON.stringify(state)); } catch (e) {} pushCloud(); }
+      const now = Date.now();
+      const elapsed = Math.max(0, Math.round((now - lastTickAt) / 1000));
+      if (elapsed < 1) return;
+      lastTickAt = now;
+      timerRemaining = Math.max(0, timerRemaining - elapsed);
+      act.focusSec = (act.focusSec || 0) + elapsed;
+      if (act.focusSec % 15 < elapsed) { try { localStorage.setItem(notebookKey(), JSON.stringify(state)); } catch (e) {} pushCloud(); }
       updateTimerUI();
       if (timerRemaining <= 0) { pauseTimer(); save(); alarmDone(); }
     }, 1000);
@@ -923,8 +943,8 @@
       status.textContent = p < 1 ? Math.ceil((DUR - (Date.now() - start)) / 1000) + t("hold_sec") : "";
       if (p < 1) raf = requestAnimationFrame(tick);
     }
-    function begin(e) { if (done) return; e.preventDefault(); start = Date.now(); btn.classList.add("holding"); tick(); timer = setTimeout(() => { done = true; onSolved(); }, DUR); }
-    function cancel() { if (done) return; clearTimeout(timer); cancelAnimationFrame(raf); btn.classList.remove("holding"); fill.style.width = "0"; status.textContent = t("hold_cancel"); }
+    function begin(e) { if (done || timer) return; e.preventDefault(); start = Date.now(); btn.classList.add("holding"); tick(); timer = setTimeout(() => { done = true; onSolved(); }, DUR); }
+    function cancel() { if (done) return; clearTimeout(timer); timer = null; cancelAnimationFrame(raf); btn.classList.remove("holding"); fill.style.width = "0"; status.textContent = t("hold_cancel"); }
     btn.addEventListener("pointerdown", begin);
     btn.addEventListener("pointerup", cancel);
     btn.addEventListener("pointerleave", cancel);
@@ -1174,11 +1194,15 @@
     if (!cardTarget || !currentUser || !msgDb) return;
     const text = $id("cardCmt").value.trim(); if (!text) return;
     const td = (projectTodosCache[cardTarget.pid] || {})[cardTarget.tid] || {};
-    const cmts = Array.isArray(td.comments) ? td.comments.slice() : [];
-    cmts.push({ by: currentUser.name, text: text, ts: Date.now() });
-    kbUpdate(cardTarget.pid, cardTarget.tid, { comments: cmts });
+    const cmt = { by: currentUser.name, text: text, ts: Date.now() };
+    try {
+      wsRef("projectTodos/" + cardTarget.pid + "/" + cardTarget.tid + "/comments").transaction((cur) => {
+        const arr = Array.isArray(cur) ? cur : [];
+        arr.push(cmt); return arr;
+      });
+    } catch (_) {}
     $id("cardCmt").value = "";
-    renderCardComments(Object.assign({}, td, { comments: cmts }));
+    renderCardComments(Object.assign({}, td, { comments: (td.comments || []).concat([cmt]) }));
   }
   function buildKbCard(pid, td) {
     const st = kbStatusOf(td);
@@ -1888,7 +1912,7 @@
     if (document.hidden) { pendingPush = true; return; }   // 백그라운드 탭이 최신 데이터를 덮어쓰지 않도록 — 복귀 시 재푸시
     pendingPush = false;
     const ts = Date.now(); lastTs = ts;
-    try { syncRef.set({ data: state, ts: ts, origin: clientId }); } catch (_) {}
+    try { syncRef.set({ data: state, ts: ts, origin: clientId }).catch(() => { pendingPush = true; }); } catch (_) { pendingPush = true; }
   }
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && pendingPush) pushCloud();   // ★ 탭 복귀 시 밀린 저장 반영 (유실 방지)
@@ -2223,6 +2247,16 @@
   function saveFeedHidden(set) {
     try { localStorage.setItem(feedHideKey(), JSON.stringify(Array.from(set).slice(-200))); } catch (_) {}
   }
+  // 자정 넘김: 오늘 날짜가 바뀌면 화면·잠금 기준을 새 날짜로 (앱을 켜둔 채 밤을 넘겨도 정상)
+  let lastKnownDay = todayStr();
+  setInterval(() => {
+    const d = todayStr();
+    if (d !== lastKnownDay) {
+      if (viewDate === lastKnownDay) viewDate = d;   // '오늘'을 보고 있었다면 새 오늘로
+      lastKnownDay = d;
+      render();
+    }
+  }, 60000);
   // 경과 시간·진행 바 갱신 — 패널이 열려 있을 때만 1분마다
   setInterval(() => { const p = $id("sidePanel"); if (p && !p.hidden) renderTeamBoard(); }, 60000);
   // focus 해제 시 쌓인 알림(새 요청 + 새 답장) 몰아서 표시 + '지켜진 집중' 기록
@@ -2724,6 +2758,9 @@
     try {
       const targetWs = u.ws || null;
       msgDb.ref("users/" + id).remove();
+      msgDb.ref("notes/user_" + id).remove().catch(() => {});
+      msgDb.ref("qna/" + id).remove().catch(() => {});
+      msgDb.ref("managers/" + id).remove().catch(() => {});
       if (targetWs) msgDb.ref("ws/" + targetWs + "/status/" + id).remove().catch(() => {});
       delete usersCache[id];
     } catch (_) {}
@@ -3038,7 +3075,7 @@
   let reqKind = "memo";   // 요청 팝업의 쪽지/업무요청 서브탭
   function setReqKind(k) {
     reqKind = k;
-    reqShown = { inbox: REQ_PAGE, sent: REQ_PAGE };
+    if (!keepPaging) reqShown = { inbox: REQ_PAGE, sent: REQ_PAGE };
     const m = $id("rqKindMemo"), tk = $id("rqKindTask");
     if (m) m.classList.toggle("active", k === "memo");
     if (tk) tk.classList.toggle("active", k === "task");
@@ -3071,8 +3108,11 @@
     const unreadOf = (k) => inboxAll.filter((r) => reqKindOf(r) === k && !isHandledByMe(r.id, r)).length;
     const mu = $id("memoUnread"); if (mu) mu.textContent = unreadOf("memo") || "";
     const tu = $id("taskUnread"); if (tu) tu.textContent = unreadOf("task") || "";
-    if (reqTab === "inbox") { markInboxRead(); markRepliesSeen(inbox); }
-    if (reqTab === "sent") { markRepliesSeen(sent); markDoneSeen(sent); }
+    // 화면에 실제로 보이는(페이징 안) 항목만 읽음/봤음 처리 — 안 본 요청·답장의 배지 보존
+    const visIn = inbox.slice(0, reqShown["inbox"] || REQ_PAGE);
+    const visSent = sent.slice(0, reqShown["sent"] || REQ_PAGE);
+    if (reqTab === "inbox") { markInboxRead(visIn); markRepliesSeen(visIn); }
+    if (reqTab === "sent") { markRepliesSeen(visSent); markDoneSeen(visSent); }
     renderUnreadBadge();
   }
   const EMPTY_RQ_SVG = '<svg width="84" height="66" viewBox="0 0 84 66" fill="none" aria-hidden="true">'
@@ -3314,6 +3354,7 @@
     try {
       wsRef("requests/" + fwdTargetId).update({
         to: toId, toName: name, status: "sent", readAt: null,
+        hiddenFor: null, replySeen: null, addedTodo: null, progress: null, doneAt: null,   // 이전 수신자 흔적 정리
         forwardedBy: currentUser.name, forwardedAt: Date.now()
       });
     } catch (_) {}
@@ -3347,9 +3388,11 @@
   }
   function hideRequest(id) {
     const r = requestsCache[id]; if (!r || !msgDb || !currentUser) return;
-    const hf = Array.isArray(r.hiddenFor) ? r.hiddenFor.slice() : [];
-    if (!hf.includes(currentUser.id)) hf.push(currentUser.id);
-    wsRef("requests/" + id + "/hiddenFor").set(hf);
+    wsRef("requests/" + id + "/hiddenFor").transaction((cur) => {
+      const hf = Array.isArray(cur) ? cur : [];
+      if (!hf.includes(currentUser.id)) hf.push(currentUser.id);
+      return hf;
+    }).catch(() => {});
   }
   let replyTargetId = null;
   let replyRich = false;   // 업무 요청 답장 = 서식 에디터
@@ -3379,9 +3422,17 @@
     const reps = Array.isArray(r.replies) ? r.replies.slice() : [];
     const rep = { from: currentUser.id, fromName: currentUser.name, text: text, ts: Date.now() };
     if (replyRich && html) rep.html = html;
-    reps.push(rep);
-    wsRef("requests/" + replyTargetId + "/replies").set(reps);
-    wsRef("requests/" + replyTargetId + "/replySeen/" + currentUser.id).set(reps.length);   // 내 답장은 본 것으로
+    // 트랜잭션: 두 사람이 동시에 답장해도 서로를 덮어쓰지 않게
+    const rid0 = replyTargetId;
+    wsRef("requests/" + rid0 + "/replies").transaction((cur) => {
+      const arr = Array.isArray(cur) ? cur : [];
+      arr.push(rep); return arr;
+    }).then((res) => {
+      if (res && res.committed) {
+        const len = (res.snapshot.val() || []).length;
+        wsRef("requests/" + rid0 + "/replySeen/" + currentUser.id).set(len);   // 내 답장은 본 것으로
+      }
+    }).catch(() => {});
     $id("replyModal").hidden = true; replyTargetId = null;
     toast(t("rq_replied"));
   }
@@ -3607,12 +3658,14 @@
   }
   function openReqPopup(tab) { if (!currentUser) { showLoginGate(); return; } setReqTab(tab); setReqKind(reqKind); $id("reqPopup").hidden = false; }
   // 할 일에서 원본 요청 카드 열기
+  let keepPaging = false;   // openRequestById가 넓혀둔 페이징을 setReqTab/setReqKind가 되돌리지 않게
   function openRequestById(id) {
     const r = requestsCache[id];
     if (!r || !currentUser) { toast(t("rq_gone")); return; }
     reqKind = reqKindOf(r);
     const tab = r.to === currentUser.id ? "inbox" : "sent";
     reqShown[tab] = 999;   // 페이징에 가려지지 않게 전부 표시
+    keepPaging = true;
     openReqPopup(tab);
     setTimeout(() => {
       const el = document.querySelector('.rq-card[data-rid="' + id + '"]');
@@ -3622,7 +3675,8 @@
   function closeReqPopup() { $id("reqPopup").hidden = true; setReqTab(null); if (reqSelectMode) exitSelectMode(); }
   function setReqTab(tab) {
     reqTab = tab;
-    if (tab === "inbox" || tab === "sent") reqShown[tab] = REQ_PAGE;   // 탭 열 때 최신 10개부터
+    if ((tab === "inbox" || tab === "sent") && !keepPaging) reqShown[tab] = REQ_PAGE;   // 탭 열 때 최신 10개부터
+    keepPaging = false;
     const tabIn = $id("rqTabInbox"), tabSent = $id("rqTabSent"), inboxList = $id("rqInboxList"), sentList = $id("rqSentList");
     if (tabIn) tabIn.classList.toggle("active", tab === "inbox");
     if (tabSent) tabSent.classList.toggle("active", tab === "sent");
@@ -3630,11 +3684,10 @@
     if (sentList) sentList.hidden = tab !== "sent";
     if (tab === "inbox") markInboxRead();
   }
-  function markInboxRead() {
-    if (!currentUser || !msgDb) return;
-    Object.keys(requestsCache).forEach((id) => {
-      const r = requestsCache[id];
-      if (r && r.to === currentUser.id && r.status === "sent" && reqKindOf(r) === reqKind && !((r.hiddenFor || []).includes(currentUser.id))) wsRef("requests/" + id).update({ status: "read", readAt: Date.now() });
+  function markInboxRead(items) {   // 화면에 보이는 항목만
+    if (!currentUser || !msgDb || !Array.isArray(items)) return;
+    items.forEach((r) => {
+      if (r && r.status === "sent") wsRef("requests/" + r.id).update({ status: "read", readAt: Date.now() });
     });
   }
 
@@ -3831,7 +3884,17 @@
     if (!name || name === currentUser.name) return;
     if (findUserByName(name)) { toast(t("rq_dup_name")); return; }
     try {
-      msgDb.ref("users/" + currentUser.id + "/name").set(name);
+      msgDb.ref("users/" + currentUser.id + "/name").set(name).catch(() => toast(t("ws_err")));
+      // 진행 중·과거 요청 카드의 표시 이름도 갱신 (베스트 에포트)
+      if (myWsId) {
+        const nups = {};
+        Object.keys(requestsCache).forEach((rid) => {
+          const r = requestsCache[rid]; if (!r) return;
+          if (r.from === currentUser.id) nups[rid + "/fromName"] = name;
+          if (r.to === currentUser.id) nups[rid + "/toName"] = name;
+        });
+        if (Object.keys(nups).length) { try { wsRef("requests").update(nups); } catch (_) {} }
+      }
       currentUser.name = name;
       if (usersCache[currentUser.id]) usersCache[currentUser.id].name = name;
       const n = $id("userChipName"); if (n) n.textContent = name;

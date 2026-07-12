@@ -311,7 +311,9 @@
         del.addEventListener("click", () => {
           if (!confirm("정말 '" + (rec.name || uid) + "' 계정(프로필)을 삭제할까요? 되돌릴 수 없어요.")) return;
           const ws = rec.ws || null;
-          const jobs = [firebase.database().ref("users/" + uid).remove(), firebase.database().ref("managers/" + uid).remove()];
+          const jobs = [firebase.database().ref("users/" + uid).remove(), firebase.database().ref("managers/" + uid).remove(),
+            firebase.database().ref("notes/user_" + uid).remove().catch(() => {}),
+            firebase.database().ref("qna/" + uid).remove().catch(() => {})];
           if (ws) jobs.push(firebase.database().ref("ws/" + ws + "/status/" + uid).remove().catch(() => {}));
           Promise.all(jobs).then(() => toast("삭제했어요")).catch((e) => toast("실패: " + e.message));
         });
