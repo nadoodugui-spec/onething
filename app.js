@@ -139,7 +139,7 @@
     tp_custom: { ko: "직접", en: "Custom" },
     complete: { ko: "완료", en: "Done" },
     pick_again: { ko: "↩ 다시 선택", en: "↩ Pick again" },
-    hint_active: { ko: "이 하나만 끝내면 됩니다. 타이머는 끝나도 자동 완료되지 않아요.", en: "Just finish this one. The timer never auto-completes." },
+    hint_active: { ko: "이 하나만 끝내면 됩니다.", en: "Just finish this one." },
     empty_ot: { ko: "<b>모든 우선순위를 넘어서는,<br>단 하나!</b><br><span style='font-size:.82em'>할 일에서 <span class='arrow'>◉</span> 눌러 그 하나를 보내세요</span>", en: "<b>The one thing<br>above every priority!</b><br><span style='font-size:.82em'>Send it here with <span class='arrow'>◉</span></span>" },
     hint_count: { ko: "오늘 {0}개의 원씽을 끝냈어요. 다음 하나를 골라보세요.", en: "You finished {0} One Thing(s) today. Pick the next one." },
     hint_key: { ko: "성과는 개수가 아니라, 하나의 선택에서 나옵니다.", en: "Results come from one choice, not from how many you juggle." },
@@ -1443,9 +1443,11 @@
     const head = document.createElement("div"); head.className = "ot-subs-head";
     head.innerHTML = '<b>' + t("ot_break_h") + '</b>' + (subs.length ? ' <span class="obs-cnt">' + doneN + '/' + subs.length + '</span>' : '');
     wrap.append(head);
-    const subline = document.createElement("div"); subline.className = "ot-break-sub";
-    subline.textContent = subs.length ? t("ot_break_sub2") : t("ot_break_sub");
-    wrap.append(subline);
+    if (!subs.length) {   // 조각이 생기면 설명문은 치움 — 화면 간결하게
+      const subline = document.createElement("div"); subline.className = "ot-break-sub";
+      subline.textContent = t("ot_break_sub");
+      wrap.append(subline);
+    }
     if (subs.length) {   // 진행률 바
       const bar = document.createElement("div"); bar.className = "ms-bar"; bar.style.height = "6px"; bar.style.margin = "6px 0 8px";
       const fill = document.createElement("div"); fill.className = "ms-fill"; fill.style.width = Math.round((doneN / subs.length) * 100) + "%";
@@ -1518,7 +1520,7 @@
     if (isToday && cur) {
       const card = document.createElement("div"); card.className = "onething-card";
       const text = document.createElement("div"); text.className = "ot-text"; text.textContent = cur.text; text.title = t("ti_edit"); makeEditable(text, "todo", cur.id);
-      // 타이머 — 메인 한 줄(시간·시작·길이) + 보조 한 줄(처음부터·휴식·누적)
+      // 타이머 — 완료 버튼과 같은 줄(하단)에 간결하게: 시간 · 집중 시작 · 길이 선택만
       const pm = state.settings.pomodoroMin || 25;
       const timer = document.createElement("div"); timer.className = "timer";
       timer.innerHTML = '<span class="time" id="timeDisp">' + fmtMMSS(timerRemaining > 0 ? timerRemaining : pomoSec()) + '</span>'
@@ -1527,19 +1529,13 @@
         + '<div class="to-menu len-menu" id="lenMenu" hidden>'
         + [15, 25, 30, 45, 60].map((n) => '<button class="to-opt" data-min="' + n + '"' + (n === pm ? ' style="color:var(--accent);font-weight:700"' : '') + '>' + n + t("min_unit") + '</button>').join("")
         + '<button class="to-opt" data-min="custom">' + t("tp_custom") + '</button></div></span>';
-      const subRow = document.createElement("div"); subRow.className = "timer-sub-row";
-      subRow.innerHTML = '<button id="timerReset" type="button" title="' + t("tt_reset") + '">↺ ' + t("tmr_reset") + '</button><span>·</span>'
-        + '<button id="breakBtn" type="button" title="' + t("break_t") + '">' + t("break_btn") + '</button><span>·</span>'
-        + '<span class="focus-acc" id="focusAcc" title="' + t("tt_acc") + '">' + t("focus_acc", fmtDur(cur.focusSec || 0)) + '</span>';
       const foot = document.createElement("div"); foot.className = "ot-foot";
       const done = document.createElement("button"); done.className = "complete-btn"; done.innerHTML = '<span class="box"></span> ' + t("complete"); done.addEventListener("click", () => completeTodo(cur.id));
-      foot.append(done); card.append(text, buildOtSubs(cur), timer, subRow, foot); slot.append(card);
+      foot.append(timer, done); card.append(text, buildOtSubs(cur), foot); slot.append(card);
       $id("rightHint").textContent = t("hint_active");
       setTimeout(() => {
-        const tb = $id("timerToggle"), tr = $id("timerReset"), bb = $id("breakBtn"), lb = $id("lenBtn"), lm = $id("lenMenu");
+        const tb = $id("timerToggle"), lb = $id("lenBtn"), lm = $id("lenMenu");
         if (tb) tb.onclick = toggleTimer;
-        if (tr) tr.onclick = () => resetTimer();
-        if (bb) bb.onclick = startBreak;
         if (lb && lm) lb.onclick = (e) => { e.stopPropagation(); lm.hidden = !lm.hidden; };
       }, 0);
     } else if (isToday) {
