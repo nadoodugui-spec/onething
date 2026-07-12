@@ -45,7 +45,7 @@
     goal_badge: { ko: "◉ 오늘의 단 하나, 완료!", en: "◉ Today's one thing — done!" },
     lock_title: { ko: "지금은 단 하나에 집중할 시간", en: "Time to focus on the one thing" },
     hold_t: { ko: "🔒 잠금 해제", en: "🔒 Unlock" },
-    hold_d: { ko: "정말 목록을 열어야 하나요? 그렇다면 버튼을 3초간 길게 누르세요.", en: "Do you really need the list? Hold the button for 3 seconds." },
+    hold_d: { ko: "이 하나를 끝낸 뒤에 봐도 늦지 않아요.<br>정말 필요하면 3초간 길게 누르세요.", en: "It can wait until this one is done.<br>If you really need it, hold for 3 seconds." },
     hold_btn: { ko: "길게 눌러 열기", en: "Hold to open" },
     hold_sec: { ko: "초…", en: "s…" },
     hold_cancel: { ko: "놓으면 처음부터예요", en: "Released — start over" },
@@ -904,7 +904,7 @@
   }
   function openPuzzle() {
     $id("puzzleTitle").textContent = t("hold_t");
-    $id("puzzleDesc").textContent = t("hold_d");
+    $id("puzzleDesc").innerHTML = t("hold_d");   // 두 줄 문구 (신뢰 문자열 — i18n 상수만 사용)
     const stage = $id("puzzleStage"), status = $id("puzzleStatus");
     stage.innerHTML = ""; status.textContent = "";
     stage.style.height = "auto"; stage.style.background = "transparent"; stage.style.border = "none";
