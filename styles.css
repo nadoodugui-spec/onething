@@ -747,8 +747,8 @@
     .timer .time { font-size: 1.35rem; }
     .empty-ot { padding: 26px 16px 32px; font-size: 1.02rem; }
     .empty-ot .ot-lamp { width: 100px; height: 90px; margin-bottom: 10px; }
-    .group-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-left: 4px; padding-right: 4px; }
-    .group-tabs::-webkit-scrollbar { display: none; }
+    /* 목록 탭: 가로 스크롤 대신 줄바꿈 (가로 스크롤 금지 원칙) */
+    .group-tabs { flex-wrap: wrap; overflow-x: visible; padding-left: 4px; padding-right: 4px; row-gap: 2px; }
     .group-tabs button { flex: none; padding: 8px 10px 9px; }
     .add-row { gap: 6px; padding-left: 4px; }
     .add-row input { font-size: 16px; }
