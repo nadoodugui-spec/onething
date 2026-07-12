@@ -500,7 +500,7 @@
     fd_reply: { ko: "{0}님이 답장", en: "{0} replied" },
     sr_tpl: { ko: "템플릿", en: "Template" },
     sr_tpl_none: { ko: "템플릿 선택…", en: "Choose template…" },
-    sr_tpl_save: { ko: "현재 내용 저장", en: "Save current" },
+    sr_tpl_save: { ko: "현재 내용 템플릿으로 저장", en: "Save current as template" },
     sr_tpl_del: { ko: "삭제", en: "Delete" },
     sr_tpl_name: { ko: "템플릿 이름을 입력하세요", en: "Template name" },
     sr_tpl_saved: { ko: "템플릿을 저장했어요", en: "Template saved" },
