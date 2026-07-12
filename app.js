@@ -2668,6 +2668,13 @@
   }
   function switchNotebook() {
     state = loadState();
+    try {   // 잠금 해제 방식 1회 초기화(계정별) — 클라우드에서 복원된 설정에도 적용
+      const k = "onething-ul-reset::" + (currentUser ? currentUser.id : "anon");
+      if (!localStorage.getItem(k)) {
+        if (state.settings.unlockMode === "button") state.settings.unlockMode = "puzzle";
+        localStorage.setItem(k, "1");
+      }
+    } catch (_) {}
     state.trash = (state.trash || []).filter((td) => !td.deletedAt || (Date.now() - td.deletedAt) < 30 * 864e5);
     if (activeTodo()) timerRemaining = pomoSec();
     applyLang(); render(); initSync();
@@ -3937,6 +3944,13 @@
   if (activeTodo()) timerRemaining = pomoSec();
   setupPWA();
   applyTheme();
+  // 잠금 해제 방식 1회 초기화: 예전 '버튼 한 번' 저장값을 새 기본(3초 길게 누르기)으로 — 원하면 설정에서 다시 선택 가능
+  try {
+    if (!localStorage.getItem("onething-ul-reset")) {
+      if (state.settings.unlockMode === "button") { state.settings.unlockMode = "puzzle"; save(); }
+      localStorage.setItem("onething-ul-reset", "1");
+    }
+  } catch (_) {}
   // 로그인 화면은 여기서 미리 띄우지 않는다 — 세션 확인(onAuthStateChanged)이 끝난 뒤에만 표시(깜빡임 방지)
   applyLang(); render();
   refreshSyncState();
