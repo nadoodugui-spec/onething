@@ -105,6 +105,7 @@
     // todo rows
     ti_done: { ko: "완료", en: "Done" },
     ti_color: { ko: "색 라벨", en: "Color label" },
+    ti_edit_btn: { ko: "수정", en: "Edit" },
     ti_edit: { ko: "더블클릭하면 수정", en: "Double-click to edit" },
     rep_daily: { ko: "매일 반복", en: "Daily" },
     rep_weekly: { ko: "매주 반복", en: "Weekly" },
@@ -954,14 +955,16 @@
   }
 
   // ---------- editable ----------
+  function startEditText(el, kind, id) {   // 제자리 수정 — 더블클릭과 수정 버튼이 공용
+    const old = el.textContent; const input = document.createElement("input");
+    input.type = "text"; input.value = old; input.style.cssText = "font:inherit;width:100%;border:none;border-bottom:2px solid var(--accent);background:transparent;color:inherit;outline:none";
+    try { if (matchMedia("(pointer: coarse)").matches) input.style.fontSize = "16px"; } catch (_) {}   // 모바일: 포커스 시 화면 확대 방지
+    el.replaceWith(input); input.focus(); input.setSelectionRange(old.length, old.length);
+    input.addEventListener("blur", () => editText(kind, id, input.value));
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } if (e.key === "Escape") { input.value = old; input.blur(); } });
+  }
   function makeEditable(el, kind, id) {
-    el.addEventListener("dblclick", () => {
-      const old = el.textContent; const input = document.createElement("input");
-      input.type = "text"; input.value = old; input.style.cssText = "font:inherit;width:100%;border:none;border-bottom:2px solid var(--accent);background:transparent;color:inherit;outline:none";
-      el.replaceWith(input); input.focus(); input.setSelectionRange(old.length, old.length);
-      input.addEventListener("blur", () => editText(kind, id, input.value));
-      input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } if (e.key === "Escape") { input.value = old; input.blur(); } });
-    });
+    el.addEventListener("dblclick", () => startEditText(el, kind, id));
   }
 
   // ---------- render ----------
@@ -1000,6 +1003,10 @@
       rq.addEventListener("click", () => openRequestById(td.reqId));
       li.append(rq);
     }
+    const ed = document.createElement("button"); ed.className = "more-btn edit-btn"; ed.title = t("ti_edit_btn");
+    ed.innerHTML = '<svg class="icon" style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L17 4l3 3L8 19l-4 1z"/><path d="M14.5 6.5l3 3"/></svg>';
+    ed.addEventListener("click", () => startEditText(text, "todo", td.id));
+    li.append(ed);
     const more = document.createElement("button"); more.className = "more-btn"; more.textContent = "⋯"; more.title = t("ti_more"); more.addEventListener("click", () => { if (expanded.has(td.id)) expanded.delete(td.id); else expanded.add(td.id); render(); }); li.append(more);
     if (expanded.has(td.id)) li.append(buildDetail(td));
     li.addEventListener("dragstart", (e) => { dragId = td.id; li.classList.add("dragging"); document.body.classList.add("dragging-todo"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", td.id); } catch (_) {} });
