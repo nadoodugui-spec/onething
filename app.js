@@ -2241,6 +2241,7 @@
     if (!db) return;
     try {
       const auth = firebase.auth();
+      try { auth.languageCode = "ko"; } catch (_) {}   // 인증·재설정 메일과 확인 화면을 한국어로
       auth.onAuthStateChanged((user) => {
         if (user && user.isAnonymous) { try { auth.signOut(); } catch (_) {} return; }   // 구버전 익명 세션 정리
         authUser = user || null;
