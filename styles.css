@@ -714,6 +714,7 @@
     .toolbar { margin-bottom: 8px; gap: 6px; }
     .search { min-width: 0; width: 100%; order: -1; }
     .tools { width: 100%; flex-wrap: wrap; }
+    #userChip { order: -1; }   /* 모바일: 사용자 프로필 버튼을 맨 앞(좌측 상단)으로 */
     .tools button { flex: none; padding: 8px 10px; }
     .tools button > span[data-i18n] { display: none; }
     #stLabel { display: inline; }
