@@ -1591,9 +1591,7 @@
     // ★ 잠금을 목록보다 먼저 적용 — 그리는 도중 오류·지연이 생겨도 잠기지 않은 화면이 절대 노출되지 않게
     {
       const a0 = activeTodo(); if (!a0) leftUnlocked = false;
-      const lk = !!a0 && !leftUnlocked && viewDate === todayStr();
-      $(".notebook").classList.toggle("locked", lk);
-      try { (window.__renders = window.__renders || []).push({ t: Math.round(performance.now()), lk: lk, act: !!a0, lu: leftUnlocked, uid: !!authUser, todos: (state.todos || []).length, vd: viewDate }); } catch (_) {}
+      $(".notebook").classList.toggle("locked", !!a0 && !leftUnlocked && viewDate === todayStr());
     }
     renderGroupTabs(); renderTodos(); renderLater(); renderDone(); renderRight();
     // 프로젝트 보기에서는 나중에/끝난 일 섹션 숨김 (프로젝트는 자체 완료 표시)

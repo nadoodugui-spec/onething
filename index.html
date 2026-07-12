@@ -18,16 +18,6 @@
 <link rel="stylesheet" href="styles.css?v=9" />
 </head>
 <body data-theme="light" data-lang="ko">
-<script>/* 잠금 깜빡임 계측(진단용): DOM 변화 시점마다 잠금·내용 상태 기록 — 백그라운드에서도 동작 */
-(function(){var L=[];window.__lockLog=L;function snap(tag){var nb=document.querySelector(".notebook");var inner=document.querySelector(".page.left .page-inner");var hid=document.body.classList.contains("auth-wait");L.push({t:Math.round(performance.now()),tag:tag,locked:nb?nb.classList.contains("locked"):null,items:inner?inner.querySelectorAll("li").length:0,hid:hid});}
-window.addEventListener("error",function(e){L.push({t:Math.round(performance.now()),tag:"err",msg:String(e.message||"").slice(0,200)});});
-document.addEventListener("DOMContentLoaded",function(){snap("ready");var mo=new MutationObserver(function(){if(L.length<400)snap("mut");});mo.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class"]});setTimeout(function(){mo.disconnect();
-var bad=L.filter(function(e){return e.items>0&&e.locked===false&&!e.hid;});   /* 숨김(auth-wait) 상태는 눈에 안 보이므로 제외 */
-if(bad.length){var d=document.createElement("div");d.style.cssText="position:fixed;left:10px;bottom:10px;z-index:9999;background:#7a1f1f;color:#fff;font:11px/1.5 monospace;padding:10px 12px;border-radius:8px;max-width:92vw;max-height:45vh;overflow:auto;white-space:pre-wrap";
-d.textContent="[잠금 진단 - 이 화면을 캡처해 주세요]\nBAD "+JSON.stringify(bad.slice(0,6))+"\nLOG "+JSON.stringify(L.slice(0,25))+"\nRND "+JSON.stringify((window.__renders||[]).slice(0,15));
-var x=document.createElement("div");x.textContent="[닫기]";x.style.cssText="margin-top:6px;cursor:pointer;text-decoration:underline";x.onclick=function(){d.remove();};d.appendChild(x);document.body.appendChild(d);}
-},8000);});})();
-</script>
 
   <div class="login-gate" id="loginGate" hidden>
     <div class="login-card">
@@ -582,6 +572,6 @@ var x=document.createElement("div");x.textContent="[닫기]";x.style.cssText="ma
     </div>
   </div>
 
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>
