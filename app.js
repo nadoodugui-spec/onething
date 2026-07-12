@@ -2346,7 +2346,12 @@
     const info = $id("umWsInfo"), join = $id("umWsJoin");
     if (!info || !join) return;
     const vb = $id("umVerify");
-    if (vb) vb.hidden = !(authUser && authUser.providerData.some((pd) => pd.providerId === "password") && !authUser.emailVerified);
+    const needVerify = () => !!(authUser && authUser.providerData.some((pd) => pd.providerId === "password") && !authUser.emailVerified);
+    if (vb) {
+      vb.hidden = !needVerify();
+      // 표시 전 서버에서 최신 인증 상태 재확인 — 다른 기기·메일 링크에서 인증한 직후에도 배너가 남지 않게
+      if (!vb.hidden && authUser) authUser.reload().then(() => { vb.hidden = !needVerify(); }).catch(() => {});
+    }
     const pf = $id("umPlatform"); if (pf) pf.hidden = !isSuperAdmin();
     if (myWsId) {
       join.hidden = true;
