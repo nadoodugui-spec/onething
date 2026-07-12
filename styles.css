@@ -331,7 +331,7 @@
   .ot-sub-list .stext.done { text-decoration: line-through; color: var(--done); }
   .ot-sub-list .row-x { opacity: 0; }
   .ot-sub-list li:hover .row-x { opacity: 1; }
-  .ot-subs .sub-add input { font-size: 1.05rem; }
+  .ot-subs .sub-add input { font-size: 1.05rem; padding: 9px 2px; }
   .ot-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 30px; flex-wrap: wrap; }
   .ot-foot .timer { margin-top: 0; flex: 1; min-width: 0; }
   .tmr-len { border: 1px solid var(--border) !important; background: var(--surface) !important; color: var(--text-soft) !important; font-size: .85rem !important; }
