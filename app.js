@@ -1431,16 +1431,21 @@
         box.append(b);
       }
     });
-    const add = document.createElement("button"); add.type = "button"; add.className = "gt-new";
-    add.textContent = t("grp_add"); add.title = t("grp_add_t");
-    add.addEventListener("click", addGroup);
-    box.append(add);
-    if (currentUser && cloudConfigured() && myWsId) {
-      const addP = document.createElement("button"); addP.type = "button"; addP.className = "gt-new";
-      addP.innerHTML = '<svg class="icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c1-2.7 3-4 5.5-4s4.5 1.3 5.5 4"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.6c2.3.2 4 1.4 4.8 3.4"/></svg>';
-      addP.append(document.createTextNode(" " + t("prj_add"))); addP.title = t("prj_add_t");
-      addP.addEventListener("click", addProject);
-      box.append(addP);
+    // ＋List / ＋Project는 "할 일들" 제목 줄 오른쪽 끝에
+    const adds = $id("tabAdds");
+    if (adds) {
+      adds.innerHTML = "";
+      const add = document.createElement("button"); add.type = "button"; add.className = "gt-new";
+      add.textContent = t("grp_add"); add.title = t("grp_add_t");
+      add.addEventListener("click", addGroup);
+      adds.append(add);
+      if (currentUser && cloudConfigured() && myWsId) {
+        const addP = document.createElement("button"); addP.type = "button"; addP.className = "gt-new";
+        addP.innerHTML = '<svg class="icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c1-2.7 3-4 5.5-4s4.5 1.3 5.5 4"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.6c2.3.2 4 1.4 4.8 3.4"/></svg>';
+        addP.append(document.createTextNode(" " + t("prj_add"))); addP.title = t("prj_add_t");
+        addP.addEventListener("click", addProject);
+        adds.append(addP);
+      }
     }
   }
   function addGroup() {
