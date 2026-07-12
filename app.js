@@ -122,7 +122,7 @@
     subs_head: { ko: "☑ {0}/{1} · 하위 할 일", en: "☑ {0}/{1} · Subtasks" },
     subs_empty: { ko: "하위 할 일 — 작게 쪼개기", en: "Subtasks — break it down" },
     ot_break_h: { ko: "◉ \"원씽\" 작게 조각내기", en: "◉ Break it into small pieces" },
-    ot_break_sub: { ko: "커서 막막한가요? 글로 쪼개는 순간, 해야 할 일이 명확해집니다.", en: "Feels too big? Write the pieces — clarity comes from writing." },
+    ot_break_sub: { ko: "작게 조각내면, 해야 할 일이 명확해집니다.", en: "Break it into small pieces, and the next step becomes clear." },
     ot_break_sub2: { ko: "차례대로 하나씩 — 지금 조각만 생각하세요.", en: "One piece at a time — think only of the current one." },
     ot_break_first: { ko: "＋ 첫 번째 조각을 적고 Enter", en: "＋ Write the first piece, then Enter" },
     ot_break_next: { ko: "＋ 다음 조각 추가 후 Enter", en: "＋ Add the next piece, then Enter" },
