@@ -336,8 +336,8 @@
   .ot-foot .timer { margin-top: 0; flex: 1; min-width: 0; }
   .tmr-len { border: 1px solid var(--border) !important; background: var(--surface) !important; color: var(--text-soft) !important; font-size: .85rem !important; }
   .len-wrap { position: relative; display: inline-block; }
-  /* 길이 메뉴는 카드 하단에 있으므로 위로 펼침 — 아래 요소에 가려지지 않게 */
-  .len-menu { min-width: 96px; left: 0; right: auto; top: auto; bottom: calc(100% + 4px); z-index: 80; }
+  /* 길이 메뉴는 카드 하단에 있으므로 위로 펼침 — .to-menu 기본 규칙(top)보다 우선하도록 구체적으로 */
+  .len-wrap .to-menu.len-menu { min-width: 96px; left: 0; right: auto; top: auto; bottom: calc(100% + 4px); z-index: 80; }
   .timer-sub-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .82rem; color: var(--text-soft); }
   .timer-sub-row button { border: none; background: transparent; cursor: pointer; color: var(--text-soft); font-family: var(--font-body); font-size: .82rem; padding: 2px 4px; border-radius: 6px; }
   .timer-sub-row button:hover { color: var(--accent); background: var(--surface-2); }
