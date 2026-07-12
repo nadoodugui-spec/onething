@@ -24,10 +24,7 @@ window.addEventListener("error",function(e){L.push({t:Math.round(performance.now
 document.addEventListener("DOMContentLoaded",function(){snap("ready");var mo=new MutationObserver(function(){if(L.length<400)snap("mut");});mo.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class"]});setTimeout(function(){mo.disconnect();
 var bad=L.filter(function(e){return e.items>0&&e.locked===false;});
 if(bad.length){var d=document.createElement("div");d.style.cssText="position:fixed;left:10px;bottom:10px;z-index:9999;background:#7a1f1f;color:#fff;font:11px/1.5 monospace;padding:10px 12px;border-radius:8px;max-width:92vw;max-height:45vh;overflow:auto;white-space:pre-wrap";
-d.textContent="[잠금 진단 — 이 화면을 캡처해 주세요]
-BAD "+JSON.stringify(bad.slice(0,6))+"
-LOG "+JSON.stringify(L.slice(0,25))+"
-RND "+JSON.stringify((window.__renders||[]).slice(0,15));
+d.textContent="[잠금 진단 - 이 화면을 캡처해 주세요]\nBAD "+JSON.stringify(bad.slice(0,6))+"\nLOG "+JSON.stringify(L.slice(0,25))+"\nRND "+JSON.stringify((window.__renders||[]).slice(0,15));
 var x=document.createElement("div");x.textContent="[닫기]";x.style.cssText="margin-top:6px;cursor:pointer;text-decoration:underline";x.onclick=function(){d.remove();};d.appendChild(x);document.body.appendChild(d);}
 },8000);});})();
 </script>
