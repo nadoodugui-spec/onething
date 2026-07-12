@@ -15,7 +15,7 @@
     "notes": {
       "$nid": {
         ".read": "auth != null && $nid === 'user_' + auth.uid",
-        ".write": "auth != null && $nid === 'user_' + auth.uid"
+        ".write": "auth != null && ($nid === 'user_' + auth.uid || (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' && !newData.exists()))"
       }
     },
     "qna": {
@@ -23,6 +23,7 @@
       ".write": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || root.child('managers').child(auth.uid).val() === true)",
       "$uid": {
         ".read": "auth != null && $uid === auth.uid",
+        ".write": "auth != null && $uid === auth.uid && !newData.exists()",
         "$qid": {
           ".write": "auth != null && $uid === auth.uid && !newData.exists()",
           "text": { ".write": "auth != null && $uid === auth.uid", ".validate": "newData.isString() && newData.val().length <= 3000" },

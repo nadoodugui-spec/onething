@@ -2282,11 +2282,18 @@
   function initMessaging() {
     msgDb = ensureFirebase();
     if (!msgDb) { updateLoginGate(); return; }   // Firebase 미설정/오프라인 → 메시징 비활성
+    attachUsersListener();
+  }
+  // 로그아웃(signOut) 시 서버가 리스너를 취소하므로, 재로그인 때마다 다시 부착 (off 후 on — 중복 없음)
+  function attachUsersListener() {
+    if (!msgDb) return;
+    try { msgDb.ref("users").off(); } catch (_) {}
     msgDb.ref("users").on("value", (snap) => {
       usersCache = snap.val() || {};
       usersLoaded = true;
       resolveCurrentUser(); renderTeamBoard();
       maybeProfileSetup();   // 첫 로그인이면 이름 설정/기존 계정 연결
+      if (!myWsId && wsAttached) { detachWsListeners(); renderRequests(); renderUnreadBadge(); renderTeamBoard(); }   // 내보내기 등으로 무소속이 되면 이전 팀 연결·캐시 정리
       attachWsListeners();   // 소속이 확인되면 팀 데이터 연결
     });
   }
@@ -2350,7 +2357,7 @@
         try { if (user) localStorage.setItem("onething-has-session", "1"); else localStorage.removeItem("onething-has-session"); } catch (_) {}
         if (!user) document.body.classList.remove("auth-wait");   // 로그아웃 확정 시에만 여기서 해제 — 로그인이면 '내 데이터 로드 완료' 시점(resolveCurrentUser)에 해제
         authUser = user || null;
-        if (authUser) { authReady = true; startCloud(); resolveCurrentUser(); maybeProfileSetup(); }
+        if (authUser) { authReady = true; startCloud(); attachUsersListener(); resolveCurrentUser(); maybeProfileSetup(); }   // 재로그인 시 전역 리스너 재부착
         else { currentUser = null; myWsId = null; updateLoginGate(); showLoginGate(); }
       });
     } catch (e) {}
@@ -3077,6 +3084,7 @@
   function setReqKind(k) {
     reqKind = k;
     if (!keepPaging) reqShown = { inbox: REQ_PAGE, sent: REQ_PAGE };
+    keepPaging = false;   // '원본 보기'가 넓혀둔 페이징은 여기(마지막 리셋 지점)까지 보호
     const m = $id("rqKindMemo"), tk = $id("rqKindTask");
     if (m) m.classList.toggle("active", k === "memo");
     if (tk) tk.classList.toggle("active", k === "task");
@@ -3532,7 +3540,7 @@
       const r = requestsCache[id];
       if (!r || r.from !== currentUser.id || !r.repeat || r.recalled) return;
       let dueAt;
-      if (r.repeat === "monthly") { const d = new Date(r.ts || 0); d.setMonth(d.getMonth() + 1); dueAt = d.getTime(); }
+      if (r.repeat === "monthly") { const d = new Date(r.ts || 0); const day0 = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== day0) d.setDate(0); dueAt = d.getTime(); }   // 말일 보정(1/31→2/28)
       else dueAt = (r.ts || 0) + (r.repeat === "daily" ? 864e5 : 7 * 864e5);
       if (now < dueAt) return;
       // 트랜잭션으로 반복 표식을 선점 — 같은 계정이 두 기기로 접속해도 한 번만 재발송
@@ -3688,13 +3696,12 @@
   function setReqTab(tab) {
     reqTab = tab;
     if ((tab === "inbox" || tab === "sent") && !keepPaging) reqShown[tab] = REQ_PAGE;   // 탭 열 때 최신 10개부터
-    keepPaging = false;
     const tabIn = $id("rqTabInbox"), tabSent = $id("rqTabSent"), inboxList = $id("rqInboxList"), sentList = $id("rqSentList");
     if (tabIn) tabIn.classList.toggle("active", tab === "inbox");
     if (tabSent) tabSent.classList.toggle("active", tab === "sent");
     if (inboxList) inboxList.hidden = tab !== "inbox";
     if (sentList) sentList.hidden = tab !== "sent";
-    if (tab === "inbox") markInboxRead();
+    if (tab === "inbox" || tab === "sent") renderRequests();   // 전환 즉시 렌더 — 보이는 항목 읽음/봤음 처리 포함
   }
   function markInboxRead(items) {   // 화면에 보이는 항목만
     if (!currentUser || !msgDb || !Array.isArray(items)) return;
@@ -3896,7 +3903,11 @@
     if (!name || name === currentUser.name) return;
     if (findUserByName(name)) { toast(t("rq_dup_name")); return; }
     try {
-      msgDb.ref("users/" + currentUser.id + "/name").set(name).catch(() => toast(t("ws_err")));
+      msgDb.ref("users/" + currentUser.id + "/name").set(name).then(() => {}).catch(() => {
+        toast(t("ws_err"));
+        currentUser.name = (usersCache[currentUser.id] || {}).name || currentUser.name;   // 실패 시 화면 원복
+        renderTeamBoard();
+      });
       // 진행 중·과거 요청 카드의 표시 이름도 갱신 (베스트 에포트)
       if (myWsId) {
         const nups = {};
