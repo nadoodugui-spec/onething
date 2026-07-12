@@ -196,8 +196,13 @@
   .group-tabs button .row-x { opacity: 0; font-size: .85rem; padding: 0; }
   .group-tabs button.active .row-x { opacity: .6; }
   .group-tabs button .row-x:hover { opacity: 1; color: var(--danger); }
-  .group-tabs .gt-new { margin-left: 4px; margin-bottom: 5px; padding: 3px 11px; border: 1px dashed var(--border); border-radius: 999px; font-size: .82rem; }
-  .group-tabs .gt-new:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  /* ＋List / ＋Project — 제목 줄의 조용한 고스트 버튼 (툴바·타일과 같은 톤) */
+  .tab-adds .gt-new { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-soft); border-radius: 8px; padding: 5px 12px;
+    font-size: .8rem; font-weight: 600; font-family: var(--font-body); cursor: pointer; line-height: 1.2;
+    transition: border-color .12s ease, color .12s ease, background .12s ease; }
+  .tab-adds .gt-new:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  body[data-theme="dark"] .tab-adds .gt-new { background: var(--surface-2); }
   .group-tabs button.drop-into { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); border-radius: 8px; }
   .group-tabs .gt-prj .icon { color: var(--text-soft); }
   .group-tabs .gt-prj.active .icon { color: var(--accent); }
