@@ -500,6 +500,7 @@
     iv_join_q: { ko: "\"$1\" 팀에 참여할까요?", en: "Join the team \"$1\"?" },
     iv_switch_q: { ko: "지금 소속된 팀에서 나와 \"$1\"(으)로 옮깁니다. 계속할까요?", en: "You will leave your current team and move to \"$1\". Continue?" },
     iv_joined: { ko: "\"$1\" 팀에 합류했어요! 🎉", en: "You joined \"$1\"! 🎉" },
+    sp_need_ot: { ko: "먼저 오늘의 원씽을 정해주세요 — 할 일에서 ◉를 누르면 원씽 중이 돼요", en: "Set your One Thing first — press ◉ on a task" },
     sp_alone: { ko: "아직 혼자예요", en: "It's just you so far" },
     sp_alone_d: { ko: "이 초대 코드를 동료에게 보내면, 서로의 원씽과 요청이 여기에 나타나요.", en: "Share this invite code — teammates will appear here." },
     sp_alone_member: { ko: "관리자에게 동료 초대를 요청해보세요.", en: "Ask your admin to invite teammates." },
@@ -2081,12 +2082,15 @@
       stl.textContent = stTxt; top.appendChild(stl);
       card.appendChild(top);
       const seg = document.createElement("div"); seg.className = "sp-me-seg";
-      [["work", "st_work"], ["away", "st_away"]].forEach((pair) => {
+      [["focus", "st_focus"], ["work", "st_work"], ["away", "st_away"]].forEach((pair) => {
         const b = document.createElement("button"); b.type = "button";
         b.className = myStatus() === pair[0] ? "sel" : "";
         const d = document.createElement("span"); d.className = "st-dot st-" + pair[0]; b.appendChild(d);
         b.appendChild(document.createTextNode(t(pair[1])));
-        b.addEventListener("click", () => { setMyStatus(pair[0]); renderTeamBoard(); });
+        b.addEventListener("click", () => {
+          if (pair[0] === "focus" && !activeTodo()) { toast(t("sp_need_ot")); return; }   // 원씽 중 = 원씽이 있어야
+          setMyStatus(pair[0]); renderTeamBoard();
+        });
         seg.appendChild(b);
       });
       card.appendChild(seg);
