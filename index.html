@@ -18,6 +18,9 @@
 <link rel="stylesheet" href="styles.css?v=8" />
 </head>
 <body data-theme="light" data-lang="ko">
+<script>/* 잠금 깜빡임 계측: 첫 6초간 매 프레임의 잠금·내용 상태 기록 (진단용, 성능 영향 없음) */
+(function(){var L=[];window.__lockLog=L;function f(){var nb=document.querySelector(".notebook");var inner=document.querySelector(".page.left .page-inner");L.push({t:Math.round(performance.now()),locked:nb?nb.classList.contains("locked"):null,items:inner?inner.querySelectorAll("li").length:0});if(performance.now()<6000)requestAnimationFrame(f);}requestAnimationFrame(f);})();
+</script>
 
   <div class="login-gate" id="loginGate" hidden>
     <div class="login-card">
