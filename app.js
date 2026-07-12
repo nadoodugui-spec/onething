@@ -1,6 +1,8 @@
 (function () {
   "use strict";
 
+  const APP_VER = "12.2";   // 사용자 메뉴에 표시 — 기기가 새 코드를 받았는지 확인용
+
   const STORAGE_KEY = "onething-notebook-v1";
 
   // ===== 클라우드 동기화 설정 =====
@@ -3600,7 +3602,7 @@
     if (act === "lang") toggleLang();
     else if (act === "stats") openStats(); else if (act === "trash") openTrash();
     else if (act === "settings") openSettings(); else if (act === "help") $id("helpModal").hidden = false;
-    else if (act === "user") { if (currentUser) { $id("userWho").textContent = t("um_who", currentUser.name); renderMembers(); renderUmWs(); $id("userModal").hidden = false; } else showLoginGate(); }
+    else if (act === "user") { if (currentUser) { $id("userWho").textContent = t("um_who", currentUser.name) + " · v" + APP_VER; renderMembers(); renderUmWs(); $id("userModal").hidden = false; } else showLoginGate(); }
     else if (act === "status") { if (currentUser) { renderMyStatus(); $id("statusModal").hidden = false; } else showLoginGate(); }
     else if (act === "inbox") openReqPopup("inbox");
     else if (act === "sentbox") openReqPopup("sent");
