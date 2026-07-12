@@ -1882,12 +1882,17 @@
       }, () => setSyncStatus("error"));
     } catch (e) { setSyncStatus("error"); }
   }
+  let pendingPush = false;   // 백그라운드에서 건너뛴 저장이 있는지
   function pushCloud() {
     if (!cloudReady || !syncRef || applyingRemote) return;
-    if (document.hidden) return;   // 백그라운드 탭이 최신 데이터를 덮어쓰지 않도록
+    if (document.hidden) { pendingPush = true; return; }   // 백그라운드 탭이 최신 데이터를 덮어쓰지 않도록 — 복귀 시 재푸시
+    pendingPush = false;
     const ts = Date.now(); lastTs = ts;
     try { syncRef.set({ data: state, ts: ts, origin: clientId }); } catch (_) {}
   }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && pendingPush) pushCloud();   // ★ 탭 복귀 시 밀린 저장 반영 (유실 방지)
+  });
   function setSyncStatus(kind, code) {
     const chip = $id("syncChip"), stateEl = $id("syncState"); if (!chip) return; chip.classList.remove("on", "warn", "err");
     let c, m, cls;
@@ -2251,8 +2256,19 @@
     });
   }
   // 워크스페이스가 정해진 뒤에만 팀 데이터(요청·상태·프로젝트) 연결
+  function detachWsListeners() {
+    if (!msgDb || !wsAttached) return;
+    try {
+      msgDb.ref("workspaces/" + wsAttached).off();
+      ["requests", "status", "projects", "projectTodos"].forEach((pth) => msgDb.ref("ws/" + wsAttached + "/" + pth).off());
+    } catch (_) {}
+    wsAttached = null; wsMeta = null;
+    requestsCache = {}; statusCache = {}; projectsCache = {}; projectTodosCache = {};
+    knownReqIds = null;   // 알림 기준점 리셋 — 새 워크스페이스에서 다시 잡음
+  }
   function attachWsListeners() {
     if (!msgDb || !myWsId || wsAttached === myWsId) return;
+    if (wsAttached && wsAttached !== myWsId) detachWsListeners();   // ★ 회사가 바뀌면 이전 연결부터 해제
     wsAttached = myWsId;
     msgDb.ref("workspaces/" + myWsId).on("value", (snap) => { wsMeta = snap.val(); });
     wsRef("requests").on("value", (snap) => {
@@ -2368,6 +2384,7 @@
     try {
       await msgDb.ref("workspaces/" + wsId).set({ name: name, code: code, owner: currentUser.id, createdAt: Date.now() });
       await msgDb.ref("users/" + currentUser.id).update({ ws: wsId, role: "owner" });
+      await msgDb.ref("wscodes/" + code).set({ w: wsId, n: name });   // 코드→회사 색인 (참여용)
       alert(t("ws_created", name, code));
       location.reload();
     } catch (_) { toast(t("ws_err")); }
@@ -2405,12 +2422,12 @@
     if (!pendingInvite || !currentUser || !msgDb || inviteJoining) return;
     inviteJoining = true;
     try {
-      const snap = await msgDb.ref("workspaces").once("value");
-      const all = snap.val() || {};
-      const wsId = Object.keys(all).find((k2) => ((all[k2] || {}).code || "") === pendingInvite);
-      if (!wsId) { clearInvite(); toast(t("ws_bad_code")); return; }
+      const snap = await msgDb.ref("wscodes/" + pendingInvite).once("value");
+      const rec = snap.val();
+      if (!rec || !rec.w) { clearInvite(); toast(t("ws_bad_code")); return; }
+      const wsId = rec.w;
       if (myWsId === wsId) { clearInvite(); return; }
-      const nm = (all[wsId] || {}).name || wsId;
+      const nm = rec.n || wsId;
       if (!confirm(t("iv_join_q", nm))) { clearInvite(); return; }
       if (myWsId && !confirm(t("iv_switch_q", nm))) { clearInvite(); return; }
       await msgDb.ref("users/" + currentUser.id).update({ ws: wsId, role: "member" });
@@ -2423,26 +2440,19 @@
     if (!msgDb || !currentUser) { toast(t("rq_offline")); return; }
     code = (code || "").trim().toUpperCase(); if (!code) return;
     try {
-      const snap = await msgDb.ref("workspaces").once("value");
-      const all = snap.val() || {};
-      const wsId = Object.keys(all).find((k) => ((all[k] || {}).code || "") === code);
-      if (!wsId) { toast(t("ws_bad_code")); return; }
-      await msgDb.ref("users/" + currentUser.id).update({ ws: wsId, role: "member" });
+      const snap = await msgDb.ref("wscodes/" + code).once("value");
+      const rec = snap.val();
+      if (!rec || !rec.w) { toast(t("ws_bad_code")); return; }
+      await msgDb.ref("users/" + currentUser.id).update({ ws: rec.w, role: "member" });
       location.reload();
     } catch (_) { toast(t("ws_err")); }
   }
   // ----- 관리자 -----
   // 제작자(나두혁) 계정에 최초 1회 admin 플래그를 자동 부여
-  function claimAdmin() {
-    if (!currentUser || !msgDb) return;
-    const rec = usersCache[currentUser.id];
-    if (rec && rec.name === "나두혁" && !rec.admin) {
-      try { msgDb.ref("users/" + currentUser.id + "/admin").set(true); rec.admin = true; } catch (_) {}
-    }
-  }
+  function claimAdmin() { /* 제거됨 — 이름 기반 관리자 부여는 보안 결함(직책은 role로만 판정) */ }
   function isAdmin() {
     const u = currentUser && usersCache[currentUser.id];
-    return !!(u && (u.role === "owner" || u.role === "admin" || u.admin));
+    return !!(u && (u.role === "owner" || u.role === "admin"));
   }
   function renderUmWs() {
     const info = $id("umWsInfo"), join = $id("umWsJoin");
@@ -2618,9 +2628,11 @@
     if (sd) sd.addEventListener("click", () => {
       const v = (tx.value || "").trim(); if (!v || !currentUser || !msgDb) return;
       const qid = uid();
-      msgDb.ref("qna/" + currentUser.id + "/" + qid).set({
-        text: v, ts: Date.now(), name: currentUser.name || "?", email: (usersCache[currentUser.id] || {}).email || ""
-      }).then(() => { tx.value = ""; toast(t("qna_sent")); renderQna(); }).catch(() => {});
+      const qb = "qna/" + currentUser.id + "/" + qid + "/";
+      const qups = {};
+      qups[qb + "text"] = v; qups[qb + "ts"] = Date.now();
+      qups[qb + "name"] = currentUser.name || "?"; qups[qb + "email"] = (usersCache[currentUser.id] || {}).email || "";
+      msgDb.ref().update(qups).then(() => { tx.value = ""; toast(t("qna_sent")); renderQna(); }).catch(() => {});
     });
   })();
   (function wirePlatform() {
@@ -2771,9 +2783,11 @@
   function logoutUser() {
     releaseMyPresence();
     currentUser = null;
-    if (syncRef) { syncRef.off(); syncRef = null; } cloudReady = false;
+    lastResolvedUid = null;   // ★ 같은 계정 재로그인 시 노트·동기화가 반드시 다시 연결되게
+    if (syncRef) { syncRef.off(); syncRef = null; } cloudReady = false; lastTs = 0;
+    detachWsListeners();      // ★ 이전 워크스페이스 실시간 연결 해제 (타 회사 데이터 잔존 차단)
     try { firebase.auth().signOut(); } catch (_) {}
-    state = migrate(null); render(); updateLoginGate(); refreshSyncState();
+    state = migrate(null); render(); renderRequests(); renderUnreadBadge(); renderTeamBoard(); updateLoginGate(); refreshSyncState();
   }
   function switchNotebook() {
     state = loadState();
@@ -3835,7 +3849,12 @@
     if (!confirm(t("ws_regen_confirm"))) return;
     const code = genWsCode();
     try {
+      const oldCode = wsMeta && wsMeta.code;
       await msgDb.ref("workspaces/" + myWsId + "/code").set(code);
+      const cups = {};
+      cups["wscodes/" + code] = { w: myWsId, n: (wsMeta && wsMeta.name) || "" };
+      if (oldCode) cups["wscodes/" + oldCode] = null;
+      await msgDb.ref().update(cups);
       if (wsMeta) wsMeta.code = code;
       logAdmin("초대 코드 재발급", "");
       renderUmWs(); toast(t("ws_regen_done", code));

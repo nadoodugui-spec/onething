@@ -23,9 +23,12 @@
       ".write": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || root.child('managers').child(auth.uid).val() === true)",
       "$uid": {
         ".read": "auth != null && $uid === auth.uid",
-        ".write": "auth != null && $uid === auth.uid",
         "$qid": {
-          "text": { ".validate": "newData.isString() && newData.val().length <= 3000" }
+          ".write": "auth != null && $uid === auth.uid && !newData.exists()",
+          "text": { ".write": "auth != null && $uid === auth.uid", ".validate": "newData.isString() && newData.val().length <= 3000" },
+          "ts": { ".write": "auth != null && $uid === auth.uid", ".validate": "newData.isNumber()" },
+          "name": { ".write": "auth != null && $uid === auth.uid", ".validate": "newData.isString() && newData.val().length <= 40" },
+          "email": { ".write": "auth != null && $uid === auth.uid", ".validate": "newData.isString() && newData.val().length <= 120" }
         }
       }
     },
@@ -36,9 +39,17 @@
         ".validate": "newData.isBoolean()"
       }
     },
-    "workspaces": {
+    "wscodes": {
       ".read": "auth != null",
+      "$code": {
+        ".write": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || (newData.exists() && newData.child('w').val() === root.child('users').child(auth.uid).child('ws').val()) || (!newData.exists() && data.child('w').val() === root.child('users').child(auth.uid).child('ws').val() && (root.child('users').child(auth.uid).child('role').val() === 'owner' || root.child('users').child(auth.uid).child('role').val() === 'admin')))",
+        ".validate": "newData.hasChildren(['w', 'n'])"
+      }
+    },
+    "workspaces": {
+      ".read": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || root.child('managers').child(auth.uid).val() === true)",
       "$ws": {
+        ".read": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || root.child('managers').child(auth.uid).val() === true || root.child('users').child(auth.uid).child('ws').val() === $ws)",
         ".write": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || (!data.exists() && newData.child('owner').val() === auth.uid) || data.child('owner').val() === auth.uid || ((root.child('users').child(auth.uid).child('role').val() === 'owner' || root.child('users').child(auth.uid).child('role').val() === 'admin') && root.child('users').child(auth.uid).child('ws').val() === $ws))",
         ".validate": "newData.hasChildren(['name', 'owner'])"
       }
@@ -46,16 +57,13 @@
     "ws": {
       "$ws": {
         ".read": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || root.child('managers').child(auth.uid).val() === true || root.child('users').child(auth.uid).child('ws').val() === $ws)",
-        ".write": "auth != null && (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || root.child('users').child(auth.uid).child('ws').val() === $ws)",
-        "status": {
-          "$uid": {
-            ".validate": "newData.hasChildren(['state', 'ts']) && newData.child('state').val().matches(/^(focus|work|away|vacation)$/)"
-          }
-        },
+        ".write": "auth != null && auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3'",
         "requests": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('ws').val() === $ws",
           "$rid": {
             "kind": { ".validate": "newData.isString() && newData.val().matches(/^(memo|task)$/)" },
             "title": { ".validate": "newData.isString() && newData.val().length <= 200" },
+            "text": { ".validate": "newData.isString() && newData.val().length <= 10000" },
             "html": { ".validate": "newData.isString() && newData.val().length <= 200000" },
             "attachments": {
               "$i": {
@@ -63,6 +71,21 @@
               }
             }
           }
+        },
+        "projects": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('ws').val() === $ws"
+        },
+        "projectTodos": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('ws').val() === $ws"
+        },
+        "status": {
+          "$uid": {
+            ".write": "auth != null && (($uid === auth.uid && root.child('users').child(auth.uid).child('ws').val() === $ws) || (root.child('users').child(auth.uid).child('ws').val() === $ws && (root.child('users').child(auth.uid).child('role').val() === 'owner' || root.child('users').child(auth.uid).child('role').val() === 'admin') && !newData.exists()))",
+            ".validate": "newData.hasChildren(['state', 'ts']) && newData.child('state').val().matches(/^(focus|work|away|vacation)$/)"
+          }
+        },
+        "audit": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('ws').val() === $ws && (root.child('users').child(auth.uid).child('role').val() === 'owner' || root.child('users').child(auth.uid).child('role').val() === 'admin')"
         }
       }
     }
