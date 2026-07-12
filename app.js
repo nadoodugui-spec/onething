@@ -2295,6 +2295,8 @@
       try { auth.languageCode = "ko"; } catch (_) {}   // 인증·재설정 메일과 확인 화면을 한국어로
       auth.onAuthStateChanged((user) => {
         if (user && user.isAnonymous) { try { auth.signOut(); } catch (_) {} return; }   // 구버전 익명 세션 정리
+        try { if (user) localStorage.setItem("onething-has-session", "1"); else localStorage.removeItem("onething-has-session"); } catch (_) {}
+        setTimeout(() => document.body.classList.remove("auth-wait"), 60);   // 세션 판정 완료 — 노트 표시
         authUser = user || null;
         if (authUser) { authReady = true; startCloud(); resolveCurrentUser(); maybeProfileSetup(); }
         else { currentUser = null; myWsId = null; updateLoginGate(); showLoginGate(); }
@@ -4071,6 +4073,8 @@
   if (activeTodo()) timerRemaining = pomoSec();
   setupPWA();
   applyTheme();
+  // 로그인 이력이 있는 기기: 세션 판정(0.3~1초) 전까지 노트를 그리지 않음 — 옛 로컬 데이터가 잠깐 비치는 것 원천 차단
+  try { if (localStorage.getItem("onething-has-session") === "1") { document.body.classList.add("auth-wait"); setTimeout(() => document.body.classList.remove("auth-wait"), 4000); } } catch (_) {}
   { const ib = $id("inviteBanner"); if (ib) ib.hidden = !pendingInvite; }
   // 잠금 해제 방식 1회 초기화: 예전 '버튼 한 번' 저장값을 새 기본(3초 길게 누르기)으로 — 원하면 설정에서 다시 선택 가능
   try {
