@@ -82,7 +82,8 @@
   .binding { display: none; }
 
   .page-inner { transition: filter .45s ease, opacity .45s ease; }
-  .notebook.locked .page-inner { filter: blur(4.5px) saturate(.82); opacity: .32; pointer-events: none; user-select: none; }
+  /* 잠글 때는 즉시(transition:none — 새로고침 시 안 잠긴 화면이 비치는 것 방지), 풀 때만 부드럽게 */
+  .notebook.locked .page-inner { filter: blur(4.5px) saturate(.82); opacity: .32; pointer-events: none; user-select: none; transition: none; }
 
   .page-head {
     display: flex; align-items: center; justify-content: space-between;
