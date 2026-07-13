@@ -508,6 +508,7 @@
     set_shareot: { ko: "오늘의 원씽을 팀에 공개", en: "Share today's One Thing with team" },
     tb_me: { ko: "나", en: "me" },
     sp_title: { ko: "소속 현황", en: "Team" },
+    sp_left_end: { ko: "후 종료", en: "left" },
     sp_search_ph: { ko: "이름 검색…", en: "Search names…" },
     sp_sum: { ko: "{0}명", en: "{0} members" },
     sp_pin_t: { ko: "사이드바 고정", en: "Pin sidebar" },
@@ -2232,11 +2233,12 @@
       const top = document.createElement("div"); top.className = "sp-me-top";
       top.appendChild(spAvatar(currentUser.id));
       const nm = document.createElement("span"); nm.className = "sp-me-name"; nm.textContent = currentUser.name; top.appendChild(nm);
-      const stl = document.createElement("span"); stl.className = "sp-me-st";
+      // 상태 글자는 버튼 선택과 중복이라 생략 — 타이머 작동 중일 때만 남은 시간 표시
       const myS = statusCache[currentUser.id] || {};
-      let stTxt = t("st_" + myStatus());
-      if (myStatus() === "focus") { const fi = focusInfoOf(myS); if (fi) stTxt += " · ~" + fi.left + t("min_unit"); }
-      stl.textContent = stTxt; top.appendChild(stl);
+      if (myStatus() === "focus") {
+        const fi = focusInfoOf(myS);
+        if (fi) { const stl = document.createElement("span"); stl.className = "sp-me-st"; stl.textContent = "~" + fi.left + t("min_unit") + " " + t("sp_left_end"); top.appendChild(stl); }
+      }
       card.appendChild(top);
       const seg = document.createElement("div"); seg.className = "sp-me-seg";
       [["focus", "st_focus"], ["work", "st_work"], ["away", "st_away"]].forEach((pair) => {
