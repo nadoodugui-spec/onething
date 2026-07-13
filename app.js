@@ -108,6 +108,10 @@
     ti_edit_btn: { ko: "수정", en: "Edit" },
     ue_login: { ko: "로그인", en: "log-in" },
     ue_email_login: { ko: "이메일 가입", en: "email account" },
+    ap_head: { ko: "어디로 추가할까요?", en: "Where should this go?" },
+    ap_now_d: { ko: "지금 해야 함", en: "Do now" },
+    ap_next_d: { ko: "다음에", en: "Up next" },
+    ap_rt_d: { ko: "반복 루틴", en: "Routine" },
     ts_head: { ko: "할 일 상세", en: "Task details" },
     ts_subs_h: { ko: "작게 조각내기", en: "Break into pieces" },
     ts_due: { ko: "마감일", en: "Due date" },
@@ -3846,9 +3850,31 @@
       try { wsRef("projectTodos/" + currentProject + "/" + uid()).set({ text: text, status: "todo", done: false, ts: Date.now(), by: currentUser.name }); } catch (_) {}
       i.value = ""; i.focus(); return;
     }
-    addTodo(i.value, { priority: prio || "normal" });
+    const text = (i.value || "").trim(); if (!text) return;
+    // 모바일: 조합키가 없으므로 우선순위 선택창으로 (Now/Next/Routine)
+    if (!prio && matchMedia("(pointer: coarse)").matches) {
+      $id("apText").textContent = text;
+      $id("addPrioModal").hidden = false;
+      return;
+    }
+    addTodo(text, { priority: prio || "normal" });
     i.value = ""; i.focus();
   }
+  (function wireAddPrio() {
+    const md = $id("addPrioModal");
+    function pick(prio) {
+      const i = $id("newTodo"); const text = (i.value || "").trim();
+      md.hidden = true;
+      if (!text) return;
+      addTodo(text, { priority: prio });
+      i.value = "";
+    }
+    $id("apNow").addEventListener("click", () => pick("urgent"));
+    $id("apNext").addEventListener("click", () => pick("important"));
+    $id("apRoutine").addEventListener("click", () => pick("normal"));
+    $id("apClose").addEventListener("click", () => { md.hidden = true; });
+    md.addEventListener("click", (e) => { if (e.target === md) md.hidden = true; });
+  })();
   $id("addBtn").addEventListener("click", () => addFromInput());
   // Enter = 기본(드롭다운 값) · Shift+Enter = Next · Ctrl+Enter = Now
   $id("newTodo").addEventListener("keydown", (e) => {

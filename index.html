@@ -15,7 +15,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<link rel="stylesheet" href="styles.css?v=25" />
+<link rel="stylesheet" href="styles.css?v=26" />
 </head>
 <body data-theme="light" data-lang="ko">
 
@@ -436,6 +436,18 @@
     </div>
   </div>
 
+  <div class="modal" id="addPrioModal" hidden style="z-index:152">
+    <div class="modal-box" style="width:min(94vw,420px)">
+      <div class="modal-head"><span data-i18n="ap_head">어디로 추가할까요?</span><button class="modal-close" id="apClose">✕</button></div>
+      <p class="modal-desc" id="apText" style="margin:6px 0 10px;font-weight:600"></p>
+      <div class="ap-btns">
+        <button id="apNow" type="button"><span class="ap-dot" style="background:#c0392b"></span>Now<small data-i18n="ap_now_d">지금 해야 함</small></button>
+        <button id="apNext" type="button"><span class="ap-dot" style="background:#8b5cf6"></span>Next<small data-i18n="ap_next_d">다음에</small></button>
+        <button id="apRoutine" type="button"><span class="ap-dot" style="background:#9aa1ad"></span>Routine<small data-i18n="ap_rt_d">반복 루틴</small></button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal" id="todoSheet" hidden style="z-index:150">
     <div class="modal-box ts-box">
       <div class="modal-head"><span data-i18n="ts_head">할 일 상세</span><button class="modal-close" id="todoSheetClose">✕</button></div>
@@ -582,6 +594,6 @@
     </div>
   </div>
 
-<script src="app.js?v=34"></script>
+<script src="app.js?v=35"></script>
 </body>
 </html>
