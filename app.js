@@ -348,7 +348,7 @@
     lg_name_ph: { ko: "이름", en: "Name" },
     lg_pin_ph: { ko: "숫자 4자리", en: "4-digit PIN" },
     lg_register: { ko: "등록하고 시작", en: "Register & start" },
-    lg_empty: { ko: "아직 등록된 사람이 없어요 — 아래에서 새로 등록하세요", en: "No users yet — register below" },
+    lg_empty: { ko: "아직 구성원이 없어요. 위의 [초대 공유하기]로 동료를 초대해보세요.", en: "No members yet. Invite teammates with [Share invite] above." },
     lg_skip: { ko: "그냥 둘러보기 →", en: "Just browse →" },
     lg_pin_prompt: { ko: "{0} 님의 4자리 비밀번호를 입력하세요", en: "Enter {0}'s 4-digit PIN" },
     lg_pin_head: { ko: "비밀번호 입력", en: "Enter PIN" },
