@@ -789,7 +789,7 @@
     li.todo .detail { display: none !important; }
     /* 상세 시트: 아래에서 올라오는 카드 */
     #todoSheet .modal-box.ts-box { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: 100%; max-width: 100%;
-      border-radius: 18px 18px 0 0; max-height: 86vh; overflow-y: auto; padding: 14px 18px calc(20px + env(safe-area-inset-bottom));
+      border-radius: 18px 18px 0 0; min-height: 50vh; max-height: 86vh; overflow-y: auto; padding: 14px 18px calc(20px + env(safe-area-inset-bottom));
       box-shadow: 0 -14px 44px rgba(0,0,0,.28); }
     .list, .later-wrap, .done-wrap { padding-left: 4px; }
     /* 팀 사이드바: 떠 있는 왼쪽 탭 제거 → 상단 툴바의 '팀 현황' 버튼으로 진입 */
