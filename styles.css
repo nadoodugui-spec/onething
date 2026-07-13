@@ -817,10 +817,11 @@
     .side-panel #spFeed { order: 4; }
     /* 내 상태는 맨 아래 한 줄 칩으로 축소 (상태 전환은 툴바에도 있음) */
     .side-panel #spMe { order: 5; margin-top: 10px; }
-    .side-panel .sp-me { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 0; }
-    .side-panel .sp-me-top { flex: 1; min-width: 0; }
-    .side-panel .sp-me-seg { margin-top: 0; flex: none; }
-    .side-panel .sp-me-seg button { padding: 6px 10px; font-size: .8rem; }
+    .side-panel .sp-me { display: block; padding: 10px 12px; margin-bottom: 0; }
+    .side-panel .sp-me-top { display: flex; align-items: center; gap: 8px; }
+    .side-panel .sp-me-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .side-panel .sp-me-seg { display: flex; gap: 6px; margin-top: 9px; }
+    .side-panel .sp-me-seg button { flex: 1; padding: 8px 2px; font-size: .8rem; white-space: nowrap; justify-content: center; display: inline-flex; align-items: center; gap: 4px; }
     /* 터치: 액션 버튼 크게 */
     .sp-acts button { padding: 7px 12px; font-size: .85rem; }
     .sp-member { padding: 10px 8px; }

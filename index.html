@@ -15,7 +15,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<link rel="stylesheet" href="styles.css?v=23" />
+<link rel="stylesheet" href="styles.css?v=24" />
 </head>
 <body data-theme="light" data-lang="ko">
 
@@ -72,7 +72,7 @@
     <div class="tools">
       <button data-act="user" type="button" id="userChip" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg><span id="userChipName"></span> ▾</button>
       <button data-act="status" type="button" id="statusBtn" hidden><span class="st-dot st-work" id="stDot"></span><span id="stLabel"></span> ▾</button>
-      <button data-act="team" type="button" id="tbTeamBtn" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 19c1.2-2.8 3.6-4.2 6.5-4.2s5.3 1.4 6.5 4.2"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.4c2.7.1 4.9 1.4 6 3.9"/></svg><span data-i18n="sp_title">팀 현황</span> <span class="side-tab-badge" id="teamBtnBadge" hidden>0</span></button>
+      <button data-act="team" type="button" id="tbTeamBtn" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 19c1.2-2.8 3.6-4.2 6.5-4.2s5.3 1.4 6.5 4.2"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.4c2.7.1 4.9 1.4 6 3.9"/></svg><span data-i18n="sp_title">소속 현황</span> <span class="side-tab-badge" id="teamBtnBadge" hidden>0</span></button>
       <button data-act="inbox" type="button" id="tbInboxBtn" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h5l2 3h4l2-3h5M5 6h14l2 7v6H3v-6l2-7z"/></svg><span data-i18n="rq_tab_inbox">받은 요청</span> <span class="unread-badge" id="unreadBadge" hidden>0</span></button>
       <button data-act="sentbox" type="button" id="tbSentBtn" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4 18-7z"/></svg><span data-i18n="rq_tab_sent">보낸 요청</span> <span class="unread-badge sent-badge" id="sentBadge">0</span></button>
       <button data-act="compose" type="button" id="tbComposeBtn" class="tb-compose" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="t_sendreq">요청 보내기</span></button>
@@ -143,13 +143,13 @@
   </div>
 
   <!-- 팀 사이드바 (왼쪽, 기본 접힘) -->
-  <button class="side-tab" id="sideTab" type="button" hidden data-i18n-title="sp_title" title="팀 현황">
+  <button class="side-tab" id="sideTab" type="button" hidden data-i18n-title="sp_title" title="소속 현황">
     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 19c1.2-2.8 3.6-4.2 6.5-4.2s5.3 1.4 6.5 4.2"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.4c2.7.1 4.9 1.4 6 3.9"/></svg>
     <span class="side-tab-badge" id="sideTabBadge" hidden>0</span>
   </button>
   <aside class="side-panel" id="sidePanel" hidden>
     <div class="sp-head">
-      <span class="sp-title" data-i18n="sp_title">팀 현황</span>
+      <span class="sp-title" data-i18n="sp_title">소속 현황</span>
       <span style="display:inline-flex;gap:2px">
         <button class="modal-close" id="spPin" type="button" data-i18n-title="sp_pin_t" title="사이드바 고정"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 4h6l1 7 3 3H5l3-3 1-7zM12 14v6"/></svg></button>
         <button class="modal-close" id="spClose" type="button">✕</button>
@@ -582,6 +582,6 @@
     </div>
   </div>
 
-<script src="app.js?v=29"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>

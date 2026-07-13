@@ -507,7 +507,7 @@
     rq_due: { ko: "마감 {0}", en: "due {0}" },
     set_shareot: { ko: "오늘의 원씽을 팀에 공개", en: "Share today's One Thing with team" },
     tb_me: { ko: "나", en: "me" },
-    sp_title: { ko: "팀 현황", en: "Team" },
+    sp_title: { ko: "소속 현황", en: "Team" },
     sp_search_ph: { ko: "이름 검색…", en: "Search names…" },
     sp_sum: { ko: "{0}명", en: "{0} members" },
     sp_pin_t: { ko: "사이드바 고정", en: "Pin sidebar" },
