@@ -1587,18 +1587,15 @@
     si.addEventListener("keydown", (e) => { if (e.key === "Enter") { addSub(td.id, si.value); } });
     sa.append(si); d.append(sa);
     const act = document.createElement("div"); act.className = "detail-actions";
-    // 우선순위 변경 (모바일에서도 가능하게)
-    PRIO_GROUPS.forEach((key) => {
-      const pb = document.createElement("button"); pb.textContent = t("prio_" + key);
-      pb.className = "det-prio" + ((td.priority || "normal") === key ? " sel-" + key : "");
-      pb.addEventListener("click", () => { td.priority = key; save(); render(); });
-      act.append(pb);
-    });
+    // 우선순위는 목록(구획)에서 결정 — 상세에는 라벨 붙은 설정만 (모바일 시트와 동일 문법)
+    const lb1 = document.createElement("span"); lb1.className = "det-lb"; lb1.textContent = "📅 " + t("ts_due");
     const due = document.createElement("input"); due.type = "date"; due.value = td.due || ""; due.title = t("ti_due"); due.addEventListener("change", () => setDue(td.id, due.value));
+    const lb2 = document.createElement("span"); lb2.className = "det-lb"; lb2.textContent = "🔁 " + t("ts_repeat");
     const rep = document.createElement("button"); rep.textContent = td.repeat ? (td.repeat === "daily" ? t("rep_daily") : t("rep_weekly")) : t("rep_none"); rep.addEventListener("click", () => cycleRepeat(td.id));
-    const lat = document.createElement("button"); lat.textContent = t("ti_later"); lat.addEventListener("click", () => toggleLater(td.id));
-    const del = document.createElement("button"); del.className = "del"; del.textContent = t("ti_delete"); del.addEventListener("click", () => deleteTodo(td.id));
-    act.append(due, rep, lat, del); d.append(act);
+    const sp = document.createElement("span"); sp.className = "det-space";
+    const lat = document.createElement("button"); lat.textContent = "🌙 " + t("ti_later"); lat.addEventListener("click", () => toggleLater(td.id));
+    const del = document.createElement("button"); del.className = "del"; del.textContent = "🗑 " + t("ti_delete"); del.addEventListener("click", () => deleteTodo(td.id));
+    act.append(lb1, due, lb2, rep, sp, lat, del); d.append(act);
     return d;
   }
   // '원씽 부수기' — 큰 원씽을 조각으로 쪼개 차례대로 실행

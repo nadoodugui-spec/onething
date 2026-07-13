@@ -375,6 +375,10 @@
   .ts-acts { display: flex; gap: 8px; margin: 12px 0 6px; }
   .ts-acts .mbtn { flex: 1; padding: 11px 8px; font-size: .95rem; }
   /* 상세 시트 내부 — 아이콘+이름 설정 행 */
+  .det-lb { font-size: .8rem; color: var(--text-soft); margin-right: -2px; white-space: nowrap; }
+  .det-space { flex: 1; }
+  .detail-actions .del { color: #c0392b; }
+  body[data-theme="dark"] .detail-actions .del { color: #e07060; }
   .ts-sec-h { font-size: .82rem; font-weight: 700; color: var(--text-soft); margin: 14px 0 4px; }
   .ts-subs .sub-add input { width: 100%; font-size: 16px; padding: 8px 2px; }
   .ts-rows { margin-top: 14px; border-top: 1px solid var(--border); }
