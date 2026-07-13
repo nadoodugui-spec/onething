@@ -761,7 +761,15 @@
     .add-row input { font-size: 16px; }
     .add-row button { flex: none; white-space: nowrap; padding: 8px 14px; }
     .add-hint { display: none; }
-    li.todo { line-height: 30px; min-height: 32px; }
+    /* 할 일 줄: 글자 폭 최대화 — 모바일에선 드래그가 없으므로 손잡이 제거, 버튼·여백 압축 */
+    li.todo { line-height: 28px; min-height: 34px; gap: 4px; padding: 2px 0 2px 5px; }
+    li.todo .grip { display: none !important; }
+    li.todo .more-btn { padding: 0 1px; font-size: 1.05rem; }
+    li.todo .edit-btn { min-width: 26px; min-height: 26px; }
+    li.todo .edit-btn svg, li.todo .req-link svg { width: 13px; height: 13px; }
+    li.todo .send-btn { padding: 0 1px; }
+    li.todo .check { width: 20px; height: 20px; flex: none; }
+    li.todo .todo-text { font-size: .98rem; line-height: 1.45; padding: 3px 0; }
     .list, .later-wrap, .done-wrap { padding-left: 4px; }
     /* 팀 사이드바: 떠 있는 왼쪽 탭 제거 → 상단 툴바의 '팀 현황' 버튼으로 진입 */
     /* 팀 현황 = 바텀 시트 (아래에서 올라오는 카드, 엄지 조작) */
