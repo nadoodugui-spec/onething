@@ -109,6 +109,8 @@
     ts_head: { ko: "할 일 상세", en: "Task details" },
     ts_subs_h: { ko: "작게 조각내기", en: "Break into pieces" },
     ts_due: { ko: "마감일", en: "Due date" },
+    ts_list: { ko: "목록", en: "List" },
+    ts_moved: { ko: "\"{0}\" 목록으로 옮겼어요", en: "Moved to \"{0}\"" },
     ts_repeat: { ko: "반복", en: "Repeat" },
     ts_later_do: { ko: "보관하기", en: "Move" },
     ts_later_done: { ko: "'나중에' 보관함으로 옮겼어요", en: "Moved to Later" },
@@ -1538,6 +1540,17 @@
     rep2.textContent = td.repeat ? (td.repeat === "daily" ? t("rep_daily") : t("rep_weekly")) : t("rep_none");
     rep2.addEventListener("click", () => { cycleRepeat(td.id); });
     rows.append(tsRow("🔁", t("ts_repeat"), rep2));
+    // 목록(List) 이동 — 목록이 2개 이상일 때만 표시 (라이트 사용자 화면은 그대로)
+    if ((state.groups || []).length) {
+      const sel = document.createElement("select"); sel.className = "ts-ctrl";
+      const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "Inbox"; sel.append(o0);
+      (state.groups || []).forEach((g) => {
+        const o = document.createElement("option"); o.value = g.id; o.textContent = g.name; sel.append(o);
+      });
+      sel.value = td.group || "";
+      sel.addEventListener("change", () => { td.group = sel.value || null; save(); render(); toast(t("ts_moved", sel.options[sel.selectedIndex].textContent)); });
+      rows.append(tsRow("🗂", t("ts_list"), sel));
+    }
     const lat = document.createElement("button"); lat.type = "button"; lat.className = "ts-ctrl";
     lat.textContent = t("ts_later_do");
     lat.addEventListener("click", () => { toggleLater(td.id); closeTodoSheet(); toast(t("ts_later_done")); });
