@@ -770,6 +770,15 @@
     li.todo .send-btn { padding: 0 1px; }
     li.todo .check { width: 20px; height: 20px; flex: none; }
     li.todo .todo-text { font-size: .98rem; line-height: 1.45; padding: 3px 0; }
+    /* A: 은은한 구분선 — 할 일 경계를 조용히 표시 */
+    li.todo { border-bottom: 1px solid rgba(0,0,0,.06); border-radius: 0; }
+    body[data-theme="dark"] li.todo { border-bottom-color: rgba(255,255,255,.08); }
+    ul.list li.todo:last-child, .done-list li.todo:last-child { border-bottom: none; }
+    /* B: 내어쓰기 정렬 — 체크박스는 첫 줄에 고정, 줄바꿈된 글은 글자 시작선에 맞춰짐 */
+    li.todo { align-items: flex-start; }
+    li.todo .check { margin-top: 6px; }
+    li.todo .send-btn, li.todo .more-btn, li.todo .edit-btn, li.todo .req-link, li.todo .ot-cancel { margin-top: 4px; }
+    li.todo .chip, li.todo .badge { margin-top: 6px; }
     .list, .later-wrap, .done-wrap { padding-left: 4px; }
     /* 팀 사이드바: 떠 있는 왼쪽 탭 제거 → 상단 툴바의 '팀 현황' 버튼으로 진입 */
     /* 팀 현황 = 바텀 시트 (아래에서 올라오는 카드, 엄지 조작) */
