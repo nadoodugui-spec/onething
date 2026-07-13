@@ -15,7 +15,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<link rel="stylesheet" href="styles.css?v=19" />
+<link rel="stylesheet" href="styles.css?v=20" />
 </head>
 <body data-theme="light" data-lang="ko">
 
@@ -435,6 +435,13 @@
     </div>
   </div>
 
+  <div class="modal" id="todoSheet" hidden style="z-index:150">
+    <div class="modal-box ts-box">
+      <div class="modal-head"><span data-i18n="ts_head">할 일 상세</span><button class="modal-close" id="todoSheetClose">✕</button></div>
+      <div id="todoSheetBody"></div>
+    </div>
+  </div>
+
   <div class="modal" id="firstOtModal" hidden style="z-index:154">
     <div class="modal-box" style="width:min(94vw,480px);text-align:center">
       <div class="modal-head"><span data-i18n="fo_head">◉ 첫 원씽 정하기</span><button class="modal-close" id="foClose">✕</button></div>
@@ -574,6 +581,6 @@
     </div>
   </div>
 
-<script src="app.js?v=24"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>

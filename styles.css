@@ -370,6 +370,11 @@
   .relock-btn { border: none; background: var(--accent); color: #fff; cursor: pointer; font-family: var(--font-body); font-size: .9rem; border-radius: 16px; padding: 3px 12px; box-shadow: 0 2px 5px rgba(0,0,0,.18); }
   .relock-btn[hidden] { display: none; }
   .tab-adds { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; }
+  .ts-title { width: 100%; border: none; border-bottom: 2px solid var(--accent); background: transparent; color: var(--text);
+    font-family: var(--font-body); font-size: 1.15rem; font-weight: 700; line-height: 1.5; outline: none; resize: none; padding: 4px 2px 8px; }
+  .ts-acts { display: flex; gap: 8px; margin: 12px 0 6px; }
+  .ts-acts .mbtn { flex: 1; padding: 11px 8px; font-size: .95rem; }
+  #todoSheetBody .detail { border: none; padding: 4px 0 0; margin: 8px 0 0; background: transparent; }
   .page-head .relock-btn { margin-left: 8px; }
 
   /* ===== Sync chip ===== */
@@ -779,6 +784,13 @@
     li.todo .check { margin-top: 6px; }
     li.todo .send-btn, li.todo .more-btn, li.todo .edit-btn, li.todo .req-link, li.todo .ot-cancel { margin-top: 4px; }
     li.todo .chip, li.todo .badge { margin-top: 6px; }
+    /* 상세는 시트로 — 줄에는 체크·글자·◉만 (핵심 동선 유지) */
+    li.todo .edit-btn, li.todo .more-btn:not(.req-link) { display: none !important; }
+    li.todo .detail { display: none !important; }
+    /* 상세 시트: 아래에서 올라오는 카드 */
+    #todoSheet .modal-box.ts-box { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: 100%; max-width: 100%;
+      border-radius: 18px 18px 0 0; max-height: 86vh; overflow-y: auto; padding: 14px 18px calc(20px + env(safe-area-inset-bottom));
+      box-shadow: 0 -14px 44px rgba(0,0,0,.28); }
     .list, .later-wrap, .done-wrap { padding-left: 4px; }
     /* 팀 사이드바: 떠 있는 왼쪽 탭 제거 → 상단 툴바의 '팀 현황' 버튼으로 진입 */
     /* 팀 현황 = 바텀 시트 (아래에서 올라오는 카드, 엄지 조작) */

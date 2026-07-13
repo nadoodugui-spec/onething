@@ -106,6 +106,10 @@
     ti_done: { ko: "완료", en: "Done" },
     ti_color: { ko: "색 라벨", en: "Color label" },
     ti_edit_btn: { ko: "수정", en: "Edit" },
+    ts_head: { ko: "할 일 상세", en: "Task details" },
+    ts_to_ot: { ko: "원씽으로 보내기", en: "Make it my One Thing" },
+    ts_putback: { ko: "원씽에서 내리기", en: "Put back" },
+    ts_done: { ko: "완료", en: "Done" },
     ti_edit: { ko: "더블클릭하면 수정", en: "Double-click to edit" },
     rep_daily: { ko: "매일 반복", en: "Daily" },
     rep_weekly: { ko: "매주 반복", en: "Weekly" },
@@ -1009,6 +1013,11 @@
     li.append(ed);
     const more = document.createElement("button"); more.className = "more-btn"; more.textContent = "⋯"; more.title = t("ti_more"); more.addEventListener("click", () => { if (expanded.has(td.id)) expanded.delete(td.id); else expanded.add(td.id); render(); }); li.append(more);
     if (expanded.has(td.id)) li.append(buildDetail(td));
+    li.addEventListener("click", (e) => {   // 모바일: 줄 탭 = 상세 시트 (버튼·입력 탭은 제외)
+      if (!matchMedia("(pointer: coarse)").matches) return;
+      if (e.target.closest("button, input, textarea, a, .detail")) return;
+      openTodoSheet(td.id);
+    });
     li.addEventListener("dragstart", (e) => { dragId = td.id; li.classList.add("dragging"); document.body.classList.add("dragging-todo"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", td.id); } catch (_) {} });
     li.addEventListener("dragend", () => { dragId = null; li.classList.remove("dragging"); document.body.classList.remove("dragging-todo"); document.querySelectorAll(".drop-before, .drop-into, .ot-drop").forEach((n) => n.classList.remove("drop-before", "drop-into", "ot-drop")); });
     li.addEventListener("dragover", (e) => { e.preventDefault(); e.stopPropagation(); if (dragId && dragId !== td.id) li.classList.add("drop-before"); });
@@ -1464,6 +1473,42 @@
     if (currentGroup === id) currentGroup = null;
     save(); render();
   }
+  // ── 모바일 상세 시트: 할 일을 탭하면 한 화면에서 전부 편집 ──
+  let sheetTodoId = null;
+  function openTodoSheet(id) {
+    sheetTodoId = id;
+    refreshTodoSheet();
+    $id("todoSheet").hidden = false;
+  }
+  function closeTodoSheet() { sheetTodoId = null; $id("todoSheet").hidden = true; }
+  function refreshTodoSheet() {
+    if (!sheetTodoId) return;
+    const td = state.todos.find((x) => x.id === sheetTodoId);
+    if (!td || td.status === "done") { closeTodoSheet(); return; }
+    const box = $id("todoSheetBody"); if (!box) return;
+    box.innerHTML = "";
+    // 제목 — 바로 수정
+    const title = document.createElement("textarea"); title.className = "ts-title"; title.rows = 2; title.maxLength = 200;
+    title.value = td.text;
+    title.addEventListener("blur", () => { const v = title.value.trim(); if (v && v !== td.text) editText("todo", td.id, v); });
+    title.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); title.blur(); } });
+    box.append(title);
+    // 큰 실행 버튼: 원씽으로 / 완료
+    const acts = document.createElement("div"); acts.className = "ts-acts";
+    const ot = document.createElement("button"); ot.className = "mbtn"; ot.type = "button";
+    if (td.status === "active") { ot.textContent = t("ts_putback"); ot.addEventListener("click", () => { putBack(td.id); refreshTodoSheet(); }); }
+    else { ot.textContent = "◉ " + t("ts_to_ot"); ot.addEventListener("click", () => { sendToOneThing(td.id); closeTodoSheet(); }); }
+    const done = document.createElement("button"); done.className = "mbtn ghost"; done.type = "button"; done.textContent = "✓ " + t("ts_done");
+    done.addEventListener("click", () => { completeTodo(td.id); closeTodoSheet(); });
+    acts.append(ot, done); box.append(acts);
+    // 기존 상세(우선순위·마감·반복·색·조각·나중에·삭제) 그대로 재사용
+    box.append(buildDetail(td));
+  }
+  (function wireTodoSheet() {
+    const md = $id("todoSheet"), cb = $id("todoSheetClose");
+    if (cb) cb.addEventListener("click", closeTodoSheet);
+    if (md) md.addEventListener("click", (e) => { if (e.target === md) closeTodoSheet(); });
+  })();
   function buildDetail(td) {
     const d = document.createElement("div"); d.className = "detail";
     const ul = document.createElement("ul"); ul.className = "sub-list";
@@ -1634,6 +1679,7 @@
       $(".notebook").classList.toggle("locked", !!a0 && !leftUnlocked && viewDate === todayStr());
     }
     renderGroupTabs(); renderTodos(); renderLater(); renderDone(); renderRight();
+    if (sheetTodoId && !$id("todoSheet").hidden) refreshTodoSheet();   // 시트가 열려 있으면 내용 동기화
     // 프로젝트 보기에서는 나중에/끝난 일 섹션 숨김 (프로젝트는 자체 완료 표시)
     const lw = $id("laterWrap"), dw = $id("doneWrap"), ah = $id("addHint");
     if (lw) lw.style.display = currentProject ? "none" : "";
