@@ -42,7 +42,7 @@
     add_btn: { ko: "＋ 추가", en: "＋ Add" },
     add_title: { ko: "추가", en: "Add" },
     np_title: { ko: "우선순위", en: "Priority" },
-    add_hint: { ko: "<kbd>Enter</kbd> Routine · <kbd>Shift+Enter</kbd> Next · <kbd>Ctrl+Enter</kbd> Now", en: "<kbd>Enter</kbd> Routine · <kbd>Shift+Enter</kbd> Next · <kbd>Ctrl+Enter</kbd> Now" },
+    add_hint: { ko: "<kbd>Enter</kbd> Anytime · <kbd>Shift+Enter</kbd> Next · <kbd>Ctrl+Enter</kbd> Now", en: "<kbd>Enter</kbd> Anytime · <kbd>Shift+Enter</kbd> Next · <kbd>Ctrl+Enter</kbd> Now" },
     later_h: { ko: "나중에", en: "Later" },
     done_h: { ko: "끝난 일", en: "Done" },
     prev_day: { ko: "이전 날", en: "Previous day" },
@@ -83,8 +83,8 @@
     import_btn: { ko: "파일에서 불러오기", en: "Import from file" },
     help_head: { ko: "도움말 · 단축키", en: "Help · Shortcuts" },
     help_body: {
-      ko: "<b>왜 '단 하나'인가</b><br>모든 게 급해 보여도, 성과는 언제나 가장 중요한 하나에서 나옵니다. 이 도구는 그 하나를 정하고, 끝날 때까지 지키게 합니다.<br><br><b>어떻게 쓰나</b><br>① 왼쪽에 할 일을 모으고, 매일 스스로 묻습니다 — \"이걸 끝내면 나머지가 쉬워지는 일은?\"<br>② 그 하나를 ◉ 눌러 오른쪽으로 보냅니다. 나머지 할 일은 잠깁니다.<br>③ 원씽을 정하면 팀에게 '원씽 중'으로 보이고, 요청 알림은 조용히 쌓였다가 나중에 전달됩니다.<br>④ 완료하면 도미노가 하나 넘어가고, 요청으로 받은 일이면 보낸 사람에게 자동으로 전해집니다.<br><br><b>단축키</b><br>N: 할 일 입력 · / : 검색 · S: 통계 · T: 테마 · ? : 도움말 · Esc: 닫기<br>Enter: Routine · Shift+Enter: Next · Ctrl+Enter: Now / 보내기",
-      en: "<b>Why one thing</b><br>Everything feels urgent, but results come from the single most important thing. This tool helps you pick it and protect it until it's done.<br><br><b>How it works</b><br>① Collect to-dos on the left and ask daily — \"What makes everything else easier once done?\"<br>② Send that one to the right with ◉. The rest locks.<br>③ With a One Thing set, teammates see you as 'Focusing' and request alerts pile up quietly.<br>④ Completing it topples a domino — and auto-notifies the requester if it came from a request.<br><br><b>Shortcuts</b><br>N: input · / : search · S: stats · T: theme · ? : help · Esc: close<br>Enter: Routine · Shift+Enter: Next · Ctrl+Enter: Now / Send"
+      ko: "<b>왜 '단 하나'인가</b><br>모든 게 급해 보여도, 성과는 언제나 가장 중요한 하나에서 나옵니다. 이 도구는 그 하나를 정하고, 끝날 때까지 지키게 합니다.<br><br><b>어떻게 쓰나</b><br>① 왼쪽에 할 일을 모으고, 매일 스스로 묻습니다 — \"이걸 끝내면 나머지가 쉬워지는 일은?\"<br>② 그 하나를 ◉ 눌러 오른쪽으로 보냅니다. 나머지 할 일은 잠깁니다.<br>③ 원씽을 정하면 팀에게 '원씽 중'으로 보이고, 요청 알림은 조용히 쌓였다가 나중에 전달됩니다.<br>④ 완료하면 도미노가 하나 넘어가고, 요청으로 받은 일이면 보낸 사람에게 자동으로 전해집니다.<br><br><b>단축키</b><br>N: 할 일 입력 · / : 검색 · S: 통계 · T: 테마 · ? : 도움말 · Esc: 닫기<br>Enter: Anytime · Shift+Enter: Next · Ctrl+Enter: Now / 보내기",
+      en: "<b>Why one thing</b><br>Everything feels urgent, but results come from the single most important thing. This tool helps you pick it and protect it until it's done.<br><br><b>How it works</b><br>① Collect to-dos on the left and ask daily — \"What makes everything else easier once done?\"<br>② Send that one to the right with ◉. The rest locks.<br>③ With a One Thing set, teammates see you as 'Focusing' and request alerts pile up quietly.<br>④ Completing it topples a domino — and auto-notifies the requester if it came from a request.<br><br><b>Shortcuts</b><br>N: input · / : search · S: stats · T: theme · ? : help · Esc: close<br>Enter: Anytime · Shift+Enter: Next · Ctrl+Enter: Now / Send"
     },
     // dynamic — toasts & messages
     swap_done: { ko: "단 하나를 교체했어요 — 나머지는 다시 잠겼습니다", en: "Swapped your one thing — the rest is locked again" },
@@ -111,7 +111,7 @@
     ap_head: { ko: "어디로 추가할까요?", en: "Where should this go?" },
     ap_now_d: { ko: "지금 해야 함", en: "Do now" },
     ap_next_d: { ko: "다음에", en: "Up next" },
-    ap_rt_d: { ko: "반복 루틴", en: "Routine" },
+    ap_rt_d: { ko: "급하지 않은 일", en: "No rush" },
     ts_head: { ko: "할 일 상세", en: "Task details" },
     ts_subs_h: { ko: "작게 조각내기", en: "Break into pieces" },
     ts_due: { ko: "마감일", en: "Due date" },
@@ -139,7 +139,7 @@
     empty_list: { ko: "위 칸에 할 일을 적어 시작하세요", en: "Write a to-do above to start" },
     prio_urgent: { ko: "Now", en: "Now" },
     prio_important: { ko: "Next", en: "Next" },
-    prio_normal: { ko: "Routine", en: "Routine" },
+    prio_normal: { ko: "Anytime", en: "Anytime" },
     prio_drop: { ko: "여기로 끌어다 놓기", en: "Drag items here" },
     sub_ph: { ko: "+ 하위 할 일 추가 후 Enter", en: "+ Add a subtask, then Enter" },
     ti_due: { ko: "마감일", en: "Due date" },
