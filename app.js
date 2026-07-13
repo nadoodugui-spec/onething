@@ -54,7 +54,7 @@
     hold_d: { ko: "이 하나를 끝낸 뒤에 봐도 늦지 않아요.<br>정말 필요하면 3초간 길게 누르세요.", en: "It can wait until this one is done.<br>If you really need it, hold for 3 seconds." },
     hold_btn: { ko: "길게 눌러 열기", en: "Hold to open" },
     hold_sec: { ko: "초…", en: "s…" },
-    hold_cancel: { ko: "놓으면 처음부터예요", en: "Released — start over" },
+    hold_cancel: { ko: "놓으면 다시 시작", en: "Released — start again" },
     lock_msg: { ko: "지금은 오른쪽 <b>단 하나</b>에 집중 중", en: "Focusing on the <b>one thing</b> on the right" },
     lock_sub: { ko: "목록 보기·원씽 교체 — 버튼을 3초간 길게 누르면 열립니다", en: "View list & swap — hold the button for 3 seconds to open" },
     // sync modal
