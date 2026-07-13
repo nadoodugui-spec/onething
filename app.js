@@ -106,6 +106,8 @@
     ti_done: { ko: "완료", en: "Done" },
     ti_color: { ko: "색 라벨", en: "Color label" },
     ti_edit_btn: { ko: "수정", en: "Edit" },
+    ue_login: { ko: "로그인", en: "sign-in" },
+    ue_email_login: { ko: "이메일 가입", en: "email account" },
     ts_head: { ko: "할 일 상세", en: "Task details" },
     ts_subs_h: { ko: "작게 조각내기", en: "Break into pieces" },
     ts_due: { ko: "마감일", en: "Due date" },
@@ -3907,7 +3909,14 @@
     if (act === "lang") toggleLang();
     else if (act === "stats") openStats(); else if (act === "trash") openTrash();
     else if (act === "settings") openSettings(); else if (act === "help") $id("helpModal").hidden = false;
-    else if (act === "user") { if (currentUser) { $id("userWho").textContent = t("um_who", currentUser.name) + " · v" + APP_VER; renderMembers(); renderUmWs(); $id("userModal").hidden = false; } else showLoginGate(); }
+    else if (act === "user") { if (currentUser) {
+      $id("userWho").textContent = t("um_who", currentUser.name) + " · v" + APP_VER;
+      const ue = $id("userEmail");
+      if (ue && authUser) {
+        const viaGoogle = (authUser.providerData || []).some((pd) => pd.providerId === "google.com");
+        ue.textContent = (authUser.email || "") + (viaGoogle ? " (Google " + t("ue_login") + ")" : " (" + t("ue_email_login") + ")");
+      }
+      renderMembers(); renderUmWs(); $id("userModal").hidden = false; } else showLoginGate(); }
     else if (act === "status") { if (currentUser) { renderMyStatus(); $id("statusModal").hidden = false; } else showLoginGate(); }
     else if (act === "inbox") openReqPopup("inbox");
     else if (act === "sentbox") openReqPopup("sent");
