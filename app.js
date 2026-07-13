@@ -107,6 +107,11 @@
     ti_color: { ko: "색 라벨", en: "Color label" },
     ti_edit_btn: { ko: "수정", en: "Edit" },
     ts_head: { ko: "할 일 상세", en: "Task details" },
+    ts_subs_h: { ko: "작게 조각내기", en: "Break into pieces" },
+    ts_due: { ko: "마감일", en: "Due date" },
+    ts_repeat: { ko: "반복", en: "Repeat" },
+    ts_later_do: { ko: "보관하기", en: "Move" },
+    ts_later_done: { ko: "'나중에' 보관함으로 옮겼어요", en: "Moved to Later" },
     ts_to_ot: { ko: "원씽으로 보내기", en: "Make it my One Thing" },
     ts_putback: { ko: "원씽에서 내리기", en: "Put back" },
     ts_done: { ko: "완료", en: "Done" },
@@ -1501,8 +1506,49 @@
     const done = document.createElement("button"); done.className = "mbtn ghost"; done.type = "button"; done.textContent = "✓ " + t("ts_done");
     done.addEventListener("click", () => { completeTodo(td.id); closeTodoSheet(); });
     acts.append(ot, done); box.append(acts);
-    // 기존 상세(우선순위·마감·반복·색·조각·나중에·삭제) 그대로 재사용
-    box.append(buildDetail(td));
+    // 조각(하위 할 일)
+    const subsWrap = document.createElement("div"); subsWrap.className = "ts-subs";
+    const sh = document.createElement("div"); sh.className = "ts-sec-h"; sh.textContent = t("ts_subs_h");
+    subsWrap.append(sh);
+    const ul = document.createElement("ul"); ul.className = "sub-list";
+    (td.subtasks || []).forEach((s) => {
+      const li = document.createElement("li");
+      const cb = document.createElement("button"); cb.className = "check scheck"; cb.textContent = s.done ? "✓" : ""; cb.addEventListener("click", () => toggleSub(td.id, s.id));
+      const tx = document.createElement("span"); tx.className = "stext" + (s.done ? " done" : ""); tx.textContent = s.text;
+      const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.addEventListener("click", () => delSub(td.id, s.id));
+      li.append(cb, tx, x); ul.append(li);
+    });
+    subsWrap.append(ul);
+    const sa = document.createElement("div"); sa.className = "sub-add";
+    const si = document.createElement("input"); si.placeholder = t("sub_ph");
+    si.addEventListener("keydown", (e) => { if (e.key === "Enter") addSub(td.id, si.value); });
+    sa.append(si); subsWrap.append(sa);
+    box.append(subsWrap);
+    // 설정 행 — 아이콘 + 이름 + 컨트롤 (한 줄에 한 가지)
+    const rows = document.createElement("div"); rows.className = "ts-rows";
+    function tsRow(icon, label, ctrl) {
+      const r = document.createElement("div"); r.className = "ts-row";
+      const lb = document.createElement("span"); lb.className = "ts-row-lb"; lb.textContent = icon + "  " + label;
+      r.append(lb, ctrl); return r;
+    }
+    const due = document.createElement("input"); due.type = "date"; due.value = td.due || "";
+    due.className = "ts-ctrl"; due.addEventListener("change", () => setDue(td.id, due.value));
+    rows.append(tsRow("📅", t("ts_due"), due));
+    const rep2 = document.createElement("button"); rep2.type = "button"; rep2.className = "ts-ctrl";
+    rep2.textContent = td.repeat ? (td.repeat === "daily" ? t("rep_daily") : t("rep_weekly")) : t("rep_none");
+    rep2.addEventListener("click", () => { cycleRepeat(td.id); });
+    rows.append(tsRow("🔁", t("ts_repeat"), rep2));
+    const lat = document.createElement("button"); lat.type = "button"; lat.className = "ts-ctrl";
+    lat.textContent = t("ts_later_do");
+    lat.addEventListener("click", () => { toggleLater(td.id); closeTodoSheet(); toast(t("ts_later_done")); });
+    rows.append(tsRow("🌙", t("ti_later"), lat));
+    box.append(rows);
+    // 삭제 — 아래에 분리(실수 방지)
+    const delRow = document.createElement("div"); delRow.className = "ts-del-row";
+    const del = document.createElement("button"); del.type = "button"; del.className = "ts-del";
+    del.textContent = "🗑 " + t("ti_delete");
+    del.addEventListener("click", () => { deleteTodo(td.id); closeTodoSheet(); });
+    delRow.append(del); box.append(delRow);
   }
   (function wireTodoSheet() {
     const md = $id("todoSheet"), cb = $id("todoSheetClose");

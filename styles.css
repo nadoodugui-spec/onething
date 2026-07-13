@@ -374,7 +374,18 @@
     font-family: var(--font-body); font-size: 1.15rem; font-weight: 700; line-height: 1.5; outline: none; resize: none; padding: 4px 2px 8px; }
   .ts-acts { display: flex; gap: 8px; margin: 12px 0 6px; }
   .ts-acts .mbtn { flex: 1; padding: 11px 8px; font-size: .95rem; }
-  #todoSheetBody .detail { border: none; padding: 4px 0 0; margin: 8px 0 0; background: transparent; }
+  /* 상세 시트 내부 — 아이콘+이름 설정 행 */
+  .ts-sec-h { font-size: .82rem; font-weight: 700; color: var(--text-soft); margin: 14px 0 4px; }
+  .ts-subs .sub-add input { width: 100%; font-size: 16px; padding: 8px 2px; }
+  .ts-rows { margin-top: 14px; border-top: 1px solid var(--border); }
+  .ts-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 2px; border-bottom: 1px solid var(--border); }
+  .ts-row-lb { font-size: .93rem; color: var(--text); }
+  .ts-ctrl { border: 1px solid var(--border); background: var(--surface-2); color: var(--text); border-radius: 8px;
+    padding: 7px 12px; font-family: var(--font-body); font-size: .9rem; cursor: pointer; max-width: 55%; }
+  input.ts-ctrl { font-size: 16px; }
+  .ts-del-row { margin-top: 18px; text-align: center; }
+  .ts-del { border: none; background: transparent; color: #c0392b; font-family: var(--font-body); font-size: .92rem; padding: 8px 18px; cursor: pointer; }
+  body[data-theme="dark"] .ts-del { color: #e07060; }
   .page-head .relock-btn { margin-left: 8px; }
 
   /* ===== Sync chip ===== */
