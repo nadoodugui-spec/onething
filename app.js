@@ -2644,8 +2644,9 @@
     }
   }
   // ─── 플랫폼 관리(최고관리자 전용) ───
-  const SUPER_ADMIN_UID = "srqAaRgdmLhYeCyEFeiUA552cvA3";   // 서비스 운영자(나두혁) 계정
-  function isSuperAdmin() { return !!(currentUser && currentUser.id === SUPER_ADMIN_UID); }
+  const SUPER_ADMIN_UIDS = ["srqAaRgdmLhYeCyEFeiUA552cvA3", "m4HHEZBIm3VvoZccmgZhSQIWSqM2"];   // 서비스 운영자(나두혁) 계정: gmail, naver
+  const SUPER_ADMIN_UID = SUPER_ADMIN_UIDS[0];   // 하위호환 참조용(기존 코드 호환)
+  function isSuperAdmin() { return !!(currentUser && SUPER_ADMIN_UIDS.includes(currentUser.id)); }
   let pfWsCache = {};
   async function openPlatform() {
     if (!isSuperAdmin() || !msgDb) return;
@@ -2665,7 +2666,7 @@
     });
     wrap.append(rp);
     const b = document.createElement("button"); b.className = "rq-btn"; b.textContent = t("um_del");
-    if (id === SUPER_ADMIN_UID) { b.disabled = true; b.style.opacity = ".4"; }
+    if (SUPER_ADMIN_UIDS.includes(id)) { b.disabled = true; b.style.opacity = ".4"; }
     else b.addEventListener("click", () => { deleteUser(id); setTimeout(() => renderPlatform(($id("pfSearch") || {}).value || ""), 300); });
     wrap.append(b);
     return wrap;
