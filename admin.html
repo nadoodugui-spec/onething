@@ -126,7 +126,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
-  const SUPER_ADMIN_UID = "srqAaRgdmLhYeCyEFeiUA552cvA3";
+  const SUPER_ADMIN_UIDS = ["srqAaRgdmLhYeCyEFeiUA552cvA3", "m4HHEZBIm3VvoZccmgZhSQIWSqM2"];   // 서비스 운영자(나두혁) 계정: gmail, naver
+  const isSuperUid = (uid) => SUPER_ADMIN_UIDS.includes(uid);
   firebase.initializeApp({
     apiKey: "AIzaSyASo_vj9aOyAfv0F6HlOlJ7e2oPjmKqfSo",
     authDomain: "onething-7f4d7.firebaseapp.com",
@@ -143,7 +144,7 @@
 
   firebase.auth().onAuthStateChanged(async (u) => {
     if (!u) { $id("gateMsg").textContent = "앱에서 최고관리자(또는 관리매니저) 계정으로 로그인한 뒤 다시 열어주세요."; return; }
-    isSuper = u.uid === SUPER_ADMIN_UID;
+    isSuper = isSuperUid(u.uid);
     let isMgr = false;
     if (!isSuper) {
       try { isMgr = (await firebase.database().ref("managers/" + u.uid).once("value")).val() === true; } catch (_) {}
@@ -281,7 +282,7 @@
     if (rec.role === "owner") { const c = document.createElement("span"); c.className = "chip"; c.textContent = "오너"; who.append(c); }
     else if (rec.role === "admin") { const c = document.createElement("span"); c.className = "chip"; c.textContent = "사내관리자"; who.append(c); }
     if (managers[uid] === true) { const c = document.createElement("span"); c.className = "chip mgr"; c.textContent = "관리매니저"; who.append(c); }
-    if (uid === SUPER_ADMIN_UID) { const c = document.createElement("span"); c.className = "chip"; c.textContent = "최고관리자"; who.append(c); }
+    if (isSuperUid(uid)) { const c = document.createElement("span"); c.className = "chip"; c.textContent = "최고관리자"; who.append(c); }
     const sm = document.createElement("small"); sm.textContent = (rec.email || "이메일 없음") + " · 가입 " + fmtD(rec.createdAt);
     who.append(sm);
     const acts = document.createElement("div"); acts.className = "acts";
@@ -300,7 +301,7 @@
         firebase.database().ref("users/" + uid + "/name").set(nv.trim()).then(() => toast("이름을 변경했어요")).catch((e) => toast("실패: " + e.message));
       });
       acts.append(rn);
-      if (uid !== SUPER_ADMIN_UID) {
+      if (!isSuperUid(uid)) {
         const mg = document.createElement("button"); mg.textContent = managers[uid] === true ? "매니저 해제" : "매니저 지정";
         mg.addEventListener("click", () => {
           const on = managers[uid] !== true;

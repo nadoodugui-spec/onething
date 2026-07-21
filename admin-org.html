@@ -180,7 +180,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
   // 최고관리자 계정으로 로그인된 경우에만 본문 표시
-  const SUPER_ADMIN_UID = "srqAaRgdmLhYeCyEFeiUA552cvA3";
+  const SUPER_ADMIN_UIDS = ["srqAaRgdmLhYeCyEFeiUA552cvA3", "m4HHEZBIm3VvoZccmgZhSQIWSqM2"];   // 서비스 운영자(나두혁) 계정: gmail, naver
   firebase.initializeApp({
     apiKey: "AIzaSyASo_vj9aOyAfv0F6HlOlJ7e2oPjmKqfSo",
     authDomain: "onething-7f4d7.firebaseapp.com",
@@ -189,7 +189,7 @@
   });
   firebase.auth().onAuthStateChanged((u) => {
     const gate = document.getElementById("gate"), body = document.getElementById("content"), msg = document.getElementById("gateMsg");
-    if (u && u.uid === SUPER_ADMIN_UID) { gate.style.display = "none"; body.style.display = "block"; }
+    if (u && SUPER_ADMIN_UIDS.includes(u.uid)) { gate.style.display = "none"; body.style.display = "block"; }
     else if (u) { msg.textContent = "이 문서는 최고관리자 전용입니다."; }
     else { msg.textContent = "앱에서 최고관리자 계정으로 로그인한 뒤 다시 열어주세요."; }
   });
