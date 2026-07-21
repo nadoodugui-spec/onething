@@ -116,6 +116,12 @@
       <div id="mgrList" class="dist"></div>
     </div>
 
+    <div class="panel" id="syncPanel" data-super>
+      <h3>구성원 명부 점검 <small style="color:var(--sub);font-weight:400">— 회사별 명부(wsmembers)가 실제 소속과 일치하는지 확인하고 다시 만듭니다. 개인정보 보호를 위해 일반 회원은 이 명부만 읽습니다</small></h3>
+      <div id="syncMsg" class="dist" style="margin-bottom:8px"></div>
+      <button id="syncBtn">명부 다시 만들기</button>
+    </div>
+
     <input class="search" id="q" type="search" placeholder="회사 이름 · 회원 이름 · 이메일 검색" autocomplete="off" />
     <div id="list"></div>
   </div>
@@ -136,7 +142,7 @@
     appId: "1:9113682878:web:b7b4571af1d5bed37defef"
   });
   const $id = (i) => document.getElementById(i);
-  let users = {}, wss = {}, managers = {}, qna = {}, ready = false, isSuper = false;
+  let users = {}, wss = {}, managers = {}, qna = {}, wsm = {}, ready = false, isSuper = false;
   const coStats = {};   // wid → 집계(상세 통계 버튼으로 로드)
   let toastT = null;
   function toast(m) { const el = $id("toast"); el.textContent = m; el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), 2600); }
@@ -151,6 +157,7 @@
     }
     if (!isSuper && !isMgr) { $id("gateMsg").textContent = "이 페이지는 최고관리자·관리매니저 전용입니다."; return; }
     $id("gate").style.display = "none"; $id("content").style.display = "block";
+    $id("syncBtn").addEventListener("click", runSync);
     if (!isSuper) {
       $id("roleLead").textContent = "관리매니저 모드 · 조회와 비밀번호 재설정 지원만 가능합니다";
       document.querySelectorAll("[data-super]").forEach((el) => { el.style.display = "none"; });
@@ -165,6 +172,7 @@
     db.ref("workspaces").on("value", (s) => { wss = s.val() || {}; render(); });
     db.ref("managers").on("value", (s) => { managers = s.val() || {}; render(); });
     db.ref("qna").on("value", (s) => { qna = s.val() || {}; render(); });
+    db.ref("wsmembers").on("value", (s) => { wsm = s.val() || {}; renderSync(); });
     $id("q").addEventListener("input", render);
   }
 
@@ -274,6 +282,43 @@
       + '<span>◉ 원씽 중 <b>' + s.stCnt.focus + '</b></span><span>업무 중 <b>' + s.stCnt.work + '</b></span><span>자리비움 <b>' + s.stCnt.away + '</b></span><span>휴가 <b>' + s.stCnt.vacation + "</b></span></div>";
   }
 
+  // ── 구성원 명부(wsmembers) 점검·재생성 ──
+  // users/{uid}.ws 가 소속의 원본이고, wsmembers/{ws}/{uid} 는 일반 회원이 읽는 사본이다.
+  // 사본이 빠지거나 어긋나면 그 회사의 팀 목록이 비어 보이므로 여기서 맞춘다.
+  function syncDiff() {
+    const add = [], del = [];
+    const want = {};
+    Object.keys(users).forEach((uid) => {
+      const r = users[uid] || {}; if (!r.ws) return;
+      want[r.ws + "/" + uid] = { name: r.name || "?", role: r.role || "member" };
+    });
+    Object.keys(want).forEach((k) => {
+      const [ws, uid] = k.split("/"); const cur = ((wsm[ws] || {})[uid]) || null;
+      if (!cur || cur.name !== want[k].name || (cur.role || "member") !== want[k].role) add.push({ k: k, v: want[k] });
+    });
+    Object.keys(wsm).forEach((ws) => Object.keys(wsm[ws] || {}).forEach((uid) => {
+      if (!want[ws + "/" + uid]) del.push(ws + "/" + uid);
+    }));
+    return { add: add, del: del };
+  }
+  function renderSync() {
+    const el = $id("syncMsg"); if (!el) return;
+    const d = syncDiff();
+    el.textContent = (d.add.length || d.del.length)
+      ? "맞출 항목 " + d.add.length + "건, 지울 항목 " + d.del.length + "건 — [명부 다시 만들기]를 눌러주세요."
+      : "명부가 실제 소속과 일치합니다. ✅";
+  }
+  function runSync() {
+    const d = syncDiff();
+    if (!d.add.length && !d.del.length) { toast("이미 최신입니다"); return; }
+    if (!confirm("구성원 명부를 " + d.add.length + "건 맞추고 " + d.del.length + "건 지웁니다. 진행할까요?")) return;
+    const ups = {};
+    d.add.forEach((x) => { ups["wsmembers/" + x.k] = x.v; });
+    d.del.forEach((k) => { ups["wsmembers/" + k] = null; });
+    firebase.database().ref().update(ups)
+      .then(() => toast("명부를 다시 만들었어요 (" + (d.add.length + d.del.length) + "건)"))
+      .catch((e) => toast("실패: " + e.message));
+  }
   function userRow(uid) {
     const rec = users[uid] || {};
     const row = document.createElement("div"); row.className = "row";
@@ -298,7 +343,9 @@
       rn.addEventListener("click", () => {
         const nv = prompt("새 이름 (" + (rec.name || "?") + " → ?)", rec.name || "");
         if (!nv || !nv.trim()) return;
-        firebase.database().ref("users/" + uid + "/name").set(nv.trim()).then(() => toast("이름을 변경했어요")).catch((e) => toast("실패: " + e.message));
+        const nn = nv.trim();
+        if (rec.ws) firebase.database().ref("wsmembers/" + rec.ws + "/" + uid + "/name").set(nn).catch(() => {});   // 구성원 명부도 동기화
+        firebase.database().ref("users/" + uid + "/name").set(nn).then(() => toast("이름을 변경했어요")).catch((e) => toast("실패: " + e.message));
       });
       acts.append(rn);
       if (!isSuperUid(uid)) {
@@ -315,7 +362,10 @@
           const jobs = [firebase.database().ref("users/" + uid).remove(), firebase.database().ref("managers/" + uid).remove(),
             firebase.database().ref("notes/user_" + uid).remove().catch(() => {}),
             firebase.database().ref("qna/" + uid).remove().catch(() => {})];
-          if (ws) jobs.push(firebase.database().ref("ws/" + ws + "/status/" + uid).remove().catch(() => {}));
+          if (ws) {
+            jobs.push(firebase.database().ref("ws/" + ws + "/status/" + uid).remove().catch(() => {}));
+            jobs.push(firebase.database().ref("wsmembers/" + ws + "/" + uid).remove().catch(() => {}));
+          }
           Promise.all(jobs).then(() => toast("삭제했어요")).catch((e) => toast("실패: " + e.message));
         });
         acts.append(mg, del);
@@ -326,7 +376,7 @@
   }
 
   function render() {
-    renderQna();
+    renderQna(); renderSync();
     const q = ($id("q").value || "").trim().toLowerCase();
     const uids = Object.keys(users), wids = Object.keys(wss);
     const solo = uids.filter((u) => !(users[u] || {}).ws);
@@ -399,7 +449,8 @@
           if (!confirm("'" + (w.name || wid) + "' 워크스페이스를 삭제할까요?\n요청·프로젝트 등 팀 데이터가 모두 지워지고, 구성원 " + members.length + "명은 무소속이 됩니다. 되돌릴 수 없어요.")) return;
           if (!confirm("정말입니까? 한 번 더 확인합니다.")) return;
           const db = firebase.database();
-          const jobs = [db.ref("workspaces/" + wid).remove(), db.ref("ws/" + wid).remove()];
+          const jobs = [db.ref("workspaces/" + wid).remove(), db.ref("ws/" + wid).remove(), db.ref("wsmembers/" + wid).remove()];
+          if (w.code) jobs.push(db.ref("wscodes/" + w.code).remove().catch(() => {}));   // 고아 초대 코드 정리
           members.forEach((u) => jobs.push(db.ref("users/" + u).update({ ws: null, role: null })));
           Promise.all(jobs).then(() => toast("워크스페이스를 삭제했어요")).catch((e) => toast("실패: " + e.message));
         });

@@ -12,6 +12,19 @@
         }
       }
     },
+    "wsmembers": {
+      ".read": "auth != null && ((auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || auth.uid === 'm4HHEZBIm3VvoZccmgZhSQIWSqM2') || root.child('managers').child(auth.uid).val() === true)",
+      "$ws": {
+        ".read": "auth != null && ((auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || auth.uid === 'm4HHEZBIm3VvoZccmgZhSQIWSqM2') || root.child('managers').child(auth.uid).val() === true || root.child('users').child(auth.uid).child('ws').val() === $ws)",
+        "$uid": {
+          ".write": "auth != null && ((auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || auth.uid === 'm4HHEZBIm3VvoZccmgZhSQIWSqM2') || ($uid === auth.uid && (!newData.exists() || root.child('users').child(auth.uid).child('ws').val() === $ws)) || (root.child('users').child(auth.uid).child('ws').val() === $ws && (root.child('users').child(auth.uid).child('role').val() === 'owner' || root.child('users').child(auth.uid).child('role').val() === 'admin')))",
+          ".validate": "newData.hasChild('name') && newData.child('name').isString() && newData.child('name').val().length <= 40",
+          "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "role": { ".validate": "newData.val() === null || newData.val().matches(/^(owner|admin|member)$/)" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
     "notes": {
       "$nid": {
         ".read": "auth != null && $nid === 'user_' + auth.uid",
@@ -41,8 +54,8 @@
       }
     },
     "wscodes": {
-      ".read": "auth != null",
       "$code": {
+        ".read": "auth != null",
         ".write": "auth != null && ((auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || auth.uid === 'm4HHEZBIm3VvoZccmgZhSQIWSqM2') || (newData.exists() && newData.child('w').val() === root.child('users').child(auth.uid).child('ws').val()) || (!newData.exists() && data.child('w').val() === root.child('users').child(auth.uid).child('ws').val() && (root.child('users').child(auth.uid).child('role').val() === 'owner' || root.child('users').child(auth.uid).child('role').val() === 'admin')))",
         ".validate": "newData.hasChildren(['w', 'n'])"
       }

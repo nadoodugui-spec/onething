@@ -1962,7 +1962,7 @@
   }
   function exportAllBackup() {   // 관리자: 팀 데이터 전체 (PIN은 제외)
     const users = {};
-    Object.keys(usersCache).forEach((id) => {
+    teamIds().forEach((id) => {   // ★ 내 회사 구성원만 — 예전엔 전 플랫폼 회원이 백업 파일로 새어나갔음
       const u = Object.assign({}, usersCache[id]); delete u.pin; delete u.pinH; users[id] = u;
     });
     downloadJson({ exportedAt: Date.now(), users: users, requests: requestsCache, projects: projectsCache, projectTodos: projectTodosCache, status: statusCache },
@@ -2070,7 +2070,14 @@
     for (let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
     return c;
   }
-  let usersCache = {};                 // { userId: {name, pinH, createdAt, ws, role} }
+  let usersCache = {};                 // { userId: {name, pinH, createdAt, ws, role} } — 나 + 같은 회사 구성원만
+  let selfRec = null;                  // users/{내uid} 원본(이메일 포함) — 나만 읽음
+  let selfAttached = null;             // 내 프로필 리스너가 붙은 uid
+  let membersCache = {};               // wsmembers/{내회사} = { uid: {name, role} } — 이메일 없음
+  let membersAttached = null;          // 명부 리스너가 붙은 wsId
+  let membersLoaded = false;
+  let allUsersCache = {};              // 전 회원 — 최고관리자·관리매니저만 채워짐
+  let legacyUsersOpen = false;         // users 전체 읽기가 아직 열려 있는가(명부 이관 과도기 판정)
   let requestsCache = {};              // { reqId: {from, fromName, to, toName, text, ts, status, replies, hiddenFor} }
   let msgDb = null;                    // firebase database (messaging)
   let knownReqIds = null;              // 토스트용: 이미 본 요청 id 집합(null=첫 로드 전)
@@ -2407,17 +2414,87 @@
     attachUsersListener();
   }
   // 로그아웃(signOut) 시 서버가 리스너를 취소하므로, 재로그인 때마다 다시 부착 (off 후 on — 중복 없음)
-  function attachUsersListener() {
+  //
+  // ★ 개인정보 보호 구조 (2026-07): 예전엔 users 전체를 통째로 구독해서 로그인한 누구나
+  //   전 회원의 이메일·이름·소속을 받아갔다. 지금은 세 갈래로 나눈다.
+  //     ① users/{내uid}      — 내 프로필(이메일 포함). 나만 읽을 수 있음
+  //     ② wsmembers/{내회사} — 같은 회사 구성원 명부(이름·직책만, 이메일 없음)
+  //     ③ users 전체         — 최고관리자·관리매니저만. 실패해도 일반 회원 앱은 정상 동작
+  function detachUsersListeners() {
     if (!msgDb) return;
     try { msgDb.ref("users").off(); } catch (_) {}
-    msgDb.ref("users").on("value", (snap) => {
-      usersCache = snap.val() || {};
+    try { if (selfAttached) msgDb.ref("users/" + selfAttached).off(); } catch (_) {}
+    try { if (membersAttached) msgDb.ref("wsmembers/" + membersAttached).off(); } catch (_) {}
+    selfAttached = null; membersAttached = null;
+    selfRec = null; membersCache = {}; membersLoaded = false; allUsersCache = {}; legacyUsersOpen = false;
+  }
+  function attachUsersListener() {
+    if (!msgDb || !authUser) return;
+    detachUsersListeners();
+    selfAttached = authUser.uid;
+    msgDb.ref("users/" + selfAttached).on("value", (snap) => {
+      selfRec = snap.val();
       usersLoaded = true;
-      resolveCurrentUser(); renderTeamBoard();
-      maybeProfileSetup();   // 첫 로그인이면 이름 설정/기존 계정 연결
-      if (!myWsId && wsAttached) { detachWsListeners(); renderRequests(); renderUnreadBadge(); renderTeamBoard(); }   // 내보내기 등으로 무소속이 되면 이전 팀 연결·캐시 정리
-      attachWsListeners();   // 소속이 확인되면 팀 데이터 연결
-    });
+      applyUsers();
+    }, () => { selfRec = null; usersLoaded = true; applyUsers(); });
+    // 운영진 전용 — 일반 회원은 권한 거부되며, 그때는 조용히 비워둔다(앱 동작에 영향 없음)
+    msgDb.ref("users").on("value",
+      (snap) => { allUsersCache = snap.val() || {}; legacyUsersOpen = true; rebuildUsersCache(); renderTeamBoard(); },
+      () => { allUsersCache = {}; legacyUsersOpen = false; });
+  }
+  // 같은 회사 구성원 명부 구독 (회사가 바뀌면 갈아끼움)
+  function attachMembersListener(ws) {
+    if (!msgDb || membersAttached === ws) return;
+    if (membersAttached) { try { msgDb.ref("wsmembers/" + membersAttached).off(); } catch (_) {} }
+    membersAttached = ws || null; membersCache = {}; membersLoaded = false;
+    if (!ws) { rebuildUsersCache(); return; }
+    msgDb.ref("wsmembers/" + ws).on("value",
+      (snap) => {
+        membersCache = snap.val() || {}; membersLoaded = true;
+        rebuildUsersCache(); ensureMyMembership();
+        renderTeamBoard(); renderRequests();
+      },
+      () => { membersCache = {}; membersLoaded = false; rebuildUsersCache(); });
+  }
+  // ①②(③)을 합쳐 기존 코드가 쓰던 usersCache 모양 { uid: {name, role, ws, ...} }으로 재구성
+  function rebuildUsersCache() {
+    const me = authUser && authUser.uid;
+    const ws = (selfRec && selfRec.ws) || null;
+    const c = {};
+    if (me && selfRec) c[me] = Object.assign({ ws: null, role: null }, selfRec);
+    const ids = Object.keys(membersCache);
+    if (ws && ids.length) {
+      ids.forEach((id) => {
+        if (id === me) return;
+        const m = membersCache[id] || {};
+        c[id] = { name: m.name || "?", role: m.role || null, ws: ws };   // 이메일은 의도적으로 없음
+      });
+    } else if (ws && legacyUsersOpen) {
+      // 명부 이관 전 과도기 — 옛 방식(전 회원에서 내 회사만 필터)으로 팀 기능 유지
+      Object.keys(allUsersCache).forEach((id) => {
+        if ((allUsersCache[id] || {}).ws === ws) c[id] = Object.assign({}, allUsersCache[id]);
+      });
+    }
+    usersCache = c;
+  }
+  // 자가 복구: 내 명부 항목이 없거나 이름·직책이 바뀌었으면 스스로 갱신 (기존 회원 이관을 겸함)
+  function ensureMyMembership() {
+    const me = authUser && authUser.uid;
+    const ws = (selfRec && selfRec.ws) || null;
+    if (!msgDb || !me || !ws || !membersLoaded || !selfRec || !selfRec.name) return;
+    const want = { name: selfRec.name, role: selfRec.role || "member" };
+    const cur = membersCache[me];
+    if (cur && cur.name === want.name && (cur.role || "member") === want.role) return;
+    try { msgDb.ref("wsmembers/" + ws + "/" + me).set(want).catch(() => {}); } catch (_) {}
+  }
+  function applyUsers() {
+    attachMembersListener((selfRec && selfRec.ws) || null);
+    rebuildUsersCache();
+    resolveCurrentUser(); renderTeamBoard();
+    maybeProfileSetup();   // 첫 로그인이면 이름 설정/기존 계정 연결
+    if (!myWsId && wsAttached) { detachWsListeners(); renderRequests(); renderUnreadBadge(); renderTeamBoard(); }   // 내보내기 등으로 무소속이 되면 이전 팀 연결·캐시 정리
+    attachWsListeners();   // 소속이 확인되면 팀 데이터 연결
+    ensureMyMembership();
   }
   // 워크스페이스가 정해진 뒤에만 팀 데이터(요청·상태·프로젝트) 연결
   function detachWsListeners() {
@@ -2548,6 +2625,7 @@
     try {
       await msgDb.ref("workspaces/" + wsId).set({ name: name, code: code, owner: currentUser.id, createdAt: Date.now() });
       await msgDb.ref("users/" + currentUser.id).update({ ws: wsId, role: "owner" });
+      await msgDb.ref("wsmembers/" + wsId + "/" + currentUser.id).set({ name: currentUser.name || "?", role: "owner" });   // 회사별 구성원 명부
       await msgDb.ref("wscodes/" + code).set({ w: wsId, n: name });   // 코드→회사 색인 (참여용)
       alert(t("ws_created", name, code));
       location.reload();
@@ -2594,7 +2672,7 @@
       const nm = rec.n || wsId;
       if (!confirm(t("iv_join_q", nm))) { clearInvite(); return; }
       if (myWsId && !confirm(t("iv_switch_q", nm))) { clearInvite(); return; }
-      await msgDb.ref("users/" + currentUser.id).update({ ws: wsId, role: "member" });
+      await switchMembership(wsId, "member");
       clearInvite();
       alert(t("iv_joined", nm));
       location.reload();
@@ -2607,9 +2685,16 @@
       const snap = await msgDb.ref("wscodes/" + code).once("value");
       const rec = snap.val();
       if (!rec || !rec.w) { toast(t("ws_bad_code")); return; }
-      await msgDb.ref("users/" + currentUser.id).update({ ws: rec.w, role: "member" });
+      await switchMembership(rec.w, "member");
       location.reload();
     } catch (_) { toast(t("ws_err")); }
+  }
+  // 회사 이동: 옛 명부에서 나를 빼고 → 소속을 바꾸고 → 새 명부에 넣는다 (순서 중요 — 규칙이 '현재 소속'을 본다)
+  async function switchMembership(wsId, role) {
+    const me = currentUser.id, old = myWsId;
+    if (old && old !== wsId) { try { await msgDb.ref("wsmembers/" + old + "/" + me).remove(); } catch (_) {} }
+    await msgDb.ref("users/" + me).update({ ws: wsId, role: role });
+    try { await msgDb.ref("wsmembers/" + wsId + "/" + me).set({ name: currentUser.name || "?", role: role }); } catch (_) {}
   }
   // ----- 관리자 -----
   // 제작자(나두혁) 계정에 최초 1회 admin 플래그를 자동 부여
@@ -2657,7 +2742,7 @@
   }
   function pfDelBtn(id) {   // 최고관리자 전용: 비밀번호 재설정 메일 + 계정(프로필) 삭제
     const wrap = document.createElement("span"); wrap.style.cssText = "display:flex;gap:4px;flex:none";
-    const rec = usersCache[id] || {};
+    const rec = allUsersCache[id] || {};   // 운영진 전용 캐시(전 회원) — usersCache는 내 회사만 담는다
     const rp = document.createElement("button"); rp.className = "rq-btn"; rp.textContent = t("pw_reset");
     rp.addEventListener("click", async () => {
       if (!rec.email) { toast(t("pw_reset_noemail")); return; }
@@ -2675,16 +2760,16 @@
     const body = $id("pfBody"), sum = $id("pfSummary");
     if (!body) return;
     q = (q || "").trim().toLowerCase();
-    const allUids = Object.keys(usersCache);
+    const allUids = Object.keys(allUsersCache);
     const wsIds = Object.keys(pfWsCache);
-    const soloUids = allUids.filter((u2) => !(usersCache[u2] || {}).ws);
+    const soloUids = allUids.filter((u2) => !(allUsersCache[u2] || {}).ws);
     if (sum) sum.textContent = t("pf_sum", wsIds.length, allUids.length, soloUids.length);
-    const hitUser = (u2) => { const rec = usersCache[u2] || {}; return !q || (rec.name || "").toLowerCase().includes(q) || (rec.email || "").toLowerCase().includes(q); };
+    const hitUser = (u2) => { const rec = allUsersCache[u2] || {}; return !q || (rec.name || "").toLowerCase().includes(q) || (rec.email || "").toLowerCase().includes(q); };
     body.innerHTML = "";
     let shown = 0;
     wsIds.sort((a, b) => ((pfWsCache[b] || {}).createdAt || 0) - ((pfWsCache[a] || {}).createdAt || 0)).forEach((wid) => {
       const w = pfWsCache[wid] || {};
-      const members = allUids.filter((u2) => (usersCache[u2] || {}).ws === wid);
+      const members = allUids.filter((u2) => (allUsersCache[u2] || {}).ws === wid);
       const wsHit = !q || (w.name || "").toLowerCase().includes(q);
       const memberHits = members.filter(hitUser);
       if (!wsHit && !memberHits.length) return;
@@ -2698,7 +2783,7 @@
       h.append(hl, hr); card.append(h);
       const ul = document.createElement("div"); ul.style.marginTop = "6px";
       (q ? memberHits : members).forEach((u2) => {
-        const rec = usersCache[u2] || {};
+        const rec = allUsersCache[u2] || {};
         const row = document.createElement("div"); row.className = "sp-feed-item";
         const nm = document.createElement("span");
         nm.textContent = (rec.name || "?") + (rec.email ? " · " + rec.email : "");
@@ -2719,7 +2804,7 @@
       const sh = document.createElement("div"); sh.style.fontWeight = "700"; sh.textContent = t("pf_solo_h") + " (" + soloHits.length + ")";
       sc.append(sh);
       soloHits.forEach((u2) => {
-        const rec = usersCache[u2] || {};
+        const rec = allUsersCache[u2] || {};
         const row = document.createElement("div"); row.className = "sp-feed-item";
         const nm = document.createElement("span"); nm.textContent = (rec.name || "?") + (rec.email ? " · " + rec.email : "");
         const tm = document.createElement("span"); tm.className = "rq-meta"; tm.textContent = rec.createdAt ? fmtReqTime(rec.createdAt) : "";
@@ -2773,7 +2858,10 @@
           msgDb.ref("qna/" + uid0).remove(),
           msgDb.ref("users/" + uid0).remove()
         ];
-        if (myWs) jobs.push(msgDb.ref("ws/" + myWs + "/status/" + uid0).remove().catch(() => {}));
+        if (myWs) {
+          jobs.push(msgDb.ref("ws/" + myWs + "/status/" + uid0).remove().catch(() => {}));
+          jobs.push(msgDb.ref("wsmembers/" + myWs + "/" + uid0).remove().catch(() => {}));   // 구성원 명부에서도 제거
+        }
         await Promise.all(jobs);
         await authUser.delete();   // 로그인 계정(Auth)까지 삭제 — 껍데기 안 남김
         try { localStorage.removeItem("onething-notebook::" + uid0); } catch (_) {}
@@ -2847,7 +2935,12 @@
         const pr = document.createElement("button");
         pr.textContent = u.role === "admin" ? t("role_demote") : t("role_promote");
         pr.addEventListener("click", () => {
-          try { msgDb.ref("users/" + id + "/role").set(u.role === "admin" ? "member" : "admin"); logAdmin(u.role === "admin" ? "관리자 해제" : "관리자 승격", u.name || "?"); } catch (_) {}
+          const nrole = u.role === "admin" ? "member" : "admin";
+          try {
+            msgDb.ref("users/" + id + "/role").set(nrole);
+            if (myWsId) msgDb.ref("wsmembers/" + myWsId + "/" + id + "/role").set(nrole).catch(() => {});   // 명부 직책도 동기화
+            logAdmin(nrole === "member" ? "관리자 해제" : "관리자 승격", u.name || "?");
+          } catch (_) {}
           setTimeout(renderMembers, 300);
         });
         li.append(pr);
@@ -2871,9 +2964,13 @@
           const amOwner = (usersCache[currentUser.id] || {}).role === "owner";
           const upd = { ws: null }; if (amOwner) upd.role = null;   // 직책 변경은 오너만(규칙과 일치)
           msgDb.ref("users/" + id).update(upd);
+          if (oldWs) msgDb.ref("wsmembers/" + oldWs + "/" + id).remove().catch(() => {});   // 구성원 명부에서 제거
           logAdmin("내보내기", u.name || "?");
           toastUndo(t("kick_done", u.name || "?"), () => {
-            try { const back = { ws: oldWs }; if (amOwner) back.role = oldRole; msgDb.ref("users/" + id).update(back); } catch (_) {}
+            try {
+              const back = { ws: oldWs }; if (amOwner) back.role = oldRole; msgDb.ref("users/" + id).update(back);
+              if (oldWs) msgDb.ref("wsmembers/" + oldWs + "/" + id).set({ name: u.name || "?", role: oldRole || "member" }).catch(() => {});
+            } catch (_) {}
           });
         } catch (_) {}
         setTimeout(renderMembers, 300);
@@ -2884,7 +2981,7 @@
   }
   function deleteUser(id) {
     if (!isSuperAdmin() || !msgDb) return;   // 계정(프로필) 삭제는 플랫폼 운영자만
-    const u = usersCache[id]; if (!u) return;
+    const u = allUsersCache[id] || usersCache[id]; if (!u) return;
     if (!confirm(t("um_del_confirm", u.name || "?"))) return;
     try {
       const targetWs = u.ws || null;
@@ -2892,8 +2989,11 @@
       msgDb.ref("notes/user_" + id).remove().catch(() => {});
       msgDb.ref("qna/" + id).remove().catch(() => {});
       msgDb.ref("managers/" + id).remove().catch(() => {});
-      if (targetWs) msgDb.ref("ws/" + targetWs + "/status/" + id).remove().catch(() => {});
-      delete usersCache[id];
+      if (targetWs) {
+        msgDb.ref("ws/" + targetWs + "/status/" + id).remove().catch(() => {});
+        msgDb.ref("wsmembers/" + targetWs + "/" + id).remove().catch(() => {});   // 구성원 명부에서도 제거
+      }
+      delete usersCache[id]; delete allUsersCache[id];
     } catch (_) {}
     logAdmin("구성원 삭제", (u || {}).name || "?");
     renderMembers(); renderTeamBoard();
@@ -4055,6 +4155,7 @@
     if (!name || name === currentUser.name) return;
     if (findUserByName(name)) { toast(t("rq_dup_name")); return; }
     try {
+      if (myWsId) msgDb.ref("wsmembers/" + myWsId + "/" + currentUser.id + "/name").set(name).catch(() => {});   // 명부 이름도 동기화
       msgDb.ref("users/" + currentUser.id + "/name").set(name).then(() => {}).catch(() => {
         toast(t("ws_err"));
         currentUser.name = (usersCache[currentUser.id] || {}).name || currentUser.name;   // 실패 시 화면 원복
