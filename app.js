@@ -124,6 +124,7 @@
     ts_putback: { ko: "원씽에서 내리기", en: "Put back" },
     ts_done: { ko: "완료", en: "Done" },
     ti_edit: { ko: "더블클릭하면 수정", en: "Double-click to edit" },
+    ti_edit_tap: { ko: "탭하면 수정", en: "Tap to edit" },
     rep_daily: { ko: "매일 반복", en: "Daily" },
     rep_weekly: { ko: "매주 반복", en: "Weekly" },
     rep_none: { ko: "반복 없음", en: "No repeat" },
@@ -800,6 +801,12 @@
     v = (v || "").trim();
     if (kind === "todo") { const t = state.todos.find((x) => x.id === id); if (!t) return; if (!v) { deleteTodo(id); return; } t.text = v; }
     else if (kind === "history") { const h = state.history.find((x) => x.id === id); if (!h || !v) return; h.text = v; }
+    else if (kind === "sub") {   // 조각(하위 단계) — id는 "할일id:조각id"
+      const p = String(id).split(":"); const tt = state.todos.find((x) => x.id === p[0]); if (!tt) return;
+      const s = (tt.subtasks || []).find((x) => x.id === p[1]); if (!s) return;
+      if (!v) { delSub(p[0], p[1]); return; }   // 내용을 다 지우면 삭제 — 할 일과 같은 규칙
+      s.text = v;
+    }
     save(); render();
   }
   function setDue(id, v) { const t = state.todos.find((x) => x.id === id); if (!t) return; t.due = v || null; save(); render(); }
@@ -983,6 +990,16 @@
   }
   function makeEditable(el, kind, id) {
     el.addEventListener("dblclick", () => startEditText(el, kind, id));
+  }
+  // 조각 전용: PC는 더블클릭, 터치 기기는 한 번 탭.
+  // makeEditable에 탭을 넣으면 할 일 줄을 탭했을 때 바텀시트 대신 편집이 열려버리므로 따로 둔다.
+  function makeSubEditable(el, tid, sid) {
+    const go = (e) => { if (e) e.stopPropagation(); startEditText(el, "sub", tid + ":" + sid); };   // 부모(할 일 줄·시트) 클릭 핸들러로 번지지 않게
+    let coarse = false; try { coarse = matchMedia("(pointer: coarse)").matches; } catch (_) {}
+    el.title = t(coarse ? "ti_edit_tap" : "ti_edit");
+    el.classList.add("editable-sub");
+    el.addEventListener("dblclick", go);
+    if (coarse) el.addEventListener("click", go);
   }
 
   // ---------- render ----------
@@ -1524,6 +1541,7 @@
       const li = document.createElement("li");
       const cb = document.createElement("button"); cb.className = "check scheck"; cb.textContent = s.done ? "✓" : ""; cb.addEventListener("click", () => toggleSub(td.id, s.id));
       const tx = document.createElement("span"); tx.className = "stext" + (s.done ? " done" : ""); tx.textContent = s.text;
+      makeSubEditable(tx, td.id, s.id);
       const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.addEventListener("click", () => delSub(td.id, s.id));
       li.append(cb, tx, x); ul.append(li);
     });
@@ -1582,6 +1600,7 @@
       const li = document.createElement("li");
       const cb = document.createElement("button"); cb.className = "check scheck"; cb.textContent = s.done ? "✓" : ""; cb.addEventListener("click", () => toggleSub(td.id, s.id));
       const tx = document.createElement("span"); tx.className = "stext" + (s.done ? " done" : ""); tx.textContent = s.text;
+      makeSubEditable(tx, td.id, s.id);
       const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.addEventListener("click", () => delSub(td.id, s.id));
       li.append(cb, tx, x); ul.append(li);
     });
@@ -1629,6 +1648,7 @@
       const num = document.createElement("span"); num.className = "step-num"; num.textContent = (i + 1) + ".";
       const cb = document.createElement("button"); cb.className = "check scheck"; cb.textContent = s.done ? "✓" : ""; cb.addEventListener("click", () => toggleSub(td.id, s.id));
       const tx = document.createElement("span"); tx.className = "stext" + (s.done ? " done" : ""); tx.textContent = s.text;
+      makeSubEditable(tx, td.id, s.id);
       const x = document.createElement("button"); x.className = "row-x"; x.textContent = "✕"; x.addEventListener("click", () => delSub(td.id, s.id));
       li.append(num, cb, tx, x); ul.append(li);
     });
