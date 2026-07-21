@@ -1,8 +1,9 @@
 {
   "rules": {
     "users": {
-      ".read": "auth != null",
+      ".read": "auth != null && ((auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || auth.uid === 'm4HHEZBIm3VvoZccmgZhSQIWSqM2') || root.child('managers').child(auth.uid).val() === true)",
       "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
         ".write": "auth != null && ($uid === auth.uid || (auth.uid === 'srqAaRgdmLhYeCyEFeiUA552cvA3' || auth.uid === 'm4HHEZBIm3VvoZccmgZhSQIWSqM2'))",
         "ws": {
           ".write": "auth != null && $uid !== auth.uid && (root.child('users').child(auth.uid).child('role').val() === 'owner' || root.child('users').child(auth.uid).child('role').val() === 'admin') && (data.val() === root.child('users').child(auth.uid).child('ws').val() || newData.val() === root.child('users').child(auth.uid).child('ws').val())"
